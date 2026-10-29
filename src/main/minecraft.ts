@@ -444,7 +444,11 @@ export async function launchInstance(options: {
           : 'Release',
       minMemory: 512,
       maxMemory: memory,
-      extraJVMArgs: ['-Dfile.encoding=UTF-8'],
+      resolution:
+        instance.width && instance.height
+          ? { width: instance.width, height: instance.height }
+          : undefined,
+      extraJVMArgs: ['-Dfile.encoding=UTF-8', ...(instance.jvmArgs || [])],
       extraExecOption: {
         cwd: gamePath,
         windowsHide: false

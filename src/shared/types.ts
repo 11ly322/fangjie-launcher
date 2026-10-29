@@ -70,6 +70,9 @@ export interface Instance {
   icon: string
   accent: string
   memoryMb?: number
+  jvmArgs?: string[]
+  width?: number
+  height?: number
   createdAt: number
   lastPlayedAt?: number
   totalPlayTimeMs: number
@@ -240,6 +243,9 @@ export interface UpdateInstanceInput {
   memoryMb?: number
   icon?: string
   accent?: string
+  jvmArgs?: string[]
+  width?: number
+  height?: number
 }
 
 export interface LaunchState {
@@ -253,6 +259,132 @@ export interface LogLine {
   instanceId: string
   line: string
   at: number
+}
+
+export interface CoreStatus {
+  available: boolean
+  path?: string
+  error?: string
+}
+
+export interface CoreEvidence {
+  source: string
+  line?: number
+  excerpt: string
+}
+
+export interface CoreSuggestedAction {
+  kind: string
+  label: string
+  automatic: boolean
+}
+
+export interface CoreDiagnosis {
+  code: string
+  title: string
+  severity: 'info' | 'warning' | 'error' | 'critical'
+  confidence: number
+  root_cause: string
+  evidence: CoreEvidence[]
+  suggested_actions: CoreSuggestedAction[]
+}
+
+export interface CoreScannedMod {
+  file_name: string
+  enabled: boolean
+  mod_id: string
+  name: string
+  version?: string
+  loader?: string
+  dependencies: Array<{ id: string; requirement?: string; mandatory: boolean }>
+  provides: string[]
+  sha1: string
+}
+
+export interface CoreScanReport {
+  mods: CoreScannedMod[]
+  missing_dependencies: Array<{
+    mod_file: string
+    mod_id: string
+    dependency_id: string
+    requirement?: string
+    mandatory: boolean
+  }>
+  duplicates: Array<{ mod_id: string; files: string[] }>
+  conflicts: Array<{
+    code: string
+    title: string
+    mods: string[]
+    severity: 'warning' | 'error'
+    suggestion: string
+  }>
+  warnings: string[]
+}
+
+export interface CoreDiagnosisBundle {
+  diagnosis: {
+    diagnoses: CoreDiagnosis[]
+    scanned_at_unix: number
+  }
+  scan: CoreScanReport
+  log_lines: number
+  crash_report_found: boolean
+}
+
+export interface CoreDiffEntry {
+  path: string
+  kind: 'create' | 'modify' | 'rename' | 'delete'
+  before?: string
+  after?: string
+  summary: string
+}
+
+export interface CoreRepairPlan {
+  id: string
+  instance_id: string
+  actions: Array<Record<string, unknown>>
+  diff: CoreDiffEntry[]
+  warnings: string[]
+  created_at_unix: number
+}
+
+export interface CoreRepairReceipt {
+  repair_id: string
+  plan_id: string
+  instance_id: string
+  backup_dir: string
+  changes: Array<Record<string, unknown>>
+  created_at_unix: number
+}
+
+export interface CoreInstanceTemplate {
+  id: string
+  name: string
+  jvm_args: string[]
+  memory_mb: number
+  width?: number
+  height?: number
+  mod_files: string[]
+  loader: LoaderType
+  game_version: string
+  created_at_unix: number
+}
+
+export interface CoreFlightSample {
+  timestamp_ms: number
+  fps: number
+  one_percent_low_fps: number
+  frame_time_ms: number
+}
+
+export interface CoreFlightSeries {
+  path: string
+  samples: CoreFlightSample[]
+  series: {
+    fps: Array<[number, number]>
+    one_percent_low_fps: Array<[number, number]>
+    frame_time_ms: Array<[number, number]>
+  }
 }
 
 export type WindowAction = 'minimize' | 'maximize' | 'close'
@@ -272,6 +404,16 @@ export interface LauncherApi {
   chooseDataFolder(): Promise<Result<string | null>>
   changeDataLocation(targetPath: string): Promise<Result<{ path: string }>>
   restartApp(): Promise<Result<void>>
+  coreStatus(): Promise<Result<CoreStatus>>
+  diagnoseCrash(instanceId: string): Promise<Result<CoreDiagnosisBundle>>
+  previewCrashRepair(instanceId: string): Promise<Result<CoreRepairPlan>>
+  applyCrashRepair(planId: string): Promise<Result<CoreRepairReceipt>>
+  rollbackCrashRepair(repairId: string): Promise<Result<CoreRepairReceipt>>
+  setModsEnabledBatch(instanceId: string, fileNames: string[], enabled: boolean): Promise<Result<InstalledMod[]>>
+  copyInstance(instanceId: string, name: string): Promise<Result<Instance>>
+  saveInstanceTemplate(instanceId: string): Promise<Result<CoreInstanceTemplate>>
+  flightSeries(instanceId: string): Promise<Result<CoreFlightSeries>>
+  exportFlightCsv(instanceId: string): Promise<Result<string | null>>
   createInstance(input: CreateInstanceInput): Promise<Result<{ instance: Instance; taskId: string }>>
   updateInstance(id: string, patch: UpdateInstanceInput): Promise<Result<Instance>>
   deleteInstance(id: string): Promise<Result<void>>

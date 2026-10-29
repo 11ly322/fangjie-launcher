@@ -6,6 +6,12 @@ import type {
   CreateInstanceInput,
   InstalledMod,
   InstallModResult,
+  CoreDiagnosisBundle,
+  CoreFlightSeries,
+  CoreInstanceTemplate,
+  CoreRepairPlan,
+  CoreRepairReceipt,
+  CoreStatus,
   JavaStatus,
   LaunchState,
   LauncherApi,
@@ -70,6 +76,25 @@ const api: LauncherApi = {
   changeDataLocation: (targetPath: string) =>
     invoke<{ path: string }>('app:change-data-location', targetPath),
   restartApp: () => invoke<void>('app:relaunch'),
+  coreStatus: () => invoke<CoreStatus>('core:status'),
+  diagnoseCrash: (instanceId: string) =>
+    invoke<CoreDiagnosisBundle>('crash:diagnose', instanceId),
+  previewCrashRepair: (instanceId: string) =>
+    invoke<CoreRepairPlan>('crash:preview', instanceId),
+  applyCrashRepair: (planId: string) =>
+    invoke<CoreRepairReceipt>('crash:apply', planId),
+  rollbackCrashRepair: (repairId: string) =>
+    invoke<CoreRepairReceipt>('crash:rollback', repairId),
+  setModsEnabledBatch: (instanceId: string, fileNames: string[], enabled: boolean) =>
+    invoke<InstalledMod[]>('mods:set-enabled-batch', instanceId, fileNames, enabled),
+  copyInstance: (instanceId: string, name: string) =>
+    invoke<Bootstrap['instances'][number]>('instances:copy', instanceId, name),
+  saveInstanceTemplate: (instanceId: string) =>
+    invoke<CoreInstanceTemplate>('instances:save-template', instanceId),
+  flightSeries: (instanceId: string) =>
+    invoke<CoreFlightSeries>('flight:series', instanceId),
+  exportFlightCsv: (instanceId: string) =>
+    invoke<string | null>('flight:export', instanceId),
   openLogsFolder: (id: string) => invoke<void>('instances:open-logs', id),
   instanceMods: (id: string) => invoke<InstalledMod[]>('mods:list', id),
   setModEnabled: (id: string, fileName: string, enabled: boolean) =>

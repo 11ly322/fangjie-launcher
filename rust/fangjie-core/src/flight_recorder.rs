@@ -5,7 +5,7 @@ use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
 
-use crate::error::CoreResult;
+use crate::error::{CoreError, CoreResult};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FrameSample {
@@ -88,27 +88,72 @@ impl FlightRecorder {
     /// Data shape ready for a simple frontend line chart. Each point is
     /// `[seconds_since_start, value]`.
     pub fn chart_series(&self) -> ChartSeries {
-        let samples = self.samples();
-        let start = samples.first().map(|sample| sample.timestamp_ms).unwrap_or(0);
-        let series = |value: fn(&FrameSample) -> f64| {
-            samples
-                .iter()
-                .map(|sample| {
-                    [
-                        (sample.timestamp_ms.saturating_sub(start) as f64) / 1000.0,
-                        value(sample),
-                    ]
-                })
-                .collect()
-        };
-        ChartSeries {
-            fps: series(|sample| sample.fps),
-            one_percent_low_fps: series(|sample| sample.one_percent_low_fps),
-            frame_time_ms: series(|sample| sample.frame_time_ms),
-        }
+        chart_series_from_samples(&self.samples())
     }
 
     pub fn path(&self) -> &Path {
         &self.path
+    }
+}
+
+/// Read a recorder CSV back into samples. This is the read interface used by
+/// the Electron UI when the file was produced by an external sampler.
+pub fn read_csv(path: &Path) -> CoreResult<Vec<FrameSample>> {
+    let raw = std::fs::read_to_string(path)?;
+    let mut samples = Vec::new();
+    for (index, line) in raw.lines().enumerate() {
+        let line = line.trim_start_matches('\u{feff}').trim();
+        if line.is_empty() || (index == 0 && line.starts_with("timestamp_ms")) {
+            continue;
+        }
+        let fields: Vec<&str> = line.split(',').map(str::trim).collect();
+        if fields.len() != 4 {
+            return Err(CoreError::InvalidInput(format!(
+                "invalid flight recorder row {}: expected 4 columns",
+                index + 1
+            )));
+        }
+        let parse = |value: &str, column: &str| {
+            value.parse::<f64>().map_err(|_| {
+                CoreError::InvalidInput(format!(
+                    "invalid flight recorder {} at row {}",
+                    column,
+                    index + 1
+                ))
+            })
+        };
+        let timestamp_ms = fields[0].parse::<u64>().map_err(|_| {
+            CoreError::InvalidInput(format!(
+                "invalid flight recorder timestamp at row {}",
+                index + 1
+            ))
+        })?;
+        samples.push(FrameSample {
+            timestamp_ms,
+            fps: parse(fields[1], "fps")?,
+            one_percent_low_fps: parse(fields[2], "one_percent_low_fps")?,
+            frame_time_ms: parse(fields[3], "frame_time_ms")?,
+        });
+    }
+    Ok(samples)
+}
+
+pub fn chart_series_from_samples(samples: &[FrameSample]) -> ChartSeries {
+    let start = samples.first().map(|sample| sample.timestamp_ms).unwrap_or(0);
+    let series = |value: fn(&FrameSample) -> f64| {
+        samples
+            .iter()
+            .map(|sample| {
+                [
+                    (sample.timestamp_ms.saturating_sub(start) as f64) / 1000.0,
+                    value(sample),
+                ]
+            })
+            .collect()
+    };
+    ChartSeries {
+        fps: series(|sample| sample.fps),
+        one_percent_low_fps: series(|sample| sample.one_percent_low_fps),
+        frame_time_ms: series(|sample| sample.frame_time_ms),
     }
 }

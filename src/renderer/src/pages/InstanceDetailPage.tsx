@@ -3,10 +3,12 @@ import {
   ArrowLeft,
   Check,
   Clock3,
+  Copy,
   Cpu,
   FolderOpen,
   HardDrive,
   Play,
+  Bookmark,
   Puzzle,
   RefreshCw,
   Settings2,
@@ -35,6 +37,8 @@ import {
   Toggle
 } from '../components/ui'
 import { classNames, formatDate, formatPlaytime, formatRelative, rangeProgress } from '../lib/format'
+import { CrashDiagnosticsModal } from '../components/CrashDiagnosticsModal'
+import { FlightRecorderModal } from '../components/FlightRecorderModal'
 
 type DetailTab = 'overview' | 'mods' | 'settings'
 
@@ -60,21 +64,37 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
   const [busyFile, setBusyFile] = useState('')
   const [name, setName] = useState(instance.name)
   const [memory, setMemory] = useState(instance.memoryMb || 4096)
+  const [jvmArgs, setJvmArgs] = useState((instance.jvmArgs || []).join(' '))
+  const [width, setWidth] = useState(instance.width || 1280)
+  const [height, setHeight] = useState(instance.height || 720)
   const [icon, setIcon] = useState(instance.icon)
   const [accent, setAccent] = useState(instance.accent)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())
+  const [batchBusy, setBatchBusy] = useState(false)
+  const [crashOpen, setCrashOpen] = useState(false)
+  const [flightOpen, setFlightOpen] = useState(false)
+  const [copyName, setCopyName] = useState(instance.name + ' 副本')
+  const [copying, setCopying] = useState(false)
+  const [templateSaving, setTemplateSaving] = useState(false)
 
   const isRunning = running.has(instance.id)
   const isLaunching = launching.has(instance.id)
   const instanceLogs = logs[instance.id] || []
   const instanceTasks = tasks.filter((task) => task.instanceId === instance.id)
+  const allSelected = mods.length > 0 && mods.every((mod) => selectedFiles.has(mod.fileName))
 
   useEffect(() => {
     setName(instance.name)
     setMemory(instance.memoryMb || 4096)
+    setJvmArgs((instance.jvmArgs || []).join(' '))
+    setWidth(instance.width || 1280)
+    setHeight(instance.height || 720)
     setIcon(instance.icon)
     setAccent(instance.accent)
+    setSelectedFiles(new Set())
+    setCopyName(instance.name + ' 副本')
   }, [instance.id, instance.name, instance.memoryMb, instance.icon, instance.accent])
 
   useEffect(() => {
@@ -134,6 +154,50 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
     toast('模组已移除', 'success')
   }
 
+  const batchToggle = async (enabled: boolean): Promise<void> => {
+    if (!selectedFiles.size) return
+    setBatchBusy(true)
+    const result = await window.fangjie.setModsEnabledBatch(instance.id, [...selectedFiles], enabled)
+    setBatchBusy(false)
+    if (!result.ok) {
+      toast(result.error, 'error')
+      return
+    }
+    setMods(result.value)
+    setSelectedFiles(new Set())
+    toast(enabled ? '所选模组已启用' : '所选模组已禁用', 'success')
+  }
+
+  const reloadMods = async (): Promise<void> => {
+    const result = await window.fangjie.instanceMods(instance.id)
+    if (result.ok) setMods(result.value)
+    await refresh()
+  }
+
+  const copyCurrent = async (): Promise<void> => {
+    setCopying(true)
+    const result = await window.fangjie.copyInstance(instance.id, copyName)
+    setCopying(false)
+    if (!result.ok) {
+      toast(result.error, 'error')
+      return
+    }
+    toast('已复制为「' + result.value.name + '」', 'success')
+    await refresh()
+    navigate('instances')
+  }
+
+  const saveTemplate = async (): Promise<void> => {
+    setTemplateSaving(true)
+    const result = await window.fangjie.saveInstanceTemplate(instance.id)
+    setTemplateSaving(false)
+    if (!result.ok) {
+      toast(result.error, 'error')
+      return
+    }
+    toast('模板「' + result.value.name + '」已保存', 'success')
+  }
+
   const save = async (): Promise<void> => {
     if (!name.trim()) {
       setFormError('实例名称不能为空')
@@ -145,7 +209,10 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
       name: name.trim(),
       memoryMb: memory,
       icon,
-      accent
+      accent,
+      jvmArgs: jvmArgs.split(/\s+/).map((arg) => arg.trim()).filter(Boolean),
+      width,
+      height
     })
     setSaving(false)
     if (!result.ok) {
@@ -285,6 +352,22 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
           </button>
         ))}
         <div className="detail-tabs__spacer" />
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={<Terminal size={15} />}
+          onClick={() => setCrashOpen(true)}
+        >
+          崩溃诊断
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={<Cpu size={15} />}
+          onClick={() => setFlightOpen(true)}
+        >
+          性能记录
+        </Button>
         <Button
           variant="ghost"
           size="sm"
@@ -437,6 +520,43 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
             </div>
           </div>
 
+          {instance.loader !== 'vanilla' && mods.length ? (
+            <div className="mod-batch-bar">
+              <label className="mod-select-all">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={(event) => {
+                    setSelectedFiles(
+                      event.target.checked
+                        ? new Set(mods.map((mod) => mod.fileName))
+                        : new Set()
+                    )
+                  }}
+                />
+                全选
+              </label>
+              <span className="mod-batch-count">{selectedFiles.size} 个已选</span>
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={batchBusy}
+                disabled={!selectedFiles.size}
+                onClick={() => void batchToggle(true)}
+              >
+                启用所选
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!selectedFiles.size || batchBusy}
+                onClick={() => void batchToggle(false)}
+              >
+                禁用所选
+              </Button>
+            </div>
+          ) : null}
+
           {instance.loader === 'vanilla' ? (
             <InlineNotice tone="info" title="原版实例">
               这个实例没有安装模组加载器，因此无法加载模组。新建一个 Fabric、Quilt、Forge 或
@@ -458,7 +578,22 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
               </div>
               {mods.map((mod) => (
                 <div className={classNames('mod-row', !mod.enabled && 'is-disabled')} key={mod.fileName}>
-                  <div className="mod-row__identity">
+                  <div className={classNames('mod-row__identity', selectedFiles.has(mod.fileName) && 'is-selected')}>
+                    <input
+                      type="checkbox"
+                      className="mod-select__input"
+                      checked={selectedFiles.has(mod.fileName)}
+                      onChange={(event) => {
+                        setSelectedFiles((current) => {
+                          const next = new Set(current)
+                          if (event.target.checked) next.add(mod.fileName)
+                          else next.delete(mod.fileName)
+                          return next
+                        })
+                      }}
+                      aria-label={`选择 ${mod.title}`}
+                      disabled={batchBusy}
+                    />
                     {mod.iconUrl ? (
                       <img src={mod.iconUrl} alt="" />
                     ) : (
@@ -522,6 +657,33 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
                   onChange={(event) => setName(event.target.value)}
                 />
               </Field>
+              <Field label="额外 JVM 参数" hint="空格分隔，留空使用默认值">
+                <TextInput
+                  value={jvmArgs}
+                  onChange={(event) => setJvmArgs(event.target.value)}
+                  placeholder="-XX:+UseG1GC -XX:+ParallelRefProcEnabled"
+                />
+              </Field>
+              <div className="dimension-grid">
+                <Field label="窗口宽度">
+                  <TextInput
+                    type="number"
+                    min={320}
+                    max={7680}
+                    value={width}
+                    onChange={(event) => setWidth(Number(event.target.value))}
+                  />
+                </Field>
+                <Field label="窗口高度">
+                  <TextInput
+                    type="number"
+                    min={240}
+                    max={4320}
+                    value={height}
+                    onChange={(event) => setHeight(Number(event.target.value))}
+                  />
+                </Field>
+              </div>
               <Field label="内存分配" hint={`${(memory / 1024).toFixed(1)} GB`}>
                 <input
                   type="range"
@@ -576,6 +738,9 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
                   onClick={() => {
                     setName(instance.name)
                     setMemory(instance.memoryMb || 4096)
+                    setJvmArgs((instance.jvmArgs || []).join(' '))
+                    setWidth(instance.width || 1280)
+                    setHeight(instance.height || 720)
                     setIcon(instance.icon)
                     setAccent(instance.accent)
                     setFormError('')
@@ -611,6 +776,48 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
               </div>
             </section>
 
+            <section className="panel detail-panel">
+              <div className="panel__header">
+                <div>
+                  <div className="panel__eyebrow">TEMPLATE & COPY</div>
+                  <h3>复制与模板</h3>
+                </div>
+                <Copy size={18} className="muted-icon" />
+              </div>
+              <div className="settings-form">
+                <Field label="副本名称" htmlFor="copy-name" hint="源实例不会被修改">
+                  <TextInput
+                    id="copy-name"
+                    value={copyName}
+                    maxLength={32}
+                    onChange={(event) => setCopyName(event.target.value)}
+                  />
+                </Field>
+                <div className="settings-form__actions">
+                  <Button
+                    variant="secondary"
+                    icon={<Copy size={15} />}
+                    loading={copying}
+                    disabled={isRunning || !copyName.trim()}
+                    onClick={() => void copyCurrent()}
+                  >
+                    复制实例
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    icon={<Bookmark size={15} />}
+                    loading={templateSaving}
+                    onClick={() => void saveTemplate()}
+                  >
+                    保存为模板
+                  </Button>
+                </div>
+                <p className="settings-hint">
+                  复制会深拷贝存档、模组和配置，新实例拥有独立目录；模板保存 JVM 参数、模组文件名、内存与分辨率，当前不会覆盖已有实例。
+                </p>
+              </div>
+            </section>
+
             <section className="panel detail-panel danger-panel">
               <div className="panel__header">
                 <div>
@@ -634,6 +841,18 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
           </div>
         </div>
       ) : null}
+
+      <CrashDiagnosticsModal
+        open={crashOpen}
+        instance={instance}
+        onClose={() => setCrashOpen(false)}
+        onChanged={() => { void reloadMods() }}
+      />
+      <FlightRecorderModal
+        open={flightOpen}
+        instance={instance}
+        onClose={() => setFlightOpen(false)}
+      />
     </div>
   )
 }

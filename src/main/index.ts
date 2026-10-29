@@ -4,12 +4,14 @@ import { dirname, join } from 'node:path'
 import { LauncherStore } from './store'
 import { TaskManager } from './tasks'
 import { registerIpcHandlers } from './ipc'
+import { RustCoreClient } from './rustCore'
 import { multiplayerManager } from './multiplayer'
 import { installDownloadConcurrencyLimit } from './xmclPatch'
 
 let mainWindow: BrowserWindow | null = null
 let store: LauncherStore
 let tasks: TaskManager
+let rustCore: RustCoreClient
 
 let logPath: string | null = null
 
@@ -134,7 +136,8 @@ app.whenReady().then(() => {
 
   store = new LauncherStore()
   tasks = new TaskManager()
-  registerIpcHandlers({ store, tasks, getMainWindow })
+  rustCore = new RustCoreClient()
+  registerIpcHandlers({ store, tasks, rustCore, getMainWindow })
   createWindow()
 
   app.on('activate', () => {
@@ -157,6 +160,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   log('before-quit event')
   multiplayerManager.dispose()
+  rustCore?.stop()
   store?.save()
 })
 

@@ -302,6 +302,9 @@ export class LauncherStore {
       accent: input.accent,
       icon: input.icon,
       memoryMb: input.memoryMb,
+      jvmArgs: [],
+      width: 1280,
+      height: 720,
       createdAt: now,
       totalPlayTimeMs: 0,
       mods: []

@@ -1,6 +1,7 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron'
 import type { OpenDialogOptions } from 'electron'
 import { join } from 'node:path'
+import { copyFileSync, existsSync } from 'node:fs'
 import { migrateDataLocation } from './dataLocation'
 import type {
   CreateInstanceInput,
@@ -32,12 +33,14 @@ import {
   startCurseForgeInstall
 } from './curseforge'
 import { normalizeTheme, type LauncherStore } from './store'
+import { RustCoreClient, toRustInstance } from './rustCore'
 import type { TaskManager } from './tasks'
 import { multiplayerManager } from './multiplayer'
 
 interface IpcContext {
   store: LauncherStore
   tasks: TaskManager
+  rustCore: RustCoreClient
   getMainWindow: () => BrowserWindow | null
 }
 
@@ -58,7 +61,7 @@ function handle<T>(channel: string, callback: (...args: any[]) => Promise<T> | T
 }
 
 export function registerIpcHandlers(context: IpcContext): void {
-  const { store, tasks, getMainWindow } = context
+  const { store, tasks, rustCore, getMainWindow } = context
 
   const notifyChange = (reason: string): void => {
     broadcast('data:changed', reason)
@@ -229,7 +232,12 @@ export function registerIpcHandlers(context: IpcContext): void {
         name,
         memoryMb: memory,
         icon: typeof patch.icon === 'string' ? patch.icon : current.icon,
-        accent: typeof patch.accent === 'string' ? patch.accent : current.accent
+        accent: typeof patch.accent === 'string' ? patch.accent : current.accent,
+        jvmArgs: Array.isArray(patch.jvmArgs)
+          ? patch.jvmArgs.filter((arg): arg is string => typeof arg === 'string').slice(0, 64)
+          : current.jvmArgs,
+        width: typeof patch.width === 'number' ? Math.min(7680, Math.max(320, Math.round(patch.width))) : current.width,
+        height: typeof patch.height === 'number' ? Math.min(4320, Math.max(240, Math.round(patch.height))) : current.height
       }
     })
     notifyChange('instance-updated')
@@ -298,6 +306,123 @@ export function registerIpcHandlers(context: IpcContext): void {
     const logsPath = join(store.ensureInstanceFolders(instance), 'logs')
     const error = await shell.openPath(logsPath)
     if (error) throw new Error(error)
+  })
+
+  handle('core:status', async () => rustCore.status())
+
+  handle('flight:export', async (instanceId: string) => {
+    const instance = store.getInstance(instanceId)
+    if (!instance) throw new Error('找不到这个实例')
+    const source = join(store.ensureInstanceFolders(instance), 'logs', 'flight-recorder.csv')
+    if (!existsSync(source)) throw new Error('还没有 flight-recorder.csv 可以导出')
+    const window = getMainWindow()
+    const options = {
+      title: '导出 Flight Recorder CSV',
+      defaultPath: 'flight-recorder.csv',
+      filters: [{ name: 'CSV', extensions: ['csv'] }]
+    }
+    const result = window
+      ? await dialog.showSaveDialog(window, options)
+      : await dialog.showSaveDialog(options)
+    if (result.canceled || !result.filePath) return null
+    copyFileSync(source, result.filePath)
+    return result.filePath
+  })
+
+  handle('crash:diagnose', async (instanceId: string) => {
+    const instance = store.getInstance(instanceId)
+    if (!instance) throw new Error('找不到这个实例')
+    return rustCore.request('diagnose', { instance: toRustInstance(store, instance) })
+  })
+
+  handle('crash:preview', async (instanceId: string) => {
+    const instance = store.getInstance(instanceId)
+    if (!instance) throw new Error('找不到这个实例')
+    return rustCore.request('preview_repair', {
+      instance: toRustInstance(store, instance),
+      options: { disable_conflicts: true, source_id: 'modrinth' }
+    })
+  })
+
+  handle('crash:apply', async (planId: string) => {
+    if (typeof planId !== 'string' || !planId) throw new Error('无效的修复计划')
+    const receipt = await rustCore.request('apply_repair', { plan_id: planId, confirmed: true })
+    notifyChange('crash-repair')
+    return receipt
+  })
+
+  handle('crash:rollback', async (repairId: string) => {
+    if (typeof repairId !== 'string' || !repairId) throw new Error('无效的修复记录')
+    const receipt = await rustCore.request('rollback_repair', { repair_id: repairId })
+    notifyChange('crash-rollback')
+    return receipt
+  })
+
+  handle('mods:set-enabled-batch', async (instanceId: string, fileNames: string[], enabled: boolean) => {
+    const instance = store.getInstance(instanceId)
+    if (!instance) throw new Error('找不到这个实例')
+    const files = Array.isArray(fileNames) ? fileNames.filter((file): file is string => typeof file === 'string') : []
+    if (!files.length) return listInstanceMods(store, instance)
+    await rustCore.request('set_mods_enabled', {
+      instance: toRustInstance(store, instance),
+      changes: files.map((file_name) => ({ file_name, enabled: Boolean(enabled) }))
+    })
+    notifyChange('mods')
+    return listInstanceMods(store, instance)
+  })
+
+  handle('instances:copy', async (instanceId: string, name: string) => {
+    const source = store.getInstance(instanceId)
+    if (!source) throw new Error('找不到这个实例')
+    if (runningInstanceIds().includes(instanceId)) throw new Error('请先结束正在运行的游戏')
+    if (tasks.list().some((task) => task.status === 'queued' || task.status === 'running')) {
+      throw new Error('请等待安装或下载任务完成，再复制实例')
+    }
+    const newName = typeof name === 'string' && name.trim() ? name.trim().slice(0, 32) : source.name + ' 副本'
+    const newId = store.createInstanceId()
+    const copied = await rustCore.request<{ name: string }>('copy_instance', {
+      source: toRustInstance(store, source),
+      instances_root: store.instancesPath,
+      new_id: newId,
+      new_name: newName
+    })
+    const record = {
+      ...source,
+      id: newId,
+      name: copied.name || newName,
+      createdAt: Date.now(),
+      lastPlayedAt: undefined,
+      totalPlayTimeMs: 0,
+      mods: []
+    }
+    store.addInstance(record)
+    store.ensureInstanceFolders(record)
+    const installed = listInstanceMods(store, record)
+    if (installed.length) store.updateInstance(newId, (current) => ({ ...current, mods: installed }))
+    notifyChange('instance-copied')
+    return { ...record, mods: installed }
+  })
+
+  handle('instances:save-template', async (instanceId: string) => {
+    const instance = store.getInstance(instanceId)
+    if (!instance) throw new Error('找不到这个实例')
+    const templateId = 'tpl-' + Date.now().toString(36)
+    const template = await rustCore.request('save_template', {
+      instance: toRustInstance(store, instance),
+      templates_root: join(store.dataPath, 'templates'),
+      template_id: templateId
+    })
+    notifyChange('template-saved')
+    return template
+  })
+
+  handle('flight:series', async (instanceId: string) => {
+    const instance = store.getInstance(instanceId)
+    if (!instance) throw new Error('找不到这个实例')
+    const logs = join(store.ensureInstanceFolders(instance), 'logs')
+    return rustCore.request('flight_series', {
+      csv_path: join(logs, 'flight-recorder.csv')
+    })
   })
 
   handle('app:open-data', async () => {

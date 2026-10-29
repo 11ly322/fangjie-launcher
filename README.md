@@ -48,6 +48,9 @@
 - **正版登录**：通过 Microsoft 官方登录窗口完成 Xbox Live 与 Minecraft 服务验证，登录令牌使用 Electron `safeStorage` 加密保存；刷新令牌可维持登录状态。
 - **离线皮肤**：上传 64×64 PNG 皮肤，按实例安装 CustomSkinLoader 并写入本地皮肤配置。仅在自己的客户端显示。
 - **房间联机（实验）**：房主生成 `U/XXXX-XXXX-XXXX-XXXX` 房间码，房客凭码加入并获得可直接粘贴进 Minecraft 的地址。EasyTier 以 Rust 库内嵌；不需要管理员权限、TUN 网卡或第三方 VPN。
+- **故障诊断（P0）**：崩溃模式映射、JAR 依赖扫描、修复 diff 预览、逐文件备份与回滚；需要 `npm run build:core` 构建 Rust sidecar。
+- **实例工具（P0）**：模组勾选批量启停、实例深复制、实例模板（JVM 参数/模组列表/内存/分辨率）。
+- **Flight Recorder（P0）**：读取 `logs/flight-recorder.csv`，展示 FPS、1% lows、帧时间折线图并导出 CSV。
 - **三套主题**：苔原、深海、余烬，立即切换并写入本地配置；下次启动保持。
 - **可选数据目录**：设置中可把游戏数据迁移到任意空文件夹；完整复制后重启生效，旧目录保留，删除前可自行确认。
 - **实用功能**：实例详情、模组启停/移除、下载中心、资源占用、启动日志、本地 Java 选择、自动 Java 下载。
@@ -58,6 +61,7 @@
 
 ```powershell
 npm install
+npm run build:core   # 构建 Rust 崩溃诊断 / Flight Recorder sidecar
 npm run dev
 ```
 
@@ -124,6 +128,9 @@ npm run package:installer
 - 房间联机数据面：同机经公共中继完成 Guest 转发端口到 Host 本地 TCP 服务的双向回显；真实跨机器 NAT 仍未验证。
 
 ## 已知限制
+
+- 崩溃诊断/Flight Recorder 依赖 `resources/bin/fangjie-core-sidecar.exe`；开发构建需先 `npm run build:core`。
+- Flight Recorder 目前是 CSV 读取与可视化，尚未内置游戏内采样器。
 
 - 仅面向 Windows，尚未适配 macOS/Linux。
 - 正版登录的“完成授权并在线启动”未使用真实 Microsoft 账号做端到端测试；请使用自己的账号验证。未成年人 Xbox 家庭组账号需要成年人授权。

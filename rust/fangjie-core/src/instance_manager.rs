@@ -95,77 +95,17 @@ impl InstanceManager {
     /// opened read-only, so copying can never mutate it.
     pub fn copy_instance(&self, source_id: &str, new_name: &str) -> CoreResult<Instance> {
         let source = self.load(source_id)?;
-        let id = Uuid::new_v4().simple().to_string();
-        let new_root = self.instance_dir(&id);
-        std::fs::create_dir_all(&new_root)?;
-
-        for entry in WalkDir::new(&source.root).into_iter().filter_map(Result::ok) {
-            let relative = match entry.path().strip_prefix(&source.root) {
-                Ok(relative) => relative,
-                Err(_) => continue,
-            };
-            if relative
-                .components()
-                .any(|component| component.as_os_str() == ".fangjie")
-            {
-                continue;
-            }
-            let destination = new_root.join(relative);
-            if entry.file_type().is_dir() {
-                std::fs::create_dir_all(&destination)?;
-            } else if entry.file_type().is_file() {
-                if let Some(parent) = destination.parent() {
-                    std::fs::create_dir_all(parent)?;
-                }
-                std::fs::copy(entry.path(), destination)?;
-            }
-        }
-
-        let game_relative = source
-            .game_dir
-            .strip_prefix(&source.root)
-            .map(Path::to_path_buf)
-            .unwrap_or_else(|_| PathBuf::from(".minecraft"));
-        let mut copy = source.clone();
-        copy.id = id;
-        copy.name = new_name.trim().to_string();
-        copy.root = new_root.clone();
-        copy.game_dir = new_root.join(game_relative);
-        if !copy.game_dir.exists() {
-            copy_dir_contents(&source.game_dir, &copy.game_dir)?;
-        }
-        copy.jvm_args = source.jvm_args.clone();
-        write_instance(&copy)?;
-        Ok(copy)
+        copy_instance_data(
+            &source,
+            &self.root.join("instances"),
+            &Uuid::new_v4().simple().to_string(),
+            new_name
+        )
     }
 
     pub fn save_template(&self, instance_id: &str, template_id: &str) -> CoreResult<InstanceTemplate> {
         let instance = self.load(instance_id)?;
-        let mods = ModScanner::scan(&instance)?
-            .mods
-            .into_iter()
-            .filter(|item| item.enabled)
-            .map(|item| item.file_name)
-            .collect();
-        let template = InstanceTemplate {
-            id: template_id.to_string(),
-            name: format!("{} 模板", instance.name),
-            jvm_args: instance.jvm_args.clone(),
-            memory_mb: instance.memory_mb,
-            width: instance.width,
-            height: instance.height,
-            mod_files: mods,
-            loader: instance.loader,
-            game_version: instance.game_version.clone(),
-            created_at_unix: now_unix(),
-        };
-        let dir = self.root.join("templates");
-        std::fs::create_dir_all(&dir)?;
-        std::fs::write(
-            dir.join(format!("{template_id}.json")),
-            serde_json::to_string_pretty(&template)?,
-        )?;
-        Ok(template)
+        save_template_for(&instance, &self.root.join("templates"), template_id)
     }
 
     /// Batch toggle for a checkbox UI. Renames are applied in a single pass;
@@ -176,46 +116,7 @@ impl InstanceManager {
         changes: &[ModEnableChange],
     ) -> CoreResult<crate::mod_scanner::ModScanReport> {
         let instance = self.load(instance_id)?;
-        let mut planned = Vec::new();
-        for change in changes {
-            let current = instance.path_inside_game(
-                Path::new("mods").join(&change.file_name).as_path(),
-            )?;
-            if change.enabled {
-                if change.file_name.ends_with(".jar") {
-                    continue;
-                }
-                if !change.file_name.ends_with(".jar.disabled") {
-                    return Err(CoreError::InvalidInput(format!(
-                        "not a mod jar: {}",
-                        change.file_name
-                    )));
-                }
-                let target = current.with_file_name(
-                    change.file_name.trim_end_matches(".disabled").to_string(),
-                );
-                if target.exists() {
-                    return Err(CoreError::Conflict(target.display().to_string()));
-                }
-                planned.push((current, target));
-            } else {
-                if !change.file_name.ends_with(".jar") {
-                    continue;
-                }
-                let target = current.with_file_name(format!("{}.disabled", change.file_name));
-                if target.exists() {
-                    return Err(CoreError::Conflict(target.display().to_string()));
-                }
-                planned.push((current, target));
-            }
-        }
-        for (from, to) in planned {
-            if !from.exists() {
-                return Err(CoreError::NotFound(from.display().to_string()));
-            }
-            std::fs::rename(from, to)?;
-        }
-        ModScanner::scan(&instance)
+        set_mods_enabled_for(&instance, changes)
     }
 
     /// Apply non-destructive metadata only. Mod copying is intentionally left
@@ -250,6 +151,151 @@ impl InstanceManager {
                 .collect(),
         })
     }
+}
+
+/// Copy an instance tree into a fresh directory without mutating the source.
+/// The destination id must be a safe single path segment.
+pub fn copy_instance_data(
+    source: &Instance,
+    instances_root: &Path,
+    new_id: &str,
+    new_name: &str,
+) -> CoreResult<Instance> {
+    let cleaned_id = new_id.trim();
+    if cleaned_id.is_empty()
+        || cleaned_id.contains('/')
+        || cleaned_id.contains('\\')
+        || cleaned_id == "."
+        || cleaned_id == ".."
+    {
+        return Err(CoreError::InvalidInput("invalid instance id".into()));
+    }
+    let new_root = instances_root.join(cleaned_id);
+    if new_root.exists() {
+        return Err(CoreError::Conflict(new_root.display().to_string()));
+    }
+    std::fs::create_dir_all(&new_root)?;
+    if source.root.exists() {
+        for entry in WalkDir::new(&source.root).into_iter().filter_map(Result::ok) {
+            let relative = match entry.path().strip_prefix(&source.root) {
+                Ok(relative) => relative,
+                Err(_) => continue,
+            };
+            if relative
+                .components()
+                .any(|component| component.as_os_str() == ".fangjie")
+            {
+                continue;
+            }
+            let destination = new_root.join(relative);
+            if entry.file_type().is_dir() {
+                std::fs::create_dir_all(&destination)?;
+            } else if entry.file_type().is_file() {
+                if let Some(parent) = destination.parent() {
+                    std::fs::create_dir_all(parent)?;
+                }
+                std::fs::copy(entry.path(), destination)?;
+            }
+        }
+    }
+    let game_relative = source
+        .game_dir
+        .strip_prefix(&source.root)
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|_| PathBuf::from(".minecraft"));
+    let mut copy = source.clone();
+    copy.id = cleaned_id.to_string();
+    copy.name = if new_name.trim().is_empty() {
+        format!("{} 副本", source.name)
+    } else {
+        new_name.trim().to_string()
+    };
+    copy.root = new_root.clone();
+    copy.game_dir = new_root.join(game_relative);
+    if !copy.game_dir.exists() {
+        copy_dir_contents(&source.game_dir, &copy.game_dir)?;
+    }
+    write_instance(&copy)?;
+    Ok(copy)
+}
+
+pub fn save_template_for(
+    instance: &Instance,
+    templates_root: &Path,
+    template_id: &str,
+) -> CoreResult<InstanceTemplate> {
+    let template_id = template_id.trim();
+    if template_id.is_empty() || template_id.contains('/') || template_id.contains('\\') {
+        return Err(CoreError::InvalidInput("invalid template id".into()));
+    }
+    let mods = ModScanner::scan(instance)?
+        .mods
+        .into_iter()
+        .filter(|item| item.enabled)
+        .map(|item| item.file_name)
+        .collect();
+    let template = InstanceTemplate {
+        id: template_id.to_string(),
+        name: format!("{} 模板", instance.name),
+        jvm_args: instance.jvm_args.clone(),
+        memory_mb: instance.memory_mb,
+        width: instance.width,
+        height: instance.height,
+        mod_files: mods,
+        loader: instance.loader,
+        game_version: instance.game_version.clone(),
+        created_at_unix: now_unix(),
+    };
+    std::fs::create_dir_all(templates_root)?;
+    std::fs::write(
+        templates_root.join(format!("{template_id}.json")),
+        serde_json::to_string_pretty(&template)?,
+    )?;
+    Ok(template)
+}
+
+pub fn set_mods_enabled_for(
+    instance: &Instance,
+    changes: &[ModEnableChange],
+) -> CoreResult<crate::mod_scanner::ModScanReport> {
+    let mut planned = Vec::new();
+    for change in changes {
+        let current = instance.path_inside_game(Path::new("mods").join(&change.file_name).as_path())?;
+        if change.enabled {
+            if change.file_name.ends_with(".jar") {
+                continue;
+            }
+            if !change.file_name.ends_with(".jar.disabled") {
+                return Err(CoreError::InvalidInput(format!(
+                    "not a mod jar: {}",
+                    change.file_name
+                )));
+            }
+            let target = current.with_file_name(
+                change.file_name.trim_end_matches(".disabled").to_string(),
+            );
+            if target.exists() {
+                return Err(CoreError::Conflict(target.display().to_string()));
+            }
+            planned.push((current, target));
+        } else {
+            if !change.file_name.ends_with(".jar") {
+                continue;
+            }
+            let target = current.with_file_name(format!("{}.disabled", change.file_name));
+            if target.exists() {
+                return Err(CoreError::Conflict(target.display().to_string()));
+            }
+            planned.push((current, target));
+        }
+    }
+    for (from, to) in planned {
+        if !from.exists() {
+            return Err(CoreError::NotFound(from.display().to_string()));
+        }
+        std::fs::rename(from, to)?;
+    }
+    ModScanner::scan(instance)
 }
 
 fn exported_mod(item: ScannedMod) -> ExportedMod {

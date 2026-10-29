@@ -2,7 +2,7 @@
 
 面向 Tauri v2 的启动器核心 crate，包含崩溃诊断、JAR 扫描、可回滚修复、下载源抽象、实例管理、Flight Recorder 与最小插件接口。
 
-> **架构边界（2026-10-30）**：当前发布版实际是 Electron UI + Rust 联机连接器，并非已经迁移完成的 Tauri 应用。本 crate 是按本任务要求新增的 Rust/Tauri 核心，已经通过 `cargo test` 与 `cargo check --features tauri`，但**尚未接入现有 Electron 界面**。接入需要一轮 Tauri 壳迁移；本目录不伪称已完成该迁移。
+> **架构边界（2026-10-30）**：当前发布版实际是 Electron UI + Rust 联机连接器，并非已经迁移完成的 Tauri 应用。本 crate 是按本任务要求新增的 Rust/Tauri 核心，已经通过 `cargo test` 与 `cargo check --features tauri`，但**已通过 JSON-lines sidecar 接入现有 Electron P0 界面**（崩溃诊断、批量模组、实例复制/模板、Flight Recorder）；Tauri 壳迁移仍未完成。P0 接入见 [docs/p0-p3-architecture.md](../docs/p0-p3-architecture.md)。
 
 ## 模块结构
 
@@ -16,6 +16,9 @@ rust/fangjie-core/
 │   ├── instance_manager.rs  # 实例复制、模板、批量启停、模组列表导出
 │   ├── flight_recorder.rs   # CSV 采样与折线图数据
 │   ├── plugin_api.rs        # 版本约束 + 权限声明的插件接口
+│   ├── update_manager.rs    # P1 接口：版本比较 + 更新包 SHA256 校验
+│   ├── modpack_importer.rs  # P1 接口：.mrpack / .zip 格式与导入契约
+│   ├── bin/fangjie-core-sidecar.rs # Electron JSON-lines 适配器
 │   ├── backend.rs           # 共享状态与业务编排
 │   └── commands.rs          # Tauri v2 command 适配层（feature = "tauri"）
 └── tests/phase1.rs          # 12 个第一阶段验收测试

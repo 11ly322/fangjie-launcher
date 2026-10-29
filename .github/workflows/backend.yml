@@ -25,6 +25,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config
       - name: Test
         run: cargo test --manifest-path rust/fangjie-core/Cargo.toml
+      - name: Build Electron sidecar
+        run: cargo build --manifest-path rust/fangjie-core/Cargo.toml --bin fangjie-core-sidecar
 
   tauri:
     name: Tauri command check (Windows)
