@@ -145,6 +145,7 @@ export interface MultiplayerDiagnostics {
   arch: string
   relays: string[]
   relayLatency?: { relay: string; latencyMs: number } | null
+  addressLatency?: { address: string; latencyMs: number } | null
   state: MultiplayerState
 }
 
@@ -528,7 +529,10 @@ export interface LauncherApi {
   clearTasks(): Promise<Result<void>>
   multiplayerState(): Promise<Result<MultiplayerState>>
   multiplayerDiagnostics(): Promise<Result<MultiplayerDiagnostics>>
-  multiplayerLatency(): Promise<Result<{ relay: string; latencyMs: number } | null>>
+  multiplayerLatency(): Promise<Result<{
+    relay: { relay: string; latencyMs: number } | null
+    address: { address: string; latencyMs: number } | null
+  }>>
   startHost(input: StartHostInput): Promise<Result<MultiplayerState>>
   startGuest(input: StartGuestInput): Promise<Result<MultiplayerState>>
   stopMultiplayer(): Promise<Result<MultiplayerState>>

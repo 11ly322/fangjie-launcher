@@ -28,3 +28,14 @@ export function parseConnectorLine(rawLine: string): ConnectorEvent | null {
   if (error) return { kind: 'error', message: error[1].trim() }
   return null
 }
+
+export function parseHostPort(value: string): { host: string; port: number } | null {
+  const trimmed = value.trim()
+  const ipv6 = trimmed.match(/^\[([^\]]+)\]:(\d+)$/)
+  const normal = trimmed.match(/^([^:]+):(\d+)$/)
+  const match = ipv6 || normal
+  if (!match) return null
+  const port = Number(match[2])
+  if (!Number.isInteger(port) || port < 1 || port > 65535) return null
+  return { host: match[1], port }
+}

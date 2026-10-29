@@ -28,7 +28,10 @@ export function MultiplayerPage(): React.JSX.Element {
   const [roomCode, setRoomCode] = useState('')
   const [state, setState] = useState<MultiplayerState>(EMPTY_STATE)
   const [busy, setBusy] = useState(false)
-  const [relayLatency, setRelayLatency] = useState<{ relay: string; latencyMs: number } | null>(null)
+  const [latency, setLatency] = useState<{
+    relay: { relay: string; latencyMs: number } | null
+    address: { address: string; latencyMs: number } | null
+  } | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -47,12 +50,12 @@ export function MultiplayerPage(): React.JSX.Element {
 
   useEffect(() => {
     if (!state.active) {
-      setRelayLatency(null)
+      setLatency(null)
       return
     }
     let alive = true
     void window.fangjie.multiplayerLatency().then((result) => {
-      if (alive && result.ok) setRelayLatency(result.value)
+      if (alive && result.ok) setLatency(result.value)
     })
     return () => {
       alive = false
@@ -60,8 +63,16 @@ export function MultiplayerPage(): React.JSX.Element {
   }, [state.active, state.phase])
 
   const activeRole = state.active && state.role ? state.role : tab
-  const latencyLabel = relayLatency ? relayLatency.latencyMs + ' ms' : typeof state.latencyMs === 'number' ? state.latencyMs + ' ms' : '未上报'
-  const pathLabel = relayLatency ? '公共中继' : state.path === 'direct' ? 'P2P 直连' : state.path === 'relay' ? '公共中继' : '连接器未上报'
+  const relayLatency = latency?.relay || null
+  const addressLatency = latency?.address || null
+  const latencyLabel = addressLatency
+    ? addressLatency.latencyMs + ' ms（地址 TCP）'
+    : relayLatency
+      ? relayLatency.latencyMs + ' ms（中继 TCP）'
+      : typeof state.latencyMs === 'number'
+        ? state.latencyMs + ' ms'
+        : '未上报'
+  const pathLabel = state.path === 'direct' ? 'P2P 直连' : state.path === 'relay' ? '公共中继' : addressLatency ? '地址可达（路径未标注）' : '连接器未上报'
   const relayLabel = relayLatency?.relay?.replace(/^tcp:\/\//, '') || state.relay || '社区公共节点'
   const error = state.phase === 'error' ? state.error : undefined
   const portNumber = Number(mcPort)
@@ -236,7 +247,7 @@ export function MultiplayerPage(): React.JSX.Element {
 
               <div className="multiplayer-diagnostics">
                 <div><span>连接路径</span><strong>{pathLabel}</strong></div>
-                <div><span>延迟（中继 TCP）</span><strong>{latencyLabel}</strong></div>
+                <div><span>延迟</span><strong>{latencyLabel}</strong></div>
                 <div><span>中继节点</span><strong title={relayLabel}>{relayLabel}</strong></div>
                 <div><span>玩家数</span><strong>{state.players || 1}</strong></div>
               </div>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseConnectorLine } from './multiplayerParser'
+import { parseConnectorLine, parseHostPort } from './multiplayerParser'
 
 describe('connector output parsing', () => {
   it('parses room codes', () => {
@@ -30,3 +30,10 @@ describe('connector output parsing', () => {
     })
   })
 })
+
+  it('parses IPv4, IPv6 and hostname addresses', () => {
+    expect(parseHostPort('127.0.0.1:25565')).toEqual({ host: '127.0.0.1', port: 25565 })
+    expect(parseHostPort('[::1]:25565')).toEqual({ host: '::1', port: 25565 })
+    expect(parseHostPort('localhost:25565')).toEqual({ host: 'localhost', port: 25565 })
+    expect(parseHostPort('missing-port')).toBeNull()
+  })

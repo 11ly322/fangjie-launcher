@@ -45,7 +45,7 @@ import { importCurseForgeZip } from './modpackImport'
 import { installOptiFine } from './optifine'
 import { listPlugins, openPluginsFolder } from './plugins'
 import type { TaskManager } from './tasks'
-import { COMMUNITY_RELAYS, measureRelayLatency, multiplayerManager } from './multiplayer'
+import { COMMUNITY_RELAYS, measureAddressLatency, measureRelayLatency, multiplayerManager } from './multiplayer'
 
 interface IpcContext {
   store: LauncherStore
@@ -173,7 +173,13 @@ export function registerIpcHandlers(context: IpcContext): void {
   })
 
   handle('multiplayer:state', async () => multiplayerManager.getState())
-  handle('multiplayer:latency', async () => measureRelayLatency())
+  handle('multiplayer:latency', async () => {
+    const state = multiplayerManager.getState()
+    return {
+      relay: await measureRelayLatency(),
+      address: state.address ? await measureAddressLatency(state.address) : null
+    }
+  })
   handle('multiplayer:diagnostics', async () => ({
     generatedAt: new Date().toISOString(),
     appVersion: app.getVersion(),
@@ -181,6 +187,9 @@ export function registerIpcHandlers(context: IpcContext): void {
     arch: process.arch,
     relays: [...COMMUNITY_RELAYS],
     relayLatency: await measureRelayLatency(),
+    addressLatency: multiplayerManager.getState().address
+      ? await measureAddressLatency(multiplayerManager.getState().address as string)
+      : null,
     state: multiplayerManager.getState()
   }))
   handle('multiplayer:host', async (input: StartHostInput) => multiplayerManager.startHost(input))

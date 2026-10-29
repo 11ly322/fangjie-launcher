@@ -4,7 +4,7 @@ import { createConnection } from 'node:net'
 import type { Readable } from 'node:stream'
 import { existsSync } from 'node:fs'
 import { createInterface } from 'node:readline'
-import { parseConnectorLine } from './multiplayerParser'
+import { parseConnectorLine, parseHostPort } from './multiplayerParser'
 import { join } from 'node:path'
 import type {
   MultiplayerState,
@@ -34,6 +34,33 @@ export interface RelayLatency {
   latencyMs: number
 }
 
+export interface AddressLatency {
+  address: string
+  latencyMs: number
+}
+
+export async function measureAddressLatency(address: string, timeoutMs = 1200): Promise<AddressLatency | null> {
+  const target = parseHostPort(address)
+  if (!target) return null
+  const latency = await measureTcpLatency(target.host, target.port, timeoutMs)
+  return latency === null ? null : { address, latencyMs: latency }
+}
+
+async function measureTcpLatency(host: string, port: number, timeoutMs: number): Promise<number | null> {
+  return new Promise<number | null>((resolve) => {
+    const started = Date.now()
+    const socket = createConnection({ host, port })
+    const finish = (value: number | null): void => {
+      socket.destroy()
+      resolve(value)
+    }
+    socket.setTimeout(timeoutMs)
+    socket.once('connect', () => finish(Date.now() - started))
+    socket.once('timeout', () => finish(null))
+    socket.once('error', () => finish(null))
+  })
+}
+
 function parseRelay(endpoint: string): { host: string; port: number } | null {
   try {
     const url = new URL(endpoint.replace(/^tcp:\/\//, 'http://'))
@@ -49,18 +76,7 @@ export async function measureRelayLatency(timeoutMs = 1200): Promise<RelayLatenc
   for (const endpoint of COMMUNITY_RELAYS) {
     const target = parseRelay(endpoint)
     if (!target) continue
-    const latency = await new Promise<number | null>((resolve) => {
-      const started = Date.now()
-      const socket = createConnection({ host: target.host, port: target.port })
-      const finish = (value: number | null): void => {
-        socket.destroy()
-        resolve(value)
-      }
-      socket.setTimeout(timeoutMs)
-      socket.once('connect', () => finish(Date.now() - started))
-      socket.once('timeout', () => finish(null))
-      socket.once('error', () => finish(null))
-    })
+    const latency = await measureTcpLatency(target.host, target.port, timeoutMs)
     if (latency !== null) return { relay: endpoint, latencyMs: latency }
   }
   return null

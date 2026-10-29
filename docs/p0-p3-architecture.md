@@ -118,7 +118,7 @@ src/renderer/src/pages/InstanceDetailPage.tsx
 ### 2.7 P0 验证记录
 
 - `cargo test`：12 passed（原有 12 个测试）
-- `npm test`：19 passed（主题/房间码/连接器直连中继解析/离线策略+fetch 门禁/OptiFine 文件名/统一下载校验）
+- `npm test`：20 passed（主题/房间码/连接器直连中继/地址解析/离线策略+fetch 门禁/OptiFine 文件名/统一下载校验）
 - `npm run typecheck`：通过
 - `npm run build`：通过
 - `npm run package`：通过；`release/Fangjie-win32-x64/resources/bin/fangjie-core-sidecar.exe` 已包含，打包版 `coreStatus` 与崩溃诊断已验证。
@@ -413,7 +413,7 @@ NAT 验证矩阵：[nat-test-matrix.md](nat-test-matrix.md)
 | 资源包/光影不跳浏览器 | **P1 基础实现** | Modrinth 安装实测；CurseForge 搜索实测；统一源/镜像未迁移 |
 | 下载源可替换、默认可用 | **P1 基础实现** | 代理 + API 基址可配置；流式下载已统一，JSON/元数据/OAuth/Java 尚未全部迁移 |
 | 房间码主界面入口 | **P2 基础实现** | 首页快捷房间卡：创建/粘贴自动分段/加入；未自动启动游戏 |
-| 联机状态面板直连/中继/延迟 | **P2 基础实现** | 直连/中继输出解析已有单测；延迟为公共中继 TCP 测量，真实 P2P 延迟仍缺 |
+| 联机状态面板直连/中继/延迟 | **P2 基础实现** | 直连/中继输出与地址解析有单测；优先测 Minecraft 地址 TCP 延迟，回退中继 TCP；真实 P2P RTT 仍缺 |
 | 插件版本/权限 | **P3 基础实现** | 本地 `plugins/*/manifest.json` 经 Rust 校验后列出；只加载清单，不执行第三方代码 |
 | 离线无非必要请求 | **P3 基础实现** | Electron IPC 门禁 + 全局 native fetch guard + Rust `SourceRegistry`；有单测，版本列表实测被阻止；xmcl 独立传输仍靠 IPC 门禁 |
 | 代码签名/SmartScreen | **P3 流程+脚本** | `scripts/sign-windows.ps1` 与 `docs/code-signing.md`；证书/CI 未配置 |

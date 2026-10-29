@@ -132,7 +132,10 @@ const api: LauncherApi = {
   multiplayerDiagnostics: () =>
     invoke<MultiplayerDiagnostics>('multiplayer:diagnostics'),
   multiplayerLatency: () =>
-    invoke<{ relay: string; latencyMs: number } | null>('multiplayer:latency'),
+    invoke<{
+      relay: { relay: string; latencyMs: number } | null
+      address: { address: string; latencyMs: number } | null
+    }>('multiplayer:latency'),
   startHost: (input: StartHostInput) => invoke<MultiplayerState>('multiplayer:host', input),
   startGuest: (input: StartGuestInput) => invoke<MultiplayerState>('multiplayer:guest', input),
   stopMultiplayer: () => invoke<MultiplayerState>('multiplayer:stop'),
