@@ -173,6 +173,8 @@ node scripts/loader-launch-check.cjs # 多加载器启动测试
 - 安全问题：[SECURITY.md](SECURITY.md)
 - 更新记录：[CHANGELOG.md](CHANGELOG.md)
 - 联机实现说明：[docs/multiplayer.md](docs/multiplayer.md)
+- 代码签名：[docs/code-signing.md](docs/code-signing.md)（CI 需 `WINDOWS_CERT_PFX_BASE64` / `WINDOWS_CERT_PASSWORD`）
+- 跨机器 NAT 验证：[docs/nat-test-matrix.md](docs/nat-test-matrix.md)
 - CI：推送 `v*` 标签会构建 Windows 便携包与 NSIS 安装包，并上传为 Actions artifact；维护者从 artifact 发布 GitHub Release
 
 本项目为非官方启动器，与 Mojang Studios、Microsoft、Modrinth、CurseForge 无隶属关系。Minecraft 相关版权归其各自所有者所有。

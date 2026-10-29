@@ -107,6 +107,23 @@ jobs:
       - name: Build installer
         run: node scripts/build-installer.cjs
 
+      - name: Sign Windows artifacts
+        if: ${{ env.WINDOWS_CERT_PFX_BASE64 != '' }}
+        env:
+          WINDOWS_CERT_PFX_BASE64: ${{ secrets.WINDOWS_CERT_PFX_BASE64 }}
+          WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $cert = Join-Path $env:RUNNER_TEMP 'fangjie-sign.pfx'
+          [IO.File]::WriteAllBytes($cert, [Convert]::FromBase64String($env:WINDOWS_CERT_PFX_BASE64))
+          try {
+            ./scripts/sign-windows.ps1 -Path 'release\Fangjie-win32-x64\Fangjie.exe' -CertificatePath $cert -CertificatePassword $env:WINDOWS_CERT_PASSWORD
+            ./scripts/sign-windows.ps1 -Path "release\Fangjie-Launcher-$version-Setup.exe" -CertificatePath $cert -CertificatePassword $env:WINDOWS_CERT_PASSWORD
+          } finally {
+            Remove-Item $cert -Force -ErrorAction SilentlyContinue
+          }
+
       - name: Create release archives and checksums
         shell: pwsh
         run: |

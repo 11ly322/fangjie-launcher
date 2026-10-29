@@ -118,7 +118,7 @@ src/renderer/src/pages/InstanceDetailPage.tsx
 ### 2.7 P0 验证记录
 
 - `cargo test`：12 passed（原有 12 个测试）
-- `npm test`：20 passed（主题/房间码/连接器直连中继/地址解析/离线策略+fetch 门禁/OptiFine 文件名/统一下载校验）
+- `npm test`：22 passed（主题/房间码/连接器直连中继/地址解析/离线策略+fetch 门禁/OptiFine 文件名/统一下载校验）
 - `npm run typecheck`：通过
 - `npm run build`：通过
 - `npm run package`：通过；`release/Fangjie-win32-x64/resources/bin/fangjie-core-sidecar.exe` 已包含，打包版 `coreStatus` 与崩溃诊断已验证。
@@ -407,7 +407,7 @@ NAT 验证矩阵：[nat-test-matrix.md](nat-test-matrix.md)
 | 批量启停按实例隔离 | **P0 已满足** | E2E：副本禁用 sodium，源实例仍启用 |
 | 复制实例源零污染 | **P0 已满足** | Rust 深拷贝 + 源只读；实例文件状态验证 |
 | Flight Recorder CSV/折线图 | **P0 已满足（读取/导出）** | 两张 SVG 图、CSV 导出 255 bytes；无内置采样器 |
-| OptiFine 本地安装 | **P1 基础实现** | 文件名解析有单测；官方 installer 引导 + junction + profile 检测；真实 installer 未回归 |
+| OptiFine 本地安装 | **P1 基础实现** | 文件名与 profile 发现均有单测；官方 installer 引导 + junction；真实 installer 未回归 |
 | 自动更新器检测/下载/校验/替换 | **P1 基础实现** | 检查/下载/SHA256/NSIS spawn 已接入；真实安装包替换与签名未实测 |
 | .mrpack/.zip 导入、仅模组导出 | **P1 基础实现** | 模组列表导出、`.mrpack` 与 CurseForge `.zip` 导入已接入；zip 文件下载未用真实包复测 |
 | 资源包/光影不跳浏览器 | **P1 基础实现** | Modrinth 安装实测；CurseForge 搜索实测；统一源/镜像未迁移 |
@@ -416,7 +416,7 @@ NAT 验证矩阵：[nat-test-matrix.md](nat-test-matrix.md)
 | 联机状态面板直连/中继/延迟 | **P2 基础实现** | 直连/中继输出与地址解析有单测；优先测 Minecraft 地址 TCP 延迟，回退中继 TCP；真实 P2P RTT 仍缺 |
 | 插件版本/权限 | **P3 基础实现** | 本地 `plugins/*/manifest.json` 经 Rust 校验后列出；只加载清单，不执行第三方代码 |
 | 离线无非必要请求 | **P3 基础实现** | Electron IPC 门禁 + 全局 native fetch guard + Rust `SourceRegistry`；有单测，版本列表实测被阻止；xmcl 独立传输仍靠 IPC 门禁 |
-| 代码签名/SmartScreen | **P3 流程+脚本** | `scripts/sign-windows.ps1` 与 `docs/code-signing.md`；证书/CI 未配置 |
+| 代码签名/SmartScreen | **P3 流程+脚本+可选 CI** | `scripts/sign-windows.ps1`、`docs/code-signing.md`、release.yml 可选签名步骤；证书 secret 未配置 |
 
 **结论：P0 验收项已完成；P1/P2/P3 未伪装成完成。** 这是硬约束“不得把 P1/P2/P3 强行塞进 P0”的直接结果。
 

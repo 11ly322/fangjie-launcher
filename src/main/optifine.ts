@@ -6,6 +6,7 @@ import type { Instance } from '../shared/types'
 import type { LauncherStore } from './store'
 import { scanJavaRuntimes } from './java'
 import { optifineMinecraftVersion } from '../shared/optifine'
+import { latestOptiFineProfile } from './optifineProfile'
 
 export interface OptiFineInstallResult {
   versionId: string
@@ -37,27 +38,6 @@ function cleanupJunction(root: string, link: string): void {
     }
   }
   if (removed && existsSync(root)) rmSync(root, { recursive: true, force: true })
-}
-
-function latestOptiFineProfile(store: LauncherStore, minecraftVersion: string): string | null {
-  const versionsDir = join(store.minecraftPath, 'versions')
-  if (!existsSync(versionsDir)) return null
-  const candidates: Array<{ id: string; modified: number }> = []
-  for (const entry of readdirSync(versionsDir, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue
-    const jsonPath = join(versionsDir, entry.name, entry.name + '.json')
-    if (!existsSync(jsonPath)) continue
-    try {
-      const raw = JSON.parse(readFileSync(jsonPath, 'utf8')) as { id?: string }
-      const id = String(raw.id || entry.name)
-      if (!/optifine/i.test(id) || !id.includes(minecraftVersion)) continue
-      candidates.push({ id, modified: statSync(jsonPath).mtimeMs })
-    } catch {
-      /* ignore invalid profile json */
-    }
-  }
-  candidates.sort((left, right) => right.modified - left.modified)
-  return candidates[0]?.id || null
 }
 
 /**
@@ -102,7 +82,7 @@ export async function installOptiFine(options: {
     if (exitCode !== 0) {
       throw new Error(`OptiFine 安装器退出，代码 ${exitCode ?? 'unknown'}`)
     }
-    const versionId = latestOptiFineProfile(store, minecraftVersion)
+    const versionId = latestOptiFineProfile(join(store.minecraftPath, 'versions'), minecraftVersion)
     if (!versionId) {
       throw new Error('安装器结束后没有找到 OptiFine 版本配置，请确认在安装器中点击了 Install')
     }
