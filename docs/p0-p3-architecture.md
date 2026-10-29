@@ -118,7 +118,7 @@ src/renderer/src/pages/InstanceDetailPage.tsx
 ### 2.7 P0 验证记录
 
 - `cargo test`：12 passed（原有 12 个测试）
-- `npm test`：22 passed（主题/房间码/连接器直连中继/地址解析/离线策略+fetch 门禁/OptiFine 文件名/统一下载校验）
+- `npm test`：23 passed（主题/房间码/连接器直连中继/地址解析/离线策略+fetch 门禁/OptiFine 文件名/统一下载校验）
 - `npm run typecheck`：通过
 - `npm run build`：通过
 - `npm run package`：通过；`release/Fangjie-win32-x64/resources/bin/fangjie-core-sidecar.exe` 已包含，打包版 `coreStatus` 与崩溃诊断已验证。
@@ -291,7 +291,7 @@ pub trait DownloadSource {
 
 ### 3.5 网络设置现状
 
-设置页已加入 HTTP(S) 代理、Modrinth API 基址、CurseForge API 基址；启动和保存时配置 undici 全局 dispatcher 与 xmcl 下载 dispatcher，并持久化。新增 `src/main/downloadSource.ts`：统一流式下载、SHA1/SHA256/大小校验、离线门禁；Modrinth/CurseForge/资源包/整合包/更新器已迁移到该下载路径。所有主进程 native `fetch`（项目 API、OAuth token、Mojang 元数据、Loader、皮肤、更新 feed）现已统一走 `requestResponse` seam；xmcl 传输使用同一 undici dispatcher。
+设置页已加入 HTTP(S) 代理、Modrinth API 基址、CurseForge API 基址；启动和保存时配置 undici 全局 dispatcher 与 xmcl 下载 dispatcher，并持久化。新增 `src/main/downloadSource.ts`：统一流式下载、SHA1/SHA256/大小校验、离线门禁；Modrinth/CurseForge/资源包/整合包/更新器已迁移到该下载路径。所有主进程 native `fetch`（项目 API、OAuth token、Mojang 元数据、Loader、皮肤、更新 feed）现已统一走 `requestResponse` seam；`networkBoundary.test.ts` 防止直接 fetch 回归；xmcl 传输使用同一 undici dispatcher。
 
 仍未完成：Mojang 元数据、Java 下载、Microsoft OAuth 等全部路径尚未统一迁移；当前是“可配置代理 + 可替换 API 基址”的基础层，不是完整的单一 Source 架构。
 
