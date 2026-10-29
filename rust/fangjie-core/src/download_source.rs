@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::io::Read;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -78,10 +79,12 @@ pub struct SourceRegistry {
     sources: HashMap<String, Arc<dyn DownloadSource>>,
     default_source: String,
     config: DownloadConfig,
+    offline: Arc<AtomicBool>,
 }
 
 impl SourceRegistry {
     pub fn new(config: DownloadConfig) -> CoreResult<Self> {
+        let initial_offline = config.offline;
         let mut sources: HashMap<String, Arc<dyn DownloadSource>> = HashMap::new();
         let modrinth = ModrinthSource::new(config.proxy.clone(), config.mirrors.clone())?;
         sources.insert("modrinth".to_string(), Arc::new(modrinth));
@@ -89,6 +92,7 @@ impl SourceRegistry {
             default_source: config.default_source.clone(),
             sources,
             config,
+            offline: Arc::new(AtomicBool::new(initial_offline)),
         })
     }
 
@@ -98,6 +102,16 @@ impl SourceRegistry {
 
     pub fn config(&self) -> &DownloadConfig {
         &self.config
+    }
+
+    /// Runtime switch used by the settings UI. Enabling it gates every
+    /// resolution/download before any HTTP request is attempted.
+    pub fn set_offline(&self, enabled: bool) {
+        self.offline.store(enabled, Ordering::SeqCst);
+    }
+
+    pub fn is_offline(&self) -> bool {
+        self.offline.load(Ordering::SeqCst)
     }
 
     pub fn source(&self, id: Option<&str>) -> CoreResult<Arc<dyn DownloadSource>> {
@@ -123,7 +137,7 @@ impl SourceRegistry {
         game_version: &str,
         loader: Loader,
     ) -> CoreResult<ResolvedMod> {
-        if self.config.offline {
+        if self.is_offline() {
             return Err(CoreError::Offline(format!(
                 "cannot resolve {dependency_id} while offline"
             )));
@@ -138,7 +152,7 @@ impl SourceRegistry {
         resolved: &ResolvedMod,
         destination: &Path,
     ) -> CoreResult<()> {
-        if self.config.offline {
+        if self.is_offline() {
             return Err(CoreError::Offline(format!(
                 "cannot download {} while offline",
                 resolved.file_name

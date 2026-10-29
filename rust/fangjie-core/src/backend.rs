@@ -175,6 +175,14 @@ impl Backend {
             .map_err(|error| error.to_string())
     }
 
+    pub fn set_offline_mode(&self, enabled: bool) {
+        self.sources.set_offline(enabled);
+    }
+
+    pub fn is_offline(&self) -> bool {
+        self.sources.is_offline()
+    }
+
     pub fn list_instances(&self) -> CoreResult<Vec<Instance>> {
         self.instances.list()
     }

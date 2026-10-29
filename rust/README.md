@@ -18,7 +18,7 @@ rust/fangjie-core/
 │   ├── plugin_api.rs        # 版本约束 + 权限声明的插件接口
 │   ├── backend.rs           # 共享状态与业务编排
 │   └── commands.rs          # Tauri v2 command 适配层（feature = "tauri"）
-└── tests/phase1.rs          # 11 个第一阶段验收测试
+└── tests/phase1.rs          # 12 个第一阶段验收测试
 ```
 
 ## 第一阶段：崩溃智能诊断 + 一键修复
@@ -165,6 +165,7 @@ pub struct DownloadConfig { default_source, offline, proxy, mirrors }
 SourceRegistry::new(config)
 SourceRegistry::resolve_dependency(...)
 SourceRegistry::download(...)
+Backend::set_offline_mode(true) / commands::set_offline_mode
 ```
 
 - 默认 `modrinth` 公共 API；不需要自建服务器。
@@ -186,7 +187,7 @@ cargo check --manifest-path rust/fangjie-core/Cargo.toml --features tauri
 
 本机验证（2026-10-30）：
 
-- `cargo test`：11 passed
+- `cargo test`：12 passed
 - `cargo check --features tauri`：Finished（Tauri 2.12.5）
 - 测试覆盖 9 种崩溃模式、JAR 扫描、diff、确认门禁、下载、禁用/回滚、配置/Java/内存回滚、实例复制、Flight Recorder、插件版本/权限。
 

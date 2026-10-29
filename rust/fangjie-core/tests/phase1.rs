@@ -344,6 +344,21 @@ fn batch_mod_toggle_is_isolated_to_instance() {
 }
 
 #[test]
+fn offline_registry_blocks_network_paths() {
+    let registry = SourceRegistry::new(DownloadConfig {
+        offline: true,
+        ..Default::default()
+    })
+    .unwrap();
+    let error = registry
+        .resolve_dependency(Some("modrinth"), "fabric-api", "1.20.1", Loader::Fabric)
+        .unwrap_err();
+    assert!(matches!(error, fangjie_core::CoreError::Offline(_)));
+    registry.set_offline(false);
+    assert!(!registry.is_offline());
+}
+
+#[test]
 fn flight_recorder_writes_csv_and_chart_series() {
     let temp = TempDir::new().unwrap();
     let path = temp.path().join("flight.csv");

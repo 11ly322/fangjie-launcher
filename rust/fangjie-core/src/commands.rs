@@ -26,6 +26,12 @@ pub fn diagnose_crash(
 }
 
 #[tauri::command]
+pub fn set_offline_mode(state: State<'_, BackendState>, enabled: bool) -> Result<bool, String> {
+    state.0.set_offline_mode(enabled);
+    Ok(state.0.is_offline())
+}
+
+#[tauri::command]
 pub fn scan_instance_mods(
     state: State<'_, BackendState>,
     instance_id: String,
