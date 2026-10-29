@@ -180,6 +180,7 @@ export function registerIpcHandlers(context: IpcContext): void {
     platform: process.platform,
     arch: process.arch,
     relays: [...COMMUNITY_RELAYS],
+    relayLatency: await measureRelayLatency(),
     state: multiplayerManager.getState()
   }))
   handle('multiplayer:host', async (input: StartHostInput) => multiplayerManager.startHost(input))

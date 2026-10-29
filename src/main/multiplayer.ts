@@ -249,6 +249,19 @@ class MultiplayerManager {
       return
     }
 
+    const direct = line.match(/直连模式[，,]\s*MC\s*地址[：:]\s*([^\s]+)/i)
+    if (direct) {
+      this.clearStartTimer()
+      this.setState({
+        ...this.state,
+        phase: 'ready',
+        address: direct[1],
+        path: 'direct',
+        error: undefined
+      })
+      return
+    }
+
     const address = line.match(/MC\s*服务器地址[：:]\s*([^\s]+)/i)
     if (address) {
       this.clearStartTimer()
@@ -256,6 +269,7 @@ class MultiplayerManager {
         ...this.state,
         phase: 'ready',
         address: address[1],
+        path: 'relay',
         error: undefined
       })
       return

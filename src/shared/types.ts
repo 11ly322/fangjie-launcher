@@ -144,6 +144,7 @@ export interface MultiplayerDiagnostics {
   platform: string
   arch: string
   relays: string[]
+  relayLatency?: { relay: string; latencyMs: number } | null
   state: MultiplayerState
 }
 
