@@ -131,6 +131,7 @@ src/renderer/src/pages/InstanceDetailPage.tsx
   - 无 renderer 控制台错误。
 - P1 更新器 apply E2E：本地 fake feed + 假 installer `.exe`，下载/SHA256/`/S` spawn/app quit 全链路通过；不是真实 NSIS 替换。
 - OptiFine 引导 E2E：假 Java 在 junction 目标写入 1.20.1-OptiFine_Test profile，启动器回写实例 versionId；不是真实 OptiFine installer。
+- CurseForge `.zip` 真实下载 E2E：public Mouse Tweaks projectID=60089/fileID=5230279，下载 `MouseTweaks-fabric-mc1.20-2.26.jar` 并写入 overrides；无 renderer 错误。
 - P1 基础：fake feed 检测 0.0.2、下载 22-byte 资产、Rust SHA256 校验通过；模组列表导出实测；资源包安装实测。
 - 模板中的 JVM 参数、宽高已接入 Electron 实例设置，并传入启动器 `launch()` 的 resolution/extraJVMArgs。
 
@@ -411,7 +412,7 @@ NAT 验证矩阵：[nat-test-matrix.md](nat-test-matrix.md)
 | Flight Recorder CSV/折线图 | **P0 已满足（读取/导出）** | 两张 SVG 图、CSV 导出 255 bytes；无内置采样器 |
 | OptiFine 本地安装 | **P1 基础实现** | 文件名/profile 单测；假 Java E2E 验证 junction+profile 回写；真实 installer 未回归 |
 | 自动更新器检测/下载/校验/替换 | **P1 基础实现** | fake feed+假 installer E2E 验证 `/S` spawn/app quit；真实 NSIS 替换与签名未实测 |
-| .mrpack/.zip 导入、仅模组导出 | **P1 基础实现** | 模组列表导出、`.mrpack` 与 CurseForge `.zip` 导入已接入；zip 文件下载未用真实包复测 |
+| .mrpack/.zip 导入、仅模组导出 | **P1 基础实现** | 模组列表导出、`.mrpack` 与 CurseForge `.zip` 导入已接入；CurseForge zip 已用真实公共 mod 文件下载+overrides 复测 |
 | 资源包/光影不跳浏览器 | **P1 基础实现** | Modrinth 安装实测；CurseForge 搜索实测；统一源/镜像未迁移 |
 | 下载源可替换、默认可用 | **P1 基础实现** | 代理 + API 基址可配置；native fetch 与流式下载已统一，xmcl 使用同一 dispatcher；仍非完整多源路由 |
 | 房间码主界面入口 | **P2 基础实现** | 首页快捷房间卡：创建/粘贴自动分段/加入；未自动启动游戏 |
