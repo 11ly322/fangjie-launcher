@@ -1,10 +1,10 @@
 import { app } from 'electron'
-import { createHash } from 'node:crypto'
-import { createWriteStream, existsSync, mkdirSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { spawn } from 'node:child_process'
 import type { CoreUpdateAsset, CoreUpdateCheck, CoreUpdateManifest } from '../shared/types'
 import type { RustCoreClient } from './rustCore'
+import { downloadToFile } from './downloadSource'
 
 const DEFAULT_FEED = 'https://api.github.com/repos/11ly322/fangjie-launcher/releases'
 const USER_AGENT = 'Fangjie-Updater/0.1'
@@ -107,16 +107,6 @@ export async function downloadUpdate(
 ): Promise<string> {
   if (!asset.url) throw new Error('更新资产缺少下载地址')
   if (!asset.sha256) throw new Error('发布资产缺少 SHA256，拒绝下载安装包')
-  const response = await fetch(asset.url, { headers: { 'User-Agent': USER_AGENT } })
-  if (!response.ok) throw new Error(`下载更新失败：HTTP ${response.status}`)
-  const bytes = Buffer.from(await response.arrayBuffer())
-  if (asset.size > 0 && bytes.length !== asset.size) {
-    throw new Error(`更新包大小不匹配：期望 ${asset.size}，实际 ${bytes.length}`)
-  }
-  const actual = createHash('sha256').update(bytes).digest('hex')
-  if (actual !== asset.sha256.toLowerCase()) {
-    throw new Error('更新包 SHA256 校验失败')
-  }
   const directory = join(app.getPath('userData'), 'updates')
   mkdirSync(directory, { recursive: true })
   let filename = 'Fangjie-update.exe'
@@ -126,21 +116,17 @@ export async function downloadUpdate(
     /* keep fallback */
   }
   const destination = join(directory, filename.replace(/[^A-Za-z0-9._-]/g, '_'))
-  const stream = createWriteStream(destination)
-  await new Promise<void>((resolve, reject) => {
-    stream.once('finish', resolve)
-    stream.once('error', reject)
-    stream.end(bytes)
+  await downloadToFile({
+    url: asset.url,
+    destination,
+    expectedSha256: asset.sha256,
+    expectedSize: asset.size > 0 ? asset.size : undefined,
+    headers: { 'User-Agent': USER_AGENT }
   })
-  try {
-    await rustCore.request('verify_update', {
-      path: destination,
-      asset: { ...asset, sha256: actual }
-    })
-  } catch (error) {
-    rmSync(destination, { force: true })
-    throw error
-  }
+  await rustCore.request('verify_update', {
+    path: destination,
+    asset
+  })
   return destination
 }
 

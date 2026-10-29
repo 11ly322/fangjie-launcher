@@ -118,7 +118,7 @@ src/renderer/src/pages/InstanceDetailPage.tsx
 ### 2.7 P0 验证记录
 
 - `cargo test`：12 passed（原有 12 个测试）
-- `npm test`：15 passed（主题/房间码/连接器直连中继解析/离线策略/OptiFine 文件名）
+- `npm test`：18 passed（主题/房间码/连接器直连中继解析/离线策略/OptiFine 文件名/统一下载校验）
 - `npm run typecheck`：通过
 - `npm run build`：通过
 - `npm run package`：通过；`release/Fangjie-win32-x64/resources/bin/fangjie-core-sidecar.exe` 已包含，打包版 `coreStatus` 与崩溃诊断已验证。
@@ -291,7 +291,7 @@ pub trait DownloadSource {
 
 ### 3.5 网络设置现状
 
-设置页已加入 HTTP(S) 代理、Modrinth API 基址、CurseForge API 基址；启动和保存时配置 undici 全局 dispatcher 与 xmcl 下载 dispatcher，并持久化。
+设置页已加入 HTTP(S) 代理、Modrinth API 基址、CurseForge API 基址；启动和保存时配置 undici 全局 dispatcher 与 xmcl 下载 dispatcher，并持久化。新增 `src/main/downloadSource.ts`：统一流式下载、SHA1/SHA256/大小校验、离线门禁；Modrinth/CurseForge/资源包/整合包/更新器已迁移到该下载路径。
 
 仍未完成：Mojang 元数据、Java 下载、Microsoft OAuth 等全部路径尚未统一迁移；当前是“可配置代理 + 可替换 API 基址”的基础层，不是完整的单一 Source 架构。
 
@@ -411,7 +411,7 @@ NAT 验证矩阵：[nat-test-matrix.md](nat-test-matrix.md)
 | 自动更新器检测/下载/校验/替换 | **P1 基础实现** | 检查/下载/SHA256/NSIS spawn 已接入；真实安装包替换与签名未实测 |
 | .mrpack/.zip 导入、仅模组导出 | **P1 基础实现** | 模组列表导出、`.mrpack` 与 CurseForge `.zip` 导入已接入；zip 文件下载未用真实包复测 |
 | 资源包/光影不跳浏览器 | **P1 基础实现** | Modrinth 安装实测；CurseForge 搜索实测；统一源/镜像未迁移 |
-| 下载源可替换、默认可用 | **P1 基础实现** | 代理 + Modrinth/CurseForge 基址可配置；并非所有网络路径已统一 |
+| 下载源可替换、默认可用 | **P1 基础实现** | 代理 + API 基址可配置；流式下载已统一，JSON/元数据/OAuth/Java 尚未全部迁移 |
 | 房间码主界面入口 | **P2 基础实现** | 首页快捷房间卡：创建/粘贴自动分段/加入；未自动启动游戏 |
 | 联机状态面板直连/中继/延迟 | **P2 基础实现** | 直连/中继输出解析已有单测；延迟为公共中继 TCP 测量，真实 P2P 延迟仍缺 |
 | 插件版本/权限 | **P3 基础实现** | 本地 `plugins/*/manifest.json` 经 Rust 校验后列出；只加载清单，不执行第三方代码 |

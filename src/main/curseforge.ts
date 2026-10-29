@@ -1,8 +1,5 @@
-import { createHash } from 'node:crypto'
-import { createWriteStream, mkdirSync, renameSync, rmSync } from 'node:fs'
-import { once } from 'node:events'
-import { Readable } from 'node:stream'
-import { dirname, join } from 'node:path'
+import { mkdirSync, renameSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
 import type {
   InstallModResult,
   InstalledMod,
@@ -21,6 +18,7 @@ import { errorMessage } from './java'
 import { ensureModsDirectory, isJarName, listInstanceMods, saveInstalledMods } from './mods'
 import { LOADER_MOD_TAGS } from '../shared/constants'
 import { USER_AGENT } from './version'
+import { downloadToFile } from './downloadSource'
 
 const DEFAULT_API_BASE = 'https://mod.mcimirror.top/curseforge/v1'
 let apiBase = DEFAULT_API_BASE
@@ -613,42 +611,14 @@ async function downloadCfFile(options: {
   signal: AbortSignal
   onChunk: (bytes: number) => void
 }): Promise<void> {
-  const { url, destination, expectedSha1, signal, onChunk } = options
-  const temporary = `${destination}.part-${process.pid}`
-  mkdirSync(dirname(destination), { recursive: true })
-  rmSync(temporary, { force: true })
-  let stream: ReturnType<typeof createWriteStream> | undefined
-  try {
-    const response = await fetch(url, {
-      headers: { 'User-Agent': USER_AGENT },
-      signal,
-      redirect: 'follow'
-    })
-    if (!response.ok || !response.body) throw new Error(`下载失败（HTTP ${response.status}）`)
-    const hash = createHash('sha1')
-    stream = createWriteStream(temporary)
-    const reader = Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0])
-    for await (const chunk of reader) {
-      if (signal.aborted) throw new DOMException('Aborted', 'AbortError')
-      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as Uint8Array)
-      hash.update(buffer)
-      if (!stream.write(buffer)) await once(stream, 'drain')
-      onChunk(buffer.length)
-    }
-    stream.end()
-    await once(stream, 'finish')
-    stream = undefined
-    if (expectedSha1 && hash.digest('hex') !== expectedSha1.toLowerCase()) {
-      throw new Error('文件校验失败，下载内容可能不完整')
-    }
-    rmSync(destination, { force: true })
-    renameSync(temporary, destination)
-  } catch (error) {
-    stream?.destroy()
-    rmSync(temporary, { force: true })
-    if (signal.aborted) throw new DOMException('Aborted', 'AbortError')
-    throw error
-  }
+  await downloadToFile({
+    url: options.url,
+    destination: options.destination,
+    expectedSha1: options.expectedSha1,
+    signal: options.signal,
+    headers: { 'User-Agent': USER_AGENT },
+    onChunk: options.onChunk
+  })
 }
 
 function formatBytes(bytes: number): string {
