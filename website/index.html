@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>方界启动器 — 房间码联机、模组与多加载器</title>
+    <meta
+      name="description"
+      content="方界是一款面向 Windows 的 Minecraft 启动器：房间码联机、Fabric/Quilt/Forge/NeoForge、Modrinth/CurseForge、正版登录与本地皮肤。"
+    />
+    <meta name="theme-color" content="#090c08" />
+    <meta property="og:title" content="方界启动器 — 把一个房间码，变成一次冒险" />
+    <meta
+      property="og:description"
+      content="房间码联机、五加载器、模组工坊与独立实例。Windows 10/11，免安装或一键安装。"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://11ly322.github.io/fangjie-launcher/" />
+    <meta property="og:image" content="https://11ly322.github.io/fangjie-launcher/assets/home.webp" />
+    <link rel="canonical" href="https://11ly322.github.io/fangjie-launcher/" />
+    <link rel="icon" href="assets/icon.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "方界启动器",
+        "applicationCategory": "GameApplication",
+        "operatingSystem": "Windows 10, Windows 11",
+        "softwareVersion": "0.0.1-beta",
+        "description": "支持房间码联机、五种加载器、双模组源、正版登录与本地皮肤的 Minecraft 启动器。",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
+        "url": "https://11ly322.github.io/fangjie-launcher/"
+      }
+    </script>
+    <script>document.documentElement.classList.add('js')</script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主要内容</a>
+
+    <header class="site-header" id="top" data-header>
+      <div class="container header-inner">
+        <a class="brand" href="#top" aria-label="方界启动器首页">
+          <img src="assets/icon.png" width="36" height="36" alt="" />
+          <span class="brand-copy">
+            <strong>方界</strong>
+            <small>FANGJIE LAUNCHER</small>
+          </span>
+        </a>
+
+        <nav class="site-nav" id="site-nav" aria-label="主导航">
+          <a href="#features">能力</a>
+          <a href="#multiplayer">房间联机</a>
+          <a href="#gallery">界面</a>
+          <a href="#roadmap">路线</a>
+          <a href="#faq">常见问题</a>
+          <a class="nav-github" href="https://github.com/11ly322/fangjie-launcher" target="_blank" rel="noreferrer">
+            GitHub <span aria-hidden="true">↗</span>
+          </a>
+        </nav>
+
+        <div class="header-actions">
+          <a class="button button--ghost button--sm" href="https://github.com/11ly322/fangjie-launcher" target="_blank" rel="noreferrer">源码</a>
+          <a class="button button--primary button--sm" href="#download">下载 0.0.1-beta</a>
+          <button class="menu-toggle" type="button" aria-controls="site-nav" aria-expanded="false" aria-label="打开菜单" data-menu-toggle>
+            <span></span><span></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-glow hero-glow--one" aria-hidden="true"></div>
+        <div class="hero-glow hero-glow--two" aria-hidden="true"></div>
+        <div class="container hero-grid">
+          <div class="hero-copy reveal">
+            <p class="eyebrow"><span class="status-dot"></span> MINECRAFT LAUNCHER · 0.0.1-BETA</p>
+            <h1 id="hero-title">一个房间码，<br /><em>把朋友带进你的世界。</em></h1>
+            <p class="hero-lede">
+              方界是一款轻量的 Windows Minecraft 启动器。五加载器、双模组源、正版登录、本地皮肤，
+              以及不需要公网 IP 和 VPN 软件的房间联机。
+            </p>
+            <div class="hero-actions">
+              <a class="button button--primary button--lg" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.1-beta/Fangjie-Launcher-0.0.1-beta-Setup.exe">
+                下载 Windows 安装包 <span aria-hidden="true">↓</span>
+              </a>
+              <a class="button button--ghost button--lg" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.1-beta/Fangjie-Portable-0.0.1-beta.zip">
+                免安装便携版
+              </a>
+            </div>
+            <ul class="hero-meta" aria-label="运行信息">
+              <li>Windows 10 / 11 x64</li>
+              <li>无需管理员权限</li>
+              <li>MIT 开源主体</li>
+            </ul>
+          </div>
+
+          <div class="hero-visual reveal" data-delay="120">
+            <div class="app-window">
+              <div class="app-window__bar">
+                <span class="window-dot"></span><span class="window-dot"></span><span class="window-dot"></span>
+                <span class="app-window__title">方界 · 首页</span>
+              </div>
+              <img src="assets/home.webp" width="1600" height="1000" alt="方界启动器首页：最近实例、运行状态和快捷入口" />
+            </div>
+            <div class="floating-card floating-card--room">
+              <span class="floating-card__icon" aria-hidden="true">⌁</span>
+              <span><small>ROOM CODE</small><strong>U/3KRY-EB71-…</strong></span>
+            </div>
+            <div class="floating-card floating-card--players">
+              <span class="pulse-dot"></span>
+              <span><small>SCF 房间</small><strong>2 位玩家在线</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="container trust-strip reveal" data-delay="200">
+          <span><strong>5</strong> 种加载器</span>
+          <span><strong>2</strong> 个模组下载源</span>
+          <span><strong>0</strong> 个需要自建的联机服务器</span>
+          <span><strong>1</strong> 个房间码</span>
+        </div>
+      </section>
+
+      <section class="section" id="features" aria-labelledby="features-title">
+        <div class="container">
+          <div class="section-heading reveal">
+            <p class="eyebrow">CORE FEATURES</p>
+            <h2 id="features-title">该有的都有，<br />不该折腾的都不折腾。</h2>
+            <p>把实例、加载器、模组和联机放进一个桌面应用，不要求你成为系统管理员。</p>
+          </div>
+
+          <div class="feature-grid">
+            <article class="feature-card feature-card--wide reveal">
+              <div class="feature-icon" aria-hidden="true">⌁</div>
+              <p class="card-label">ROOM LINK</p>
+              <h3>房间码联机，不走浏览器</h3>
+              <p>
+                房主开房得到 <code>U/XXXX-XXXX-XXXX-XXXX</code>，朋友输入房间码即可加入。
+                EasyTier 以 Rust 库内嵌，复用社区公共节点，不要求安装 VPN 或开放路由器端口。
+              </p>
+              <div class="tag-row">
+                <span class="tag tag--accent">无需管理员</span>
+                <span class="tag">no-tun / smoltcp</span>
+                <span class="tag">公共中继</span>
+              </div>
+            </article>
+
+            <article class="feature-card reveal">
+              <div class="feature-icon" aria-hidden="true">◈</div>
+              <p class="card-label">LOADERS</p>
+              <h3>五种加载器</h3>
+              <p>原版、Fabric、Quilt、Forge、NeoForge。创建实例时选择，运行库与 Java 自动准备。</p>
+            </article>
+
+            <article class="feature-card reveal" data-delay="60">
+              <div class="feature-icon" aria-hidden="true">✦</div>
+              <p class="card-label">MODS</p>
+              <h3>双模组源</h3>
+              <p>Modrinth 与 CurseForge 搜索、版本过滤、前置自动补齐，安装后可直接启动。</p>
+            </article>
+
+            <article class="feature-card reveal" data-delay="120">
+              <div class="feature-icon" aria-hidden="true">◎</div>
+              <p class="card-label">ACCOUNT</p>
+              <h3>Microsoft 正版登录</h3>
+              <p>官方登录窗口完成 Xbox Live 与 Minecraft 验证，令牌以 Electron safeStorage 加密保存在本机。</p>
+            </article>
+
+            <article class="feature-card reveal" data-delay="180">
+              <div class="feature-icon" aria-hidden="true">▣</div>
+              <p class="card-label">SKIN</p>
+              <h3>本地离线皮肤</h3>
+              <p>上传 64×64 PNG，自动安装 CustomSkinLoader 并写入本地皮肤配置；只在自己的客户端显示。</p>
+            </article>
+
+            <article class="feature-card reveal" data-delay="240">
+              <div class="feature-icon" aria-hidden="true">◫</div>
+              <p class="card-label">INSTANCES</p>
+              <h3>每个世界独立</h3>
+              <p>存档、模组、配置、日志互不干扰；实例详情、模组启停、下载中心与启动日志集中管理。</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--split" id="multiplayer" aria-labelledby="multiplayer-title">
+        <div class="container split-grid">
+          <div class="split-media reveal">
+            <img src="assets/multiplayer.webp" width="1600" height="1000" alt="方界启动器房间联机页面：创建房间与公共中继节点" loading="lazy" />
+            <div class="media-caption">
+              <span class="pulse-dot"></span> 房间控制面已通过公共中继与 TCP 回显验证
+            </div>
+          </div>
+          <div class="split-copy reveal" data-delay="100">
+            <p class="eyebrow">ROOM LINK · 0.0.1-BETA</p>
+            <h2 id="multiplayer-title">朋友只需要一个房间码。</h2>
+            <p>
+              房主在 Minecraft 中开放局域网，把聊天栏端口填进方界；房客输入房间码，
+              得到的地址可以直接粘贴到「多人游戏 → 直接连接」。
+            </p>
+            <ol class="step-list">
+              <li><span>01</span><div><strong>房主创建房间</strong><p>生成房间码，启动器在虚拟网络内登记房主。</p></div></li>
+              <li><span>02</span><div><strong>房客输入房间码</strong><p>连接器通过 EasyTier 社区公共节点发现房主。</p></div></li>
+              <li><span>03</span><div><strong>拿到地址并进入</strong><p>SCF 协商端口，端口转发把地址交给 Minecraft。</p></div></li>
+            </ol>
+            <div class="note-inline">
+              <span aria-hidden="true">!</span>
+              没有自建中转、信令或 TURN 服务器；不需要安装第三方 VPN。
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="gallery" aria-labelledby="gallery-title">
+        <div class="container">
+          <div class="section-heading reveal">
+            <p class="eyebrow">THE DESKTOP</p>
+            <h2 id="gallery-title">为长时间使用而设计。</h2>
+            <p>深色、紧凑、没有多余弹窗。下面是真实的桌面截图。</p>
+          </div>
+          <div class="gallery-grid">
+            <figure class="gallery-item gallery-item--large reveal">
+              <img src="assets/instances.webp" width="1600" height="1000" alt="游戏实例库" loading="lazy" />
+              <figcaption><span>01</span> 实例库：五加载器与独立存档</figcaption>
+            </figure>
+            <figure class="gallery-item reveal" data-delay="80">
+              <img src="assets/mods.webp" width="1600" height="1000" alt="模组工坊" loading="lazy" />
+              <figcaption><span>02</span> 模组工坊：双源、版本过滤与前置补齐</figcaption>
+            </figure>
+            <figure class="gallery-item reveal" data-delay="160">
+              <img src="assets/account.webp" width="1600" height="1000" alt="玩家档案与本地皮肤" loading="lazy" />
+              <figcaption><span>03</span> 玩家档案：正版登录与本地皮肤</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--roadmap" id="roadmap" aria-labelledby="roadmap-title">
+        <div class="container">
+          <div class="roadmap-panel reveal">
+            <div>
+              <p class="eyebrow">NEXT ON THE BENCH</p>
+              <h2 id="roadmap-title">下一站：让崩溃更容易被修好。</h2>
+              <p>
+                面向 Tauri v2 的 Rust 核心已经包含崩溃模式映射、JAR 依赖扫描、diff 预览与可回滚修复。
+                它尚未接入当前 Electron UI，接入正在进行；不把“已完成核心”说成“已上线功能”。
+              </p>
+            </div>
+            <div class="roadmap-list" aria-label="开发路线">
+              <div class="roadmap-item"><span class="roadmap-dot roadmap-dot--active"></span><div><strong>0.0.1-beta</strong><p>房间联机、五加载器、双模组源、本地皮肤</p></div><span class="tag tag--accent">已发布</span></div>
+              <div class="roadmap-item"><span class="roadmap-dot"></span><div><strong>崩溃诊断 core</strong><p>10 类模式、JAR 扫描、diff 与回滚已通过 Rust 测试</p></div><span class="tag">待接入 UI</span></div>
+              <div class="roadmap-item"><span class="roadmap-dot"></span><div><strong>实例模板 / 模组批量</strong><p>实例复制、模板元数据、勾选式启停已可用</p></div><span class="tag">核心已就绪</span></div>
+              <div class="roadmap-item"><span class="roadmap-dot"></span><div><strong>Flight Recorder / 插件接口</strong><p>CSV 采样、版本与权限声明已定义</p></div><span class="tag">实验</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section download-section" id="download" aria-labelledby="download-title">
+        <div class="container">
+          <div class="section-heading reveal">
+            <p class="eyebrow">DOWNLOAD · 0.0.1-BETA</p>
+            <h2 id="download-title">把方界放到桌面上。</h2>
+            <p>Windows 10/11 x64。安装版按当前用户安装，不请求管理员权限；卸载不会删除游戏存档。</p>
+          </div>
+          <div class="download-grid">
+            <a class="download-card download-card--primary reveal" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.1-beta/Fangjie-Launcher-0.0.1-beta-Setup.exe">
+              <span class="download-card__label">RECOMMENDED · SETUP</span>
+              <strong>Windows 安装包</strong>
+              <span>Fangjie-Launcher-0.0.1-beta-Setup.exe · 167.9 MiB</span>
+              <span class="download-card__action">下载安装包 <span aria-hidden="true">↓</span></span>
+            </a>
+            <a class="download-card reveal" data-delay="80" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.1-beta/Fangjie-Portable-0.0.1-beta.zip">
+              <span class="download-card__label">PORTABLE · ZIP</span>
+              <strong>免安装便携版</strong>
+              <span>解压后双击 Fangjie.exe · 168.1 MiB</span>
+              <span class="download-card__action">下载便携版 <span aria-hidden="true">↓</span></span>
+            </a>
+            <a class="download-card download-card--muted reveal" data-delay="160" href="https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.1-beta">
+              <span class="download-card__label">VERIFY</span>
+              <strong>SHA256 与更新记录</strong>
+              <span>校验发布包，查看 0.0.1-beta 变更</span>
+              <span class="download-card__action">打开 Release <span aria-hidden="true">↗</span></span>
+            </a>
+          </div>
+          <div class="checksum reveal">
+            <span>安装包 SHA256</span>
+            <code>6fafe58ab3157bd03d5bdcd3d6fd2a51682fb228fc795135ccaefa3807e57154</code>
+            <button type="button" class="copy-button" data-copy="6fafe58ab3157bd03d5bdcd3d6fd2a51682fb228fc795135ccaefa3807e57154">复制</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="faq" aria-labelledby="faq-title">
+        <div class="container faq-grid">
+          <div class="section-heading reveal">
+            <p class="eyebrow">BEFORE YOU ASK</p>
+            <h2 id="faq-title">常见问题</h2>
+            <p>这个版本还很小，先把边界说清楚。</p>
+          </div>
+          <div class="faq-list reveal">
+            <details>
+              <summary>联机需要租服务器或安装 VPN 吗？</summary>
+              <p>不需要。房间联机复用 EasyTier 社区公共节点，不需要自建中转/信令服务器，也不需要安装第三方 VPN；连接器不创建 TUN 网卡，不要求管理员权限。</p>
+            </details>
+            <details>
+              <summary>朋友拿到的是什么地址？</summary>
+              <p>通常是一个 <code>127.0.0.1:端口</code> 地址，直接粘贴到 Minecraft 的「多人游戏 → 直接连接」。控制面、端口转发和同机 TCP 回显已验证；真实跨机器 NAT 仍建议实测。</p>
+            </details>
+            <details>
+              <summary>支持正版账号吗？</summary>
+              <p>支持 Microsoft 账号 OAuth 登录。真实账号的完整在线启动仍建议使用自己的账号验证；登录窗口与取消流程已通过测试。</p>
+            </details>
+            <details>
+              <summary>本地皮肤别人能看到吗？</summary>
+              <p>不能。本地皮肤只在自己的客户端显示，依赖 CustomSkinLoader，目前仅支持经典模型。</p>
+            </details>
+            <details>
+              <summary>为什么安装包提示未知发布者？</summary>
+              <p>0.0.1-beta 尚未做代码签名，Windows SmartScreen 可能提示未知发布者。校验 SHA256 后再运行。</p>
+            </details>
+            <details>
+              <summary>哪些还没做？</summary>
+              <p>整合包、资源包/光影下载、OptiFine 自动安装、自动更新器，以及崩溃诊断 UI 接入。Rust 核心已经存在，但不要把它当成已上线的完整体验。</p>
+            </details>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div class="footer-brand">
+          <a class="brand" href="#top">
+            <img src="assets/icon.png" width="32" height="32" alt="" />
+            <span class="brand-copy"><strong>方界</strong><small>FANGJIE LAUNCHER</small></span>
+          </a>
+          <p>把 Minecraft 留在桌面上，把折腾留给启动器。</p>
+        </div>
+        <div class="footer-links">
+          <a href="https://github.com/11ly322/fangjie-launcher" target="_blank" rel="noreferrer">GitHub</a>
+          <a href="https://github.com/11ly322/fangjie-launcher/blob/main/README.md" target="_blank" rel="noreferrer">文档</a>
+          <a href="https://github.com/11ly322/fangjie-launcher/blob/main/LICENSE" target="_blank" rel="noreferrer">MIT License</a>
+          <a href="https://github.com/11ly322/fangjie-launcher/blob/main/THIRD_PARTY_NOTICES.md" target="_blank" rel="noreferrer">第三方组件</a>
+          <a href="https://github.com/11ly322/fangjie-launcher/releases" target="_blank" rel="noreferrer">Releases</a>
+        </div>
+      </div>
+      <div class="container footer-bottom">
+        <span>© <span data-year>2026</span> 方界 · 非官方 Minecraft 启动器</span>
+        <span>与 Mojang Studios、Microsoft、Modrinth、CurseForge 无隶属关系</span>
+      </div>
+    </footer>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>

@@ -1,0 +1,36 @@
+name: Rust backend
+
+on:
+  push:
+    paths:
+      - 'rust/**'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    paths:
+      - 'rust/**'
+      - '.github/workflows/backend.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    name: Core tests (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Native TLS prerequisites
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config
+      - name: Test
+        run: cargo test --manifest-path rust/fangjie-core/Cargo.toml
+
+  tauri:
+    name: Tauri command check (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Check Tauri command layer
+        run: cargo check --manifest-path rust/fangjie-core/Cargo.toml --features tauri

@@ -1,5 +1,7 @@
 # 方界启动器 · Fangjie Launcher
 
+官网：https://11ly322.github.io/fangjie-launcher/
+
 [![Release](https://img.shields.io/github/v/release/11ly322/fangjie-launcher?include_prereleases&label=release)](https://github.com/11ly322/fangjie-launcher/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-c4f06a.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-4a7c1f)
@@ -146,6 +148,10 @@ node scripts/visual-check.cjs       # 界面截图
 node scripts/e2e-check.cjs          # 真实安装 / 模组 / 启动测试
 node scripts/loader-launch-check.cjs # 多加载器启动测试
 ```
+
+## Rust 核心（实验）
+
+`rust/fangjie-core` 是面向 Tauri v2 的独立 Rust 核心，包含崩溃诊断、JAR 扫描、diff 预览/回滚、下载源抽象、实例复制/模板、Flight Recorder 与插件接口。它已经通过 `cargo test` 与 `cargo check --features tauri`，但**尚未接入当前 Electron UI**。详见 [rust/README.md](rust/README.md)。
 
 ## 开源
 
