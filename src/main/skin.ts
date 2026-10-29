@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path'
 import type { LauncherStore } from './store'
 import { errorMessage } from './java'
 import { USER_AGENT } from './version'
+import { requestResponse } from './downloadSource'
 
 const CSL_PROJECT_ID = 'idMHQ4n2'
 const MODRINTH_API = 'https://api.modrinth.com/v2'
@@ -108,7 +109,7 @@ async function fetchVersions(apiBase: string, mcVersion: string): Promise<Modrin
   const url = `${apiBase}/project/${CSL_PROJECT_ID}/version?game_versions=${encodeURIComponent(
     JSON.stringify([mcVersion])
   )}`
-  const response = await fetch(url, {
+  const response = await requestResponse(url, {
     headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
     signal: AbortSignal.timeout(30_000)
   })
@@ -118,7 +119,7 @@ async function fetchVersions(apiBase: string, mcVersion: string): Promise<Modrin
 }
 
 async function downloadToFile(url: string, destination: string, expectedSha1?: string): Promise<void> {
-  const response = await fetch(url, {
+  const response = await requestResponse(url, {
     headers: { 'User-Agent': USER_AGENT },
     signal: AbortSignal.timeout(90_000)
   })

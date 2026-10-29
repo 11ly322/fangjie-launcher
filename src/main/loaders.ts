@@ -21,6 +21,7 @@ import {
 import type { LoaderType } from '../shared/types'
 import { XMCL_HEADERS, xmclDownloadAgent } from './downloadAgent'
 import { USER_AGENT } from './version'
+import { requestResponse } from './downloadSource'
 
 export const BMCL_API = 'https://bmclapi2.bangbang93.com'
 export const BMCL_MAVEN = `${BMCL_API}/maven/`
@@ -222,7 +223,7 @@ async function ensureInstallerArchive(
   if (isUsableZipFile(destination)) return destination
   options.onDetail('正在下载安装器…', 14)
   mkdirSync(dirname(destination), { recursive: true })
-  const response = await fetch(url, {
+  const response = await requestResponse(url, {
     headers: { 'User-Agent': USER_AGENT },
     signal: AbortSignal.timeout(180_000)
   })
@@ -338,7 +339,7 @@ async function downloadInstallerLibrary(
   let lastError: unknown
   for (const url of [...new Set(urls)]) {
     try {
-      const response = await fetch(url, {
+      const response = await requestResponse(url, {
         headers: { 'User-Agent': USER_AGENT },
         signal: AbortSignal.timeout(90_000)
       })
@@ -420,7 +421,7 @@ async function fetchJson<T>(url: string, attempts = 3): Promise<T> {
   let lastError: unknown
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
-      const response = await fetch(url, {
+      const response = await requestResponse(url, {
         headers: { 'User-Agent': USER_AGENT },
         signal: AbortSignal.timeout(45_000)
       })

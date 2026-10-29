@@ -2,6 +2,7 @@ import { BrowserWindow, shell } from 'electron'
 import type { Account } from '../shared/types'
 import type { LauncherStore } from './store'
 import { USER_AGENT } from './version'
+import { requestResponse } from './downloadSource'
 
 const CLIENT_ID = '00000000402b5328'
 const REDIRECT_URI = 'https://login.live.com/oauth20_desktop.srf'
@@ -185,7 +186,7 @@ async function requestOAuthCode(parentWindow: BrowserWindow | null): Promise<str
 }
 
 async function exchangeOAuthCode(code: string): Promise<MsTokenResponse> {
-  const response = await fetch(OAUTH_TOKEN, {
+  const response = await requestResponse(OAUTH_TOKEN, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -207,7 +208,7 @@ async function exchangeOAuthCode(code: string): Promise<MsTokenResponse> {
 }
 
 async function refreshOAuthToken(refreshToken: string): Promise<MsTokenResponse> {
-  const response = await fetch(OAUTH_TOKEN, {
+  const response = await requestResponse(OAUTH_TOKEN, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -232,7 +233,7 @@ async function completeMinecraftAuth(
   refreshToken: string,
   expiresIn?: number
 ): Promise<MicrosoftSession> {
-  const xblResponse = await fetch(XBL_AUTH, {
+  const xblResponse = await requestResponse(XBL_AUTH, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({
@@ -254,7 +255,7 @@ async function completeMinecraftAuth(
     DisplayClaims?: { xui?: Array<{ uhs: string }> }
   }
 
-  const xstsResponse = await fetch(XSTS_AUTH, {
+  const xstsResponse = await requestResponse(XSTS_AUTH, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({
@@ -278,7 +279,7 @@ async function completeMinecraftAuth(
   const uhs = xsts.DisplayClaims?.xui?.[0]?.uhs || xbl.DisplayClaims?.xui?.[0]?.uhs
   if (!uhs) throw new Error('Xbox Live 未返回用户标识')
 
-  const mcResponse = await fetch(MC_LOGIN, {
+  const mcResponse = await requestResponse(MC_LOGIN, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({
@@ -297,7 +298,7 @@ async function completeMinecraftAuth(
     )
   }
 
-  const profileResponse = await fetch(MC_PROFILE, {
+  const profileResponse = await requestResponse(MC_PROFILE, {
     headers: {
       Authorization: `Bearer ${mc.access_token}`,
       Accept: 'application/json'

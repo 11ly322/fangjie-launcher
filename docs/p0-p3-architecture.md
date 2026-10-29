@@ -291,7 +291,7 @@ pub trait DownloadSource {
 
 ### 3.5 网络设置现状
 
-设置页已加入 HTTP(S) 代理、Modrinth API 基址、CurseForge API 基址；启动和保存时配置 undici 全局 dispatcher 与 xmcl 下载 dispatcher，并持久化。新增 `src/main/downloadSource.ts`：统一流式下载、SHA1/SHA256/大小校验、离线门禁；Modrinth/CurseForge/资源包/整合包/更新器已迁移到该下载路径。
+设置页已加入 HTTP(S) 代理、Modrinth API 基址、CurseForge API 基址；启动和保存时配置 undici 全局 dispatcher 与 xmcl 下载 dispatcher，并持久化。新增 `src/main/downloadSource.ts`：统一流式下载、SHA1/SHA256/大小校验、离线门禁；Modrinth/CurseForge/资源包/整合包/更新器已迁移到该下载路径。所有主进程 native `fetch`（项目 API、OAuth token、Mojang 元数据、Loader、皮肤、更新 feed）现已统一走 `requestResponse` seam；xmcl 传输使用同一 undici dispatcher。
 
 仍未完成：Mojang 元数据、Java 下载、Microsoft OAuth 等全部路径尚未统一迁移；当前是“可配置代理 + 可替换 API 基址”的基础层，不是完整的单一 Source 架构。
 
@@ -411,7 +411,7 @@ NAT 验证矩阵：[nat-test-matrix.md](nat-test-matrix.md)
 | 自动更新器检测/下载/校验/替换 | **P1 基础实现** | 检查/下载/SHA256/NSIS spawn 已接入；真实安装包替换与签名未实测 |
 | .mrpack/.zip 导入、仅模组导出 | **P1 基础实现** | 模组列表导出、`.mrpack` 与 CurseForge `.zip` 导入已接入；zip 文件下载未用真实包复测 |
 | 资源包/光影不跳浏览器 | **P1 基础实现** | Modrinth 安装实测；CurseForge 搜索实测；统一源/镜像未迁移 |
-| 下载源可替换、默认可用 | **P1 基础实现** | 代理 + API 基址可配置；流式下载已统一，JSON/元数据/OAuth/Java 尚未全部迁移 |
+| 下载源可替换、默认可用 | **P1 基础实现** | 代理 + API 基址可配置；native fetch 与流式下载已统一，xmcl 使用同一 dispatcher；仍非完整多源路由 |
 | 房间码主界面入口 | **P2 基础实现** | 首页快捷房间卡：创建/粘贴自动分段/加入；未自动启动游戏 |
 | 联机状态面板直连/中继/延迟 | **P2 基础实现** | 直连/中继输出与地址解析有单测；优先测 Minecraft 地址 TCP 延迟，回退中继 TCP；真实 P2P RTT 仍缺 |
 | 插件版本/权限 | **P3 基础实现** | 本地 `plugins/*/manifest.json` 经 Rust 校验后列出；只加载清单，不执行第三方代码 |

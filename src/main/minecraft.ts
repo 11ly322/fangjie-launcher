@@ -24,6 +24,7 @@ import { ensureMicrosoftSession } from './microsoft'
 import { APP_VERSION } from './version'
 import type { LauncherStore } from './store'
 import type { TaskManager } from './tasks'
+import { requestResponse } from './downloadSource'
 
 interface VersionCache {
   at: number
@@ -278,7 +279,7 @@ async function runMinecraftTask(
 
 async function estimateVersionBytes(versionUrl: string): Promise<number> {
   try {
-    const response = await fetch(versionUrl, { signal: AbortSignal.timeout(20_000) })
+    const response = await requestResponse(versionUrl, { signal: AbortSignal.timeout(20_000) })
     if (!response.ok) return 0
     const version = (await response.json()) as {
       downloads?: { client?: { size?: number } }

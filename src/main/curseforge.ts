@@ -18,7 +18,7 @@ import { errorMessage } from './java'
 import { ensureModsDirectory, isJarName, listInstanceMods, saveInstalledMods } from './mods'
 import { LOADER_MOD_TAGS } from '../shared/constants'
 import { USER_AGENT } from './version'
-import { downloadToFile } from './downloadSource'
+import { downloadToFile, requestResponse } from './downloadSource'
 
 const DEFAULT_API_BASE = 'https://mod.mcimirror.top/curseforge/v1'
 let apiBase = DEFAULT_API_BASE
@@ -115,7 +115,7 @@ async function cfFetch<T>(path: string, signal?: AbortSignal): Promise<T> {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
     try {
-      const response = await fetch(`${apiBase}${path}`, {
+      const response = await requestResponse(`${apiBase}${path}`, {
         headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
         signal: combined
       })

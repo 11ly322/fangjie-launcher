@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { spawn } from 'node:child_process'
 import type { CoreUpdateAsset, CoreUpdateCheck, CoreUpdateManifest } from '../shared/types'
 import type { RustCoreClient } from './rustCore'
-import { downloadToFile } from './downloadSource'
+import { downloadToFile, requestResponse } from './downloadSource'
 
 const DEFAULT_FEED = 'https://api.github.com/repos/11ly322/fangjie-launcher/releases'
 const USER_AGENT = 'Fangjie-Updater/0.1'
@@ -77,7 +77,7 @@ function normalizeRelease(raw: FeedRelease): CoreUpdateManifest | null {
 
 async function fetchFeed(): Promise<FeedRelease[]> {
   const url = process.env.FJ_UPDATE_FEED || DEFAULT_FEED
-  const response = await fetch(url, {
+  const response = await requestResponse(url, {
     headers: {
       Accept: 'application/vnd.github+json',
       'User-Agent': USER_AGENT

@@ -22,13 +22,18 @@ export interface JsonRequest {
   signal?: AbortSignal
 }
 
+export async function requestResponse(url: string, init?: RequestInit): Promise<Response> {
+  assertNetworkAllowed()
+  return fetch(url, init)
+}
+
 function assertNetworkAllowed(): void {
   if (isOffline()) throw new Error('离线模式已开启，已阻止网络请求')
 }
 
 export async function fetchJson<T>(request: JsonRequest): Promise<T> {
   assertNetworkAllowed()
-  const response = await fetch(request.url, {
+  const response = await requestResponse(request.url, {
     headers: request.headers,
     signal: request.signal,
     redirect: 'follow'
@@ -49,7 +54,7 @@ export async function downloadToFile(request: DownloadRequest): Promise<void> {
   rmSync(temporary, { force: true })
   let stream: ReturnType<typeof createWriteStream> | undefined
   try {
-    const response = await fetch(request.url, {
+    const response = await requestResponse(request.url, {
       headers: request.headers,
       signal: request.signal,
       redirect: 'follow'
