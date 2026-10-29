@@ -1,0 +1,59 @@
+name: Build connector prototype
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/multiplayer-beta
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build qomicex connector
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout launcher
+        uses: actions/checkout@v4
+
+      - name: Checkout connector reference
+        uses: actions/checkout@v4
+        with:
+          repository: Qomicex-Public/qomicex-connector-rust
+          ref: main
+          path: qomicex
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install protoc and 7zip
+        shell: pwsh
+        run: |
+          choco install protoc 7zip --no-progress -y
+          $protoc = (Get-Command protoc).Source
+          "PROTOC=$protoc" | Out-File -FilePath $env:GITHUB_ENV -Append
+          protoc --version
+
+      - name: Prepare connector environment
+        shell: pwsh
+        working-directory: qomicex
+        run: |
+          @"
+          [net]
+          git-fetch-with-cli = true
+          "@ | Set-Content .cargo/config.toml -Encoding ascii
+          Get-Content .cargo/config.toml
+
+      - name: Build connector CLI
+        working-directory: qomicex
+        run: cargo build -p qomicex-connector-cli --release
+
+      - name: Upload connector binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: qomicex-connector-cli
+          path: qomicex/target/release/qomicex-connector-cli.exe
+          if-no-files-found: error
+          retention-days: 7
