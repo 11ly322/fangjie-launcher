@@ -5,6 +5,7 @@ import {
   Cpu,
   FolderOpen,
   HardDrive,
+  Palette,
   RefreshCw,
   ShieldCheck,
   SlidersHorizontal,
@@ -21,23 +22,34 @@ import {
   ToggleRow
 } from '../components/ui'
 import { classNames, rangeProgress } from '../lib/format'
+import { applyTheme, THEMES } from '../lib/theme'
+import type { ThemeId } from '../../../shared/types'
 
 export function SettingsPage(): React.JSX.Element {
-  const { boot, openAccount, refreshJava, saveSettings, toast } = useLauncher()
+  const { boot, confirm, openAccount, refreshJava, saveSettings, toast } = useLauncher()
   const [memoryMb, setMemoryMb] = useState(boot.settings.memoryMb)
   const [javaPath, setJavaPath] = useState(boot.settings.javaPath)
   const [showSnapshots, setShowSnapshots] = useState(boot.settings.showSnapshots)
   const [minimizeOnLaunch, setMinimizeOnLaunch] = useState(boot.settings.minimizeOnLaunch)
+  const [theme, setTheme] = useState<ThemeId>(boot.settings.theme)
   const [saving, setSaving] = useState(false)
+  const [changingData, setChangingData] = useState(false)
+  const [pendingDataPath, setPendingDataPath] = useState(() => {
+    try {
+      return window.sessionStorage.getItem('fangjie-pending-data') || ''
+    } catch {
+      return ''
+    }
+  })
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState('')
 
+  // Theme is the only setting that saves immediately. Do not resync the
+  // other form fields here: that would discard unsaved memory/Java edits when
+  // the user previews a different theme.
   useEffect(() => {
-    setMemoryMb(boot.settings.memoryMb)
-    setJavaPath(boot.settings.javaPath)
-    setShowSnapshots(boot.settings.showSnapshots)
-    setMinimizeOnLaunch(boot.settings.minimizeOnLaunch)
-  }, [boot.settings])
+    setTheme(boot.settings.theme)
+  }, [boot.settings.theme])
 
   const dirty =
     memoryMb !== boot.settings.memoryMb ||
@@ -81,6 +93,57 @@ export function SettingsPage(): React.JSX.Element {
     if (!result.ok) toast(result.error, 'error')
   }
 
+  const selectTheme = async (next: ThemeId): Promise<void> => {
+    if (next === theme) return
+    const previous = theme
+    setTheme(next)
+    applyTheme(next)
+    const ok = await saveSettings({ theme: next })
+    if (!ok) {
+      setTheme(previous)
+      applyTheme(previous)
+    }
+  }
+
+  const changeDataLocation = async (): Promise<void> => {
+    const chosen = await window.fangjie.chooseDataFolder()
+    if (!chosen.ok) {
+      toast(chosen.error, 'error')
+      return
+    }
+    if (!chosen.value) return
+    if (chosen.value === boot.dataPath) {
+      toast('这已经是当前数据目录', 'info')
+      return
+    }
+    const accepted = await confirm({
+      title: '迁移游戏数据？',
+      description: `将把当前数据目录完整复制到：\n${chosen.value}\n\n旧目录不会被删除；迁移完成后需要重启启动器。请确保新目录为空，且没有游戏或下载任务在运行。数据较大时复制可能需要几分钟。`,
+      confirmLabel: '迁移并切换',
+      cancelLabel: '取消'
+    })
+    if (!accepted) return
+    setChangingData(true)
+    const result = await window.fangjie.changeDataLocation(chosen.value)
+    setChangingData(false)
+    if (!result.ok) {
+      toast(result.error, 'error')
+      return
+    }
+    setPendingDataPath(result.value.path)
+    try {
+      window.sessionStorage.setItem('fangjie-pending-data', result.value.path)
+    } catch {
+      /* session-only hint */
+    }
+    toast('数据已迁移，重启启动器后生效', 'success')
+  }
+
+  const restart = async (): Promise<void> => {
+    const result = await window.fangjie.restartApp()
+    if (!result.ok) toast(result.error, 'error')
+  }
+
   const currentJava = boot.java.runtimes.find((runtime) => runtime.path === javaPath)
   const automaticJava = boot.java.runtimes.find((runtime) => runtime.source === 'auto')
   const effectiveJava = javaPath ? currentJava : automaticJava
@@ -91,7 +154,7 @@ export function SettingsPage(): React.JSX.Element {
         <div>
           <div className="eyebrow">PREFERENCES</div>
           <h1>设置</h1>
-          <p>调整账户、Java 与启动行为。更改会在点击保存后写入本地配置。</p>
+          <p>调整账户、外观、Java 与启动行为。主题立即生效，其余更改在点击保存后写入本地配置。</p>
         </div>
         <div className="page-header__actions">
           {dirty ? <Badge tone="warn">有未保存的更改</Badge> : null}
@@ -280,6 +343,56 @@ export function SettingsPage(): React.JSX.Element {
         <section className="settings-section">
           <div className="settings-section__heading">
             <div className="settings-section__icon">
+              <Palette size={18} />
+            </div>
+            <div>
+              <h2>外观主题</h2>
+              <p>三套配色，立即生效并记住选择</p>
+            </div>
+          </div>
+          <div className="settings-card">
+            <div className="theme-options" role="group" aria-label="选择外观主题">
+              {THEMES.map((option) => {
+                const selected = option.id === theme
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={classNames('theme-option', selected && 'is-selected')}
+                    aria-pressed={selected}
+                    onClick={() => void selectTheme(option.id)}
+                  >
+                    <span
+                      className="theme-option__preview"
+                      style={{ background: option.background }}
+                      aria-hidden="true"
+                    >
+                      <span className="theme-option__glow" style={{ background: option.accent }} />
+                      <span className="theme-option__rail" style={{ background: option.accent }} />
+                      <span className="theme-option__panel" />
+                    </span>
+                    <span className="theme-option__copy">
+                      <strong>{option.name}</strong>
+                      <small>{option.description}</small>
+                    </span>
+                    {selected ? (
+                      <span className="theme-option__check" aria-hidden="true">
+                        <Check size={13} />
+                      </span>
+                    ) : null}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="settings-hint">
+              主题只改变方界的配色，不会影响游戏画面。选择后会立即写入本地配置；下次启动也会保持。
+            </p>
+          </div>
+        </section>
+
+        <section className="settings-section">
+          <div className="settings-section__heading">
+            <div className="settings-section__icon">
               <HardDrive size={18} />
             </div>
             <div>
@@ -293,9 +406,20 @@ export function SettingsPage(): React.JSX.Element {
                 <span>游戏数据目录</span>
                 <strong title={boot.dataPath}>{boot.dataPath}</strong>
               </div>
-              <Button variant="secondary" size="sm" icon={<FolderOpen size={14} />} onClick={() => void openData()}>
-                打开
-              </Button>
+              <div className="path-box__actions">
+                <Button variant="secondary" size="sm" icon={<FolderOpen size={14} />} onClick={() => void openData()}>
+                  打开
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={changingData}
+                  disabled={Boolean(pendingDataPath)}
+                  onClick={() => void changeDataLocation()}
+                >
+                  更改位置
+                </Button>
+              </div>
             </div>
             <div className="path-box">
               <div>
@@ -303,8 +427,28 @@ export function SettingsPage(): React.JSX.Element {
                 <strong title={boot.configPath}>{boot.configPath}</strong>
               </div>
             </div>
+            {pendingDataPath ? (
+              <div className="data-location-notice">
+                <InlineNotice
+                  tone="success"
+                  title="数据目录已迁移"
+                  action={
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      icon={<RefreshCw size={14} />}
+                      onClick={() => void restart()}
+                    >
+                      立即重启
+                    </Button>
+                  }
+                >
+                  下次启动将从 <code title={pendingDataPath}>{pendingDataPath}</code> 读取数据。旧目录没有删除，确认新目录正常后可手动清理。
+                </InlineNotice>
+              </div>
+            ) : null}
             <p className="settings-hint">
-              每个实例的存档与模组位于 <code>instances/&lt;实例ID&gt;/.minecraft</code>，游戏版本与运行库在实例之间共享。
+              每个实例的存档与模组位于 <code>instances/&lt;实例ID&gt;/.minecraft</code>，游戏版本与运行库在实例之间共享。更改位置会完整复制当前数据，旧目录保留。
             </p>
           </div>
         </section>

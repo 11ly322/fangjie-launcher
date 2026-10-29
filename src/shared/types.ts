@@ -36,8 +36,11 @@ export interface Account {
   skin?: AccountSkin
 }
 
+export type ThemeId = 'moss' | 'ocean' | 'ember'
+
 export interface Settings {
   memoryMb: number
+  theme: ThemeId
   javaPath: string
   showSnapshots: boolean
   minimizeOnLaunch: boolean
@@ -266,7 +269,9 @@ export interface LauncherApi {
   chooseSkin(model: 'classic' | 'slim'): Promise<Result<Account | null>>
   applySkin(instanceId: string): Promise<Result<{ instanceId: string; fileName: string }>>
   chooseJava(): Promise<Result<string | null>>
-  chooseDataFolder?(): Promise<Result<string | null>>
+  chooseDataFolder(): Promise<Result<string | null>>
+  changeDataLocation(targetPath: string): Promise<Result<{ path: string }>>
+  restartApp(): Promise<Result<void>>
   createInstance(input: CreateInstanceInput): Promise<Result<{ instance: Instance; taskId: string }>>
   updateInstance(id: string, patch: UpdateInstanceInput): Promise<Result<Instance>>
   deleteInstance(id: string): Promise<Result<void>>

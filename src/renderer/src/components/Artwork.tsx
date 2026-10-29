@@ -198,7 +198,7 @@ export function InstanceEmblem({
 }
 
 export function WorldArt({ accent }: { accent: string }): React.JSX.Element {
-  const id = accent.replace('#', '')
+  const id = accent.startsWith('var(') ? 'theme' : accent.replace('#', '')
   return (
     <svg className="world-art" viewBox="0 0 960 520" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       <defs>

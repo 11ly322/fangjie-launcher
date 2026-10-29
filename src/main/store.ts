@@ -1,8 +1,8 @@
 import { app, safeStorage } from 'electron'
 import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
-import { basename, dirname, join, resolve } from 'node:path'
-import type { Account, Instance, Settings } from '../shared/types'
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
+import type { Account, Instance, Settings, ThemeId } from '../shared/types'
 
 export interface StoredSkin {
   fileName: string
@@ -54,6 +54,10 @@ export function defaultMemoryMb(): number {
   return 4096
 }
 
+export function normalizeTheme(value: unknown): ThemeId {
+  return value === 'ocean' || value === 'ember' ? value : 'moss'
+}
+
 function createDefaultAccount(): StoredAccount {
   return {
     name: 'Steve',
@@ -66,6 +70,7 @@ export class LauncherStore {
   readonly homePath: string
   readonly configPath: string
   readonly dataPath: string
+  readonly dataLocationPath: string
   readonly minecraftPath: string
   readonly instancesPath: string
   readonly skinsPath: string
@@ -74,7 +79,8 @@ export class LauncherStore {
   constructor() {
     this.homePath = process.env.FJ_HOME ? resolve(process.env.FJ_HOME) : app.getPath('userData')
     this.configPath = join(this.homePath, 'config.json')
-    this.dataPath = process.env.FJ_DATA ? resolve(process.env.FJ_DATA) : join(this.homePath, 'game')
+    this.dataLocationPath = join(this.homePath, 'data-location.json')
+    this.dataPath = this.resolveDataPath()
     this.minecraftPath = join(this.dataPath, 'minecraft')
     this.instancesPath = join(this.dataPath, 'instances')
     this.skinsPath = join(this.homePath, 'skins')
@@ -91,6 +97,7 @@ export class LauncherStore {
       schemaVersion: 1,
       settings: {
         memoryMb: defaultMemoryMb(),
+        theme: 'moss',
         javaPath: '',
         showSnapshots: false,
         minimizeOnLaunch: false,
@@ -131,6 +138,7 @@ export class LauncherStore {
         settings: {
           ...settings,
           memoryMb: clampMemory(Number(settings.memoryMb)),
+          theme: normalizeTheme(settings.theme),
           downloadConcurrency: Math.min(64, Math.max(4, Number(settings.downloadConcurrency) || 16))
         },
         account: {
@@ -165,6 +173,39 @@ export class LauncherStore {
     renameSync(temporary, this.configPath)
   }
 
+  private resolveDataPath(): string {
+    if (process.env.FJ_DATA) return resolve(process.env.FJ_DATA)
+    try {
+      const pointer = JSON.parse(readFileSync(this.dataLocationPath, 'utf8')) as { dataPath?: unknown }
+      if (typeof pointer.dataPath === 'string' && isAbsolute(pointer.dataPath)) {
+        return resolve(pointer.dataPath)
+      }
+    } catch {
+      /* no custom location yet, or an unreadable pointer; use the default */
+    }
+    return join(this.homePath, 'game')
+  }
+
+  /** Write the location pointer consumed on the next launch. */
+  setDataLocation(targetPath: string): string {
+    if (process.env.FJ_DATA) {
+      throw new Error('当前通过 FJ_DATA 指定数据目录，不能从界面更改')
+    }
+    if (typeof targetPath !== 'string' || !targetPath.trim()) throw new Error('请选择数据目录')
+    const target = resolve(targetPath)
+    if (!isAbsolute(target)) throw new Error('数据目录必须是绝对路径')
+    if (target === this.dataPath) return target
+    mkdirSync(target, { recursive: true })
+    const temporary = `${this.dataLocationPath}.${process.pid}.tmp`
+    writeFileSync(
+      temporary,
+      JSON.stringify({ schemaVersion: 1, dataPath: target }, null, 2),
+      'utf8'
+    )
+    renameSync(temporary, this.dataLocationPath)
+    return target
+  }
+
   save(): void {
     this.config.settings.memoryMb = clampMemory(this.config.settings.memoryMb)
     this.write(this.config)
@@ -180,6 +221,7 @@ export class LauncherStore {
       ...patch
     }
     next.memoryMb = clampMemory(Number(next.memoryMb))
+    next.theme = normalizeTheme(next.theme)
     next.downloadConcurrency = Math.min(64, Math.max(4, Number(next.downloadConcurrency) || 16))
     next.javaPath = typeof next.javaPath === 'string' ? next.javaPath : ''
     this.config.settings = next

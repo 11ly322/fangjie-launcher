@@ -66,6 +66,10 @@ const api: LauncherApi = {
   stopInstance: (id: string) => invoke<void>('instances:stop', id),
   openInstanceFolder: (id: string) => invoke<void>('instances:open-folder', id),
   openDataFolder: () => invoke<void>('app:open-data'),
+  chooseDataFolder: () => invoke<string | null>('app:choose-data-folder'),
+  changeDataLocation: (targetPath: string) =>
+    invoke<{ path: string }>('app:change-data-location', targetPath),
+  restartApp: () => invoke<void>('app:relaunch'),
   openLogsFolder: (id: string) => invoke<void>('instances:open-logs', id),
   instanceMods: (id: string) => invoke<InstalledMod[]>('mods:list', id),
   setModEnabled: (id: string, fileName: string, enabled: boolean) =>

@@ -13,6 +13,7 @@ import {
 } from 'react'
 import type { Bootstrap, LogLine, Settings, TaskView } from '../../shared/types'
 import { PAGE_LABELS, type PageName } from './lib/navigation'
+import { applyTheme } from './lib/theme'
 import {
   LauncherContext,
   type ConfirmOptions,
@@ -238,6 +239,10 @@ export default function App(): React.JSX.Element {
     if (activeInstanceId || !boot) return
     setActiveInstanceId(pickDefaultInstance(boot.instances))
   }, [activeInstanceId, boot])
+
+  useEffect(() => {
+    if (boot) applyTheme(boot.settings.theme)
+  }, [boot?.settings.theme])
 
   useEffect(() => {
     if (boot) {

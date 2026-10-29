@@ -1,6 +1,7 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron'
 import type { OpenDialogOptions } from 'electron'
 import { join } from 'node:path'
+import { migrateDataLocation } from './dataLocation'
 import type {
   CreateInstanceInput,
   Result,
@@ -30,7 +31,7 @@ import {
   searchCurseForge,
   startCurseForgeInstall
 } from './curseforge'
-import type { LauncherStore } from './store'
+import { normalizeTheme, type LauncherStore } from './store'
 import type { TaskManager } from './tasks'
 import { multiplayerManager } from './multiplayer'
 
@@ -188,6 +189,7 @@ export function registerIpcHandlers(context: IpcContext): void {
     if (typeof patch.showSnapshots === 'boolean') safePatch.showSnapshots = patch.showSnapshots
     if (typeof patch.minimizeOnLaunch === 'boolean') safePatch.minimizeOnLaunch = patch.minimizeOnLaunch
     if (typeof patch.downloadConcurrency === 'number') safePatch.downloadConcurrency = patch.downloadConcurrency
+    if (patch.theme !== undefined) safePatch.theme = normalizeTheme(patch.theme)
     const settings = store.setSettings(safePatch)
     notifyChange('settings')
     return settings
@@ -301,6 +303,38 @@ export function registerIpcHandlers(context: IpcContext): void {
   handle('app:open-data', async () => {
     const error = await shell.openPath(store.dataPath)
     if (error) throw new Error(error)
+  })
+
+  handle('app:choose-data-folder', async () => {
+    const window = getMainWindow()
+    const options: OpenDialogOptions = {
+      title: '选择新的游戏数据目录',
+      buttonLabel: '使用这个文件夹',
+      properties: ['openDirectory', 'createDirectory']
+    }
+    const result = window
+      ? await dialog.showOpenDialog(window, options)
+      : await dialog.showOpenDialog(options)
+    if (result.canceled || !result.filePaths[0]) return null
+    return result.filePaths[0]
+  })
+
+  handle('app:change-data-location', async (targetPath: string) => {
+    if (runningInstanceIds().length > 0) {
+      throw new Error('请先结束正在运行的游戏，再更改数据目录')
+    }
+    if (tasks.list().some((task) => task.status === 'queued' || task.status === 'running')) {
+      throw new Error('请等待安装或下载任务完成，再更改数据目录')
+    }
+    const result = await migrateDataLocation(store, targetPath)
+    return result
+  })
+
+  handle('app:relaunch', async () => {
+    setTimeout(() => {
+      app.relaunch()
+      app.exit(0)
+    }, 300)
   })
 
   handle('mods:list', async (instanceId: string) => {

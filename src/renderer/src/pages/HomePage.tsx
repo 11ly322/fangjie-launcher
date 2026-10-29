@@ -86,9 +86,9 @@ export function HomePage(): React.JSX.Element {
       <section className="home-grid">
         <div
           className="hero-play"
-          style={{ '--hero-accent': activeInstance?.accent || '#b8e85c' } as React.CSSProperties}
+          style={{ '--hero-accent': activeInstance?.accent || 'var(--accent)' } as React.CSSProperties}
         >
-          <WorldArt accent={activeInstance?.accent || '#b8e85c'} />
+          <WorldArt accent={activeInstance?.accent || 'var(--accent)'} />
           <div className="hero-play__shade" />
           {activeInstance ? (
             <>
