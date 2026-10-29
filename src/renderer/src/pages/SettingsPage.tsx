@@ -11,6 +11,7 @@ import {
   RefreshCw,
   ShieldCheck,
   SlidersHorizontal,
+  Network,
   UserRound,
   WifiOff
 } from 'lucide-react'
@@ -22,6 +23,7 @@ import {
   Field,
   InlineNotice,
   StatusDot,
+  TextInput,
   ToggleRow
 } from '../components/ui'
 import { classNames, rangeProgress } from '../lib/format'
@@ -34,6 +36,9 @@ export function SettingsPage(): React.JSX.Element {
   const [javaPath, setJavaPath] = useState(boot.settings.javaPath)
   const [showSnapshots, setShowSnapshots] = useState(boot.settings.showSnapshots)
   const [minimizeOnLaunch, setMinimizeOnLaunch] = useState(boot.settings.minimizeOnLaunch)
+  const [proxyUrl, setProxyUrl] = useState(boot.settings.proxyUrl)
+  const [modrinthBase, setModrinthBase] = useState(boot.settings.modrinthBase)
+  const [curseforgeBase, setCurseforgeBase] = useState(boot.settings.curseforgeBase)
   const [offlineMode, setOfflineMode] = useState(boot.settings.offline)
   const [theme, setTheme] = useState<ThemeId>(boot.settings.theme)
   const [saving, setSaving] = useState(false)
@@ -74,7 +79,10 @@ export function SettingsPage(): React.JSX.Element {
     memoryMb !== boot.settings.memoryMb ||
     javaPath !== boot.settings.javaPath ||
     showSnapshots !== boot.settings.showSnapshots ||
-    minimizeOnLaunch !== boot.settings.minimizeOnLaunch
+    minimizeOnLaunch !== boot.settings.minimizeOnLaunch ||
+    proxyUrl !== boot.settings.proxyUrl ||
+    modrinthBase !== boot.settings.modrinthBase ||
+    curseforgeBase !== boot.settings.curseforgeBase
 
   const save = async (): Promise<void> => {
     setSaving(true)
@@ -83,7 +91,10 @@ export function SettingsPage(): React.JSX.Element {
       memoryMb,
       javaPath,
       showSnapshots,
-      minimizeOnLaunch
+      minimizeOnLaunch,
+      proxyUrl,
+      modrinthBase,
+      curseforgeBase
     })
     setSaving(false)
     if (!ok) setError('设置保存失败，请重试')
@@ -450,6 +461,33 @@ export function SettingsPage(): React.JSX.Element {
             </div>
             <p className="settings-hint">
               主题只改变方界的配色，不会影响游戏画面。选择后会立即写入本地配置；下次启动也会保持。
+            </p>
+          </div>
+        </section>
+
+        <section className="settings-section">
+          <div className="settings-section__heading">
+            <div className="settings-section__icon">
+              <Network size={18} />
+            </div>
+            <div>
+              <h2>网络与镜像</h2>
+              <p>代理、Modrinth 与 CurseForge API 基址</p>
+            </div>
+          </div>
+          <div className="settings-card">
+            <Field label="HTTP(S) 代理" htmlFor="proxy-url" hint="留空直连；例如 http://127.0.0.1:7890">
+              <TextInput id="proxy-url" value={proxyUrl} onChange={(event) => setProxyUrl(event.target.value)} placeholder="http://127.0.0.1:7890" />
+            </Field>
+            <div className="setting-divider" />
+            <Field label="Modrinth API" htmlFor="modrinth-base" hint="可替换为兼容镜像基址">
+              <TextInput id="modrinth-base" value={modrinthBase} onChange={(event) => setModrinthBase(event.target.value)} />
+            </Field>
+            <Field label="CurseForge API" htmlFor="curseforge-base" hint="默认 MCIM 公共镜像">
+              <TextInput id="curseforge-base" value={curseforgeBase} onChange={(event) => setCurseforgeBase(event.target.value)} />
+            </Field>
+            <p className="settings-hint">
+              代理作用于 Node fetch / xmcl 下载器；镜像基址需兼容对应 API。离线模式优先于这些设置。
             </p>
           </div>
         </section>

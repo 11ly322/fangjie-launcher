@@ -47,6 +47,9 @@ export interface Settings {
   minimizeOnLaunch: boolean
   downloadConcurrency: number
   offline: boolean
+  proxyUrl: string
+  modrinthBase: string
+  curseforgeBase: string
 }
 
 export interface InstalledMod {
@@ -404,6 +407,12 @@ export interface PluginRecord {
   error?: string
 }
 
+export interface OptiFineInstallResult {
+  versionId: string
+  profileName: string
+  installerPath: string
+}
+
 export interface CoreModpackReport {
   name: string
   version: string
@@ -493,6 +502,7 @@ export interface LauncherApi {
   exportFlightCsv(instanceId: string): Promise<Result<string | null>>
   exportModList(instanceId: string): Promise<Result<string | null>>
   importModpack(instanceId: string): Promise<Result<{ path: string; report: CoreModpackReport } | null>>
+  installOptiFine(instanceId: string): Promise<Result<OptiFineInstallResult | null>>
   pluginsList(): Promise<Result<PluginRecord[]>>
   openPluginsFolder(): Promise<Result<void>>
   updateCheck(): Promise<Result<CoreUpdateCheck>>

@@ -21,7 +21,12 @@ import { ensureModsDirectory, isJarName, listInstanceMods, saveInstalledMods } f
 import { LOADER_MOD_TAGS, MODDED_LOADERS } from '../shared/constants'
 import { USER_AGENT } from './version'
 
-const API_BASE = 'https://api.modrinth.com/v2'
+const DEFAULT_API_BASE = 'https://api.modrinth.com/v2'
+let apiBase = DEFAULT_API_BASE
+
+export function configureModrinthBase(value?: string): void {
+  apiBase = (value || DEFAULT_API_BASE).replace(/\/+$/, '')
+}
 
 interface ApiSearchHit extends Partial<ModSearchHit> {
   id?: string
@@ -92,7 +97,7 @@ async function modrinthFetch<T>(path: string, signal?: AbortSignal): Promise<T> 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
     try {
-      const response = await fetch(`${API_BASE}${path}`, {
+      const response = await fetch(`${apiBase}${path}`, {
         headers: {
           'User-Agent': USER_AGENT,
           Accept: 'application/json'

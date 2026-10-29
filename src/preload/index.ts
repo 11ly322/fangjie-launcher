@@ -26,6 +26,7 @@ import type {
   MultiplayerDiagnostics,
   ProjectType,
   PluginRecord,
+  OptiFineInstallResult,
   MultiplayerState,
   Result,
   Settings,
@@ -106,6 +107,8 @@ const api: LauncherApi = {
     invoke<string | null>('instances:export-mod-list', instanceId),
   importModpack: (instanceId: string) =>
     invoke<{ path: string; report: CoreModpackReport } | null>('instances:import-modpack', instanceId),
+  installOptiFine: (instanceId: string) =>
+    invoke<OptiFineInstallResult | null>('instances:install-optifine', instanceId),
   pluginsList: () => invoke<PluginRecord[]>('plugins:list'),
   openPluginsFolder: () => invoke<void>('plugins:open-folder'),
   updateCheck: () => invoke<CoreUpdateCheck>('update:check'),

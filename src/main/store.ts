@@ -102,7 +102,10 @@ export class LauncherStore {
         showSnapshots: false,
         minimizeOnLaunch: false,
         downloadConcurrency: 16,
-        offline: false
+        offline: false,
+        proxyUrl: '',
+        modrinthBase: 'https://api.modrinth.com/v2',
+        curseforgeBase: 'https://mod.mcimirror.top/curseforge/v1'
       },
       account: createDefaultAccount(),
       instances: []
@@ -141,6 +144,9 @@ export class LauncherStore {
           memoryMb: clampMemory(Number(settings.memoryMb)),
           theme: normalizeTheme(settings.theme),
           offline: settings.offline === true,
+          proxyUrl: typeof settings.proxyUrl === 'string' ? settings.proxyUrl : '',
+          modrinthBase: typeof settings.modrinthBase === 'string' ? settings.modrinthBase : 'https://api.modrinth.com/v2',
+          curseforgeBase: typeof settings.curseforgeBase === 'string' ? settings.curseforgeBase : 'https://mod.mcimirror.top/curseforge/v1',
           downloadConcurrency: Math.min(64, Math.max(4, Number(settings.downloadConcurrency) || 16))
         },
         account: {

@@ -6,6 +6,9 @@ import { TaskManager } from './tasks'
 import { registerIpcHandlers } from './ipc'
 import { RustCoreClient } from './rustCore'
 import { setOffline } from './networkPolicy'
+import { configureNetwork } from './downloadAgent'
+import { configureModrinthBase } from './modrinth'
+import { configureCurseForgeBase } from './curseforge'
 import { multiplayerManager } from './multiplayer'
 import { installDownloadConcurrencyLimit } from './xmclPatch'
 
@@ -137,6 +140,13 @@ app.whenReady().then(() => {
 
   store = new LauncherStore()
   setOffline(store.settings.offline)
+  try {
+    configureNetwork(store.settings.proxyUrl)
+  } catch {
+    configureNetwork('')
+  }
+  configureModrinthBase(store.settings.modrinthBase)
+  configureCurseForgeBase(store.settings.curseforgeBase)
   tasks = new TaskManager()
   rustCore = new RustCoreClient()
   registerIpcHandlers({ store, tasks, rustCore, getMainWindow })

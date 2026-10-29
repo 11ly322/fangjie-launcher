@@ -36,9 +36,13 @@ import {
 import { normalizeTheme, type LauncherStore } from './store'
 import { RustCoreClient, toRustInstance } from './rustCore'
 import { assertOnline, isOffline, setOffline } from './networkPolicy'
+import { configureNetwork } from './downloadAgent'
+import { configureModrinthBase } from './modrinth'
+import { configureCurseForgeBase } from './curseforge'
 import { applyUpdate, checkForUpdates, downloadUpdate } from './updateManager'
 import { installAsset } from './assets'
 import { importCurseForgeZip } from './modpackImport'
+import { installOptiFine } from './optifine'
 import { listPlugins, openPluginsFolder } from './plugins'
 import type { TaskManager } from './tasks'
 import { COMMUNITY_RELAYS, measureRelayLatency, multiplayerManager } from './multiplayer'
@@ -228,7 +232,13 @@ export function registerIpcHandlers(context: IpcContext): void {
     if (typeof patch.minimizeOnLaunch === 'boolean') safePatch.minimizeOnLaunch = patch.minimizeOnLaunch
     if (typeof patch.downloadConcurrency === 'number') safePatch.downloadConcurrency = patch.downloadConcurrency
     if (typeof patch.offline === 'boolean') safePatch.offline = patch.offline
+    if (typeof patch.proxyUrl === 'string') safePatch.proxyUrl = patch.proxyUrl.trim()
+    if (typeof patch.modrinthBase === 'string') safePatch.modrinthBase = patch.modrinthBase.trim()
+    if (typeof patch.curseforgeBase === 'string') safePatch.curseforgeBase = patch.curseforgeBase.trim()
     if (patch.theme !== undefined) safePatch.theme = normalizeTheme(patch.theme)
+    configureNetwork(safePatch.proxyUrl ?? store.settings.proxyUrl)
+    configureModrinthBase(safePatch.modrinthBase ?? store.settings.modrinthBase)
+    configureCurseForgeBase(safePatch.curseforgeBase ?? store.settings.curseforgeBase)
     const settings = store.setSettings(safePatch)
     setOffline(settings.offline)
     notifyChange('settings')
@@ -467,6 +477,29 @@ export function registerIpcHandlers(context: IpcContext): void {
     if (installed.length) store.updateInstance(newId, (current) => ({ ...current, mods: installed }))
     notifyChange('instance-copied')
     return { ...record, mods: installed }
+  })
+
+  handle('instances:install-optifine', async (instanceId: string) => {
+    const instance = store.getInstance(instanceId)
+    if (!instance) throw new Error('找不到这个实例')
+    if (runningInstanceIds().includes(instanceId)) throw new Error('请先结束正在运行的游戏')
+    const window = getMainWindow()
+    const options = {
+      title: '选择官方 OptiFine 安装器',
+      filters: [{ name: 'OptiFine 安装器', extensions: ['jar'] }],
+      properties: ['openFile' as const]
+    }
+    const picked = window
+      ? await dialog.showOpenDialog(window, options)
+      : await dialog.showOpenDialog(options)
+    if (picked.canceled || !picked.filePaths[0]) return null
+    const result = await installOptiFine({
+      store,
+      instance,
+      installerPath: picked.filePaths[0]
+    })
+    notifyChange('instance-updated')
+    return result
   })
 
   handle('instances:import-modpack', async (instanceId: string) => {

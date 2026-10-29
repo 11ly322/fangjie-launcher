@@ -238,7 +238,13 @@ pub trait DownloadSource {
 - 目标目录：`resourcepacks/`、`shaderpacks/`；安装后不自动启用，由用户在游戏内选择。
 - 所有下载经 `SourceRegistry`。
 
-### 3.4 OptiFine 自动安装
+### 3.4 OptiFine 本地安装（P1 基础实现）
+
+已接入本地引导安装：选择官方 OptiFine installer jar → 用本机 Java 启动官方安装器 → 通过临时 `%APPDATA%\.minecraft` junction 指向启动器共享版本目录 → 用户在安装器点击 Install → 检测生成的 OptiFine profile 并绑定当前实例。
+
+边界：官方 installer 没有稳定无人值守 CLI，因此这不是“静默一键安装”；不随启动器分发 OptiFine，也不自动下载 installer。junction 清理已做防递归保护。
+
+#### 原始自动安装设计边界
 
 - OptiFine 不允许随启动器分发；采用“用户选择官方下载的 installer jar”或官方页面跳转后的本地文件。
 - 流程：校验 jar 是 OptiFine installer → 选择匹配 MC 版本 → 执行 `java -jar` 到临时目录 → 把生成的版本放入共享 versions → 创建实例。
@@ -282,6 +288,12 @@ pub trait DownloadSource {
 5. OptiFine 本地 installer 流程。
 
 ---
+
+### 3.5 网络设置现状
+
+设置页已加入 HTTP(S) 代理、Modrinth API 基址、CurseForge API 基址；启动和保存时配置 undici 全局 dispatcher 与 xmcl 下载 dispatcher，并持久化。
+
+仍未完成：Mojang 元数据、Java 下载、Microsoft OAuth 等全部路径尚未统一迁移；当前是“可配置代理 + 可替换 API 基址”的基础层，不是完整的单一 Source 架构。
 
 ## 4. P2：联机体验最后一公里
 
@@ -395,10 +407,11 @@ NAT 验证矩阵：[nat-test-matrix.md](nat-test-matrix.md)
 | 批量启停按实例隔离 | **P0 已满足** | E2E：副本禁用 sodium，源实例仍启用 |
 | 复制实例源零污染 | **P0 已满足** | Rust 深拷贝 + 源只读；实例文件状态验证 |
 | Flight Recorder CSV/折线图 | **P0 已满足（读取/导出）** | 两张 SVG 图、CSV 导出 255 bytes；无内置采样器 |
+| OptiFine 本地安装 | **P1 基础实现** | 官方 installer 引导 + junction + profile 检测；非静默无人值守 |
 | 自动更新器检测/下载/校验/替换 | **P1 基础实现** | 检查/下载/SHA256/NSIS spawn 已接入；真实安装包替换与签名未实测 |
 | .mrpack/.zip 导入、仅模组导出 | **P1 基础实现** | 模组列表导出、`.mrpack` 与 CurseForge `.zip` 导入已接入；zip 文件下载未用真实包复测 |
 | 资源包/光影不跳浏览器 | **P1 基础实现** | Modrinth 安装实测；CurseForge 搜索实测；统一源/镜像未迁移 |
-| 下载源可替换、默认可用 | **P0 底座 / P1 扩展** | Rust `DownloadSource` + Modrinth；Electron 尚未全部迁移 |
+| 下载源可替换、默认可用 | **P1 基础实现** | 代理 + Modrinth/CurseForge 基址可配置；并非所有网络路径已统一 |
 | 房间码主界面入口 | **P2 基础实现** | 首页快捷房间卡：创建/粘贴自动分段/加入；未自动启动游戏 |
 | 联机状态面板直连/中继/延迟 | **P2 基础实现** | 状态字段/摘要已接入；延迟为公共中继 TCP 测量，P2P 直连状态仍由连接器上报 |
 | 插件版本/权限 | **P3 基础实现** | 本地 `plugins/*/manifest.json` 经 Rust 校验后列出；只加载清单，不执行第三方代码 |

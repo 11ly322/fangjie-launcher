@@ -136,12 +136,15 @@ npm run package:installer
 - 仅面向 Windows，尚未适配 macOS/Linux。
 - 正版登录的“完成授权并在线启动”未使用真实 Microsoft 账号做端到端测试；请使用自己的账号验证。未成年人 Xbox 家庭组账号需要成年人授权。
 - 本地皮肤只在自己客户端显示，其他玩家看不到离线皮肤；仅支持经典（wide）模型。实际皮肤显示效果取决于 CustomSkinLoader 与游戏版本。
-- 暂不支持整合包（Modpack）、资源包/光影下载、OptiFine 自动安装、皮肤 3D 预览与 CurseForge 账户 API Key 私有项目。
+- 整合包支持 `.mrpack` 与 CurseForge `.zip` 基础导入，但复杂整合包/真实文件下载仍需更多回归；CurseForge 私有项目 API Key 未实现。
+- 资源包/光影已支持 Modrinth 与 CurseForge 搜索；OptiFine 需要用户提供官方 installer，采用引导安装，不是静默无人值守。
+- 皮肤 3D 预览未实现。
+- 网络设置已支持代理和 Modrinth/CurseForge 基址，但 Mojang/Java/Microsoft 等全部路径尚未迁移到统一下载源。
 - CurseForge 依赖 MCIM 公开镜像，若镜像不可用可切换回 Modrinth。
 - Forge / NeoForge 的安装需要联网下载较大的安装器与前置；首次安装会比 Fabric 慢。
 - 房间联机的 P2P 数据面在真实跨机器 NAT 环境尚未完整验证；本版验证了公共中继下的 Host/Guest 控制面与端口映射。
 - 连接器是 GPL-3.0-or-later 独立组件；启动器主体仍为 MIT。
-- 0.0.1-beta 提供便携版与安装版，但尚未提供自动更新器；安装包未签名。
+- 自动更新器已有检查/下载/SHA256/NSIS 入口，但未用真实签名安装包验证；当前发布包仍未签名。
 
 ## 开发与测试
 

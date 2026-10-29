@@ -22,7 +22,12 @@ import { ensureModsDirectory, isJarName, listInstanceMods, saveInstalledMods } f
 import { LOADER_MOD_TAGS } from '../shared/constants'
 import { USER_AGENT } from './version'
 
-const API_BASE = 'https://mod.mcimirror.top/curseforge/v1'
+const DEFAULT_API_BASE = 'https://mod.mcimirror.top/curseforge/v1'
+let apiBase = DEFAULT_API_BASE
+
+export function configureCurseForgeBase(value?: string): void {
+  apiBase = (value || DEFAULT_API_BASE).replace(/\/+$/, '')
+}
 
 const LOADER_IDS: Record<string, number> = {
   forge: 1,
@@ -112,7 +117,7 @@ async function cfFetch<T>(path: string, signal?: AbortSignal): Promise<T> {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
     try {
-      const response = await fetch(`${API_BASE}${path}`, {
+      const response = await fetch(`${apiBase}${path}`, {
         headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
         signal: combined
       })

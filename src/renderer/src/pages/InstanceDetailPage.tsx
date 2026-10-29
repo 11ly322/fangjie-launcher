@@ -80,6 +80,7 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
   const [copying, setCopying] = useState(false)
   const [templateSaving, setTemplateSaving] = useState(false)
   const [importingModpack, setImportingModpack] = useState(false)
+  const [installingOptiFine, setInstallingOptiFine] = useState(false)
 
   const isRunning = running.has(instance.id)
   const isLaunching = launching.has(instance.id)
@@ -196,6 +197,26 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
       return
     }
     if (result.value) toast('模组列表已导出', 'success')
+  }
+
+  const installOptiFine = async (): Promise<void> => {
+    const approved = await confirm({
+      title: '安装 OptiFine',
+      description: '将打开官方 OptiFine 安装器。请在安装器窗口中点击 Install；完成后启动器会自动把检测到的 OptiFine 版本绑定到当前实例。需要本机已有 Java 和官方安装器 jar。',
+      confirmLabel: '选择安装器',
+      cancelLabel: '取消'
+    })
+    if (!approved) return
+    setInstallingOptiFine(true)
+    const result = await window.fangjie.installOptiFine(instance.id)
+    setInstallingOptiFine(false)
+    if (!result.ok) {
+      toast(result.error, 'error')
+      return
+    }
+    if (!result.value) return
+    toast('OptiFine 已安装并绑定：' + result.value.versionId, 'success')
+    await refresh()
   }
 
   const importModpack = async (): Promise<void> => {
@@ -807,7 +828,15 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
                   loading={importingModpack}
                   onClick={() => void importModpack()}
                 >
-                  导入 .mrpack
+                  导入 .mrpack / .zip
+                </Button>
+                <Button
+                  variant="secondary"
+                  icon={<Cpu size={16} />}
+                  loading={installingOptiFine}
+                  onClick={() => void installOptiFine()}
+                >
+                  安装 OptiFine
                 </Button>
               </div>
             </section>

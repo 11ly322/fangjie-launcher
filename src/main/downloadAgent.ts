@@ -1,5 +1,5 @@
 import { setDefaultResultOrder } from 'node:dns'
-import { Agent, setGlobalDispatcher } from 'undici'
+import { Agent, ProxyAgent, setGlobalDispatcher, type Dispatcher } from 'undici'
 import { USER_AGENT } from './version'
 
 // Prefer IPv4 for both native fetch and the xmcl transfer agent. Some CDNs
@@ -14,14 +14,18 @@ setDefaultResultOrder('ipv4first')
  * lets a single stalled CDN request freeze an entire install. Keeping one
  * pooled dispatcher with explicit timeouts makes downloads retry instead.
  */
-const dispatcher = new Agent({
-  connections: 24,
-  connect: { timeout: 20_000, family: 4 },
-  headersTimeout: 30_000,
-  bodyTimeout: 60_000,
-  keepAliveTimeout: 12_000,
-  keepAliveMaxTimeout: 30_000
-})
+function createAgent(): Dispatcher {
+  return new Agent({
+    connections: 24,
+    connect: { timeout: 20_000, family: 4 },
+    headersTimeout: 30_000,
+    bodyTimeout: 60_000,
+    keepAliveTimeout: 12_000,
+    keepAliveMaxTimeout: 30_000
+  })
+}
+
+const dispatcher = createAgent()
 
 // Native fetch (used for Modrinth/CurseForge/skin downloads) can otherwise
 // select an IPv6 route that stalls on some regional CDNs.
@@ -35,6 +39,16 @@ setGlobalDispatcher(
     keepAliveMaxTimeout: 30_000
   })
 )
+
+export function configureNetwork(proxyUrl?: string): void {
+  const normalized = (proxyUrl || '').trim()
+  if (normalized && !/^https?:\/\//i.test(normalized)) {
+    throw new Error('代理地址必须以 http:// 或 https:// 开头')
+  }
+  const next = normalized ? new ProxyAgent(normalized) : createAgent()
+  setGlobalDispatcher(next)
+  xmclDownloadAgent.dispatcher = next
+}
 
 export const xmclDownloadAgent = {
   dispatcher,
