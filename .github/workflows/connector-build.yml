@@ -22,8 +22,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: Qomicex-Public/qomicex-connector-rust
-          ref: main
+          ref: c43421925a6711baf4dcef36d234abe31bed2a43
           path: qomicex
+
+      - name: Apply packet-free no-TUN patch
+        shell: pwsh
+        run: |
+          git -C qomicex apply --ignore-whitespace "${{ github.workspace }}\native\qomicex-no-packet.patch"
+          git -C qomicex diff --stat
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -53,7 +59,7 @@ jobs:
       - name: Upload connector binary
         uses: actions/upload-artifact@v4
         with:
-          name: qomicex-connector-cli
+          name: qomicex-connector-cli-nopacket
           path: qomicex/target/release/qomicex-connector-cli.exe
           if-no-files-found: error
           retention-days: 7

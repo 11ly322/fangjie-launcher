@@ -1,0 +1,66 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index 8a0dbd1..ab1363a 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -35,9 +35,7 @@ easytier = { git = "https://github.com/Qomicex-Public/EasyTier4QML.git", rev = "
+     "socks5",
+     "kcp",
+     "quic",
+-    "faketcp",
+     "websocket",
+-    "wireguard",
+     "upnp",
+ ] }
+ easytier-core = { git = "https://github.com/Qomicex-Public/EasyTier4QML.git", rev = "e8a60e6b", package = "easytier-core", default-features = false, features = [
+@@ -48,8 +46,6 @@ easytier-core = { git = "https://github.com/Qomicex-Public/EasyTier4QML.git", re
+     "tcp-hole-punch",
+     "zstd",
+     "proxy-smoltcp-stack",
+-    "proxy-packet",
+-    "vpn-portal",
+ ] }
+-easytier-proto = { git = "https://github.com/Qomicex-Public/EasyTier4QML.git", rev = "e8a60e6b", package = "easytier-proto", default-features = false, features = ["api", "core", "quic", "faketcp", "websocket", "wireguard"] }
++easytier-proto = { git = "https://github.com/Qomicex-Public/EasyTier4QML.git", rev = "e8a60e6b", package = "easytier-proto", default-features = false, features = ["api", "core", "quic", "websocket"] }
+ 
+diff --git a/crates/qomicex-connector/Cargo.toml b/crates/qomicex-connector/Cargo.toml
+index f9c93de..e486fc5 100644
+--- a/crates/qomicex-connector/Cargo.toml
++++ b/crates/qomicex-connector/Cargo.toml
+@@ -27,7 +27,7 @@ easytier-proto.workspace = true
+ # 仅 Windows 启用 easytier TUN 特性（rust-tun → wintun.dll 动态加载）：
+ # 管理员模式下创建真实虚拟网卡；其他平台保持 no-tun/smoltcp 不变。
+ [target.'cfg(windows)'.dependencies]
+-easytier = { workspace = true, features = ["tun"] }
++easytier = { workspace = true }
+ windows-sys = { version = "0.61", features = [
+     "Win32_Foundation",
+     "Win32_Security",
+diff --git a/crates/qomicex-connector/src/center/scaffolding_center.rs b/crates/qomicex-connector/src/center/scaffolding_center.rs
+index bf595d5..abca565 100644
+--- a/crates/qomicex-connector/src/center/scaffolding_center.rs
++++ b/crates/qomicex-connector/src/center/scaffolding_center.rs
+@@ -206,7 +206,8 @@ impl ScaffoldingCenter {
+             network_secret: self.room_code.easy_tier_network_secret().to_string(),
+             hostname: format!("scaffolding-mc-server-{tcp_port}"),
+             // 管理员 → TUN 虚拟网卡（wintun）；非管理员保持默认 no-tun
+-            no_tun: !crate::util::is_elevated(),
++            no_tun: true,
++            use_smoltcp: true,
+             ipv4: Some("10.144.144.1".to_string()),
+             dhcp: false,
+             tcp_whitelist: vec![tcp_port.to_string(), self.minecraft_port.to_string()],
+diff --git a/crates/qomicex-connector/src/guest/scaffolding_guest.rs b/crates/qomicex-connector/src/guest/scaffolding_guest.rs
+index 523674b..d7dd1ae 100644
+--- a/crates/qomicex-connector/src/guest/scaffolding_guest.rs
++++ b/crates/qomicex-connector/src/guest/scaffolding_guest.rs
+@@ -147,8 +147,8 @@ impl ScaffoldingGuest {
+             network_name: code.easy_tier_network_name(),
+             network_secret: code.easy_tier_network_secret().to_string(),
+             hostname: format!("scaffolding-mc-guest-{hostname_suffix}"),
+-            no_tun: !elevated,
+-            use_smoltcp: !elevated,
++            no_tun: true,
++            use_smoltcp: true,
+             dhcp: true,
+             relay_nodes: self.relay_nodes.clone(),
+             bind_ip: crate::util::resolve_bind_ip(),
