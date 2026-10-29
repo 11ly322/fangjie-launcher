@@ -105,6 +105,7 @@ tauri::Builder::default()
         commands::start_flight_recorder,
         commands::record_frame_sample,
         commands::flight_chart,
+        commands::set_offline_mode,
         commands::register_plugin_manifest,
     ])
     .run(tauri::generate_context!())?;
