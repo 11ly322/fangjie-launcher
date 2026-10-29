@@ -188,7 +188,7 @@ update:check
 
 ### 3.2 整合包导入/导出（部分实现）
 
-已实现：将 `.mrpack` 应用到现有实例（files + overrides）；已用本地 HTTP 资产测试成功。CurseForge `.zip` 导入仍未实现，仅保留格式检测接口。
+已实现：将 `.mrpack` 应用到现有实例（files + overrides）；已用本地 HTTP 资产测试成功。CurseForge `.zip` 导入基础路径已接入：读取 `manifest.json`、通过 CurseForge API 解析 fileID、下载到 mods、复制 overrides；已用无文件 zip 验证 overrides。真实 CurseForge 文件下载仍建议用公开小包复测。
 
 
 已落接口：`modpack_importer.rs`。
@@ -392,7 +392,7 @@ pub trait AccountProviderPlugin { fn manifest(&self) -> &PluginManifest; ... }
 | 复制实例源零污染 | **P0 已满足** | Rust 深拷贝 + 源只读；实例文件状态验证 |
 | Flight Recorder CSV/折线图 | **P0 已满足（读取/导出）** | 两张 SVG 图、CSV 导出 255 bytes；无内置采样器 |
 | 自动更新器检测/下载/校验/替换 | **P1 基础实现** | 检查/下载/SHA256/NSIS spawn 已接入；真实安装包替换与签名未实测 |
-| .mrpack/.zip 导入、仅模组导出 | **部分实现** | 模组列表导出与 `.mrpack` 导入已接入；CurseForge `.zip` 未实现 |
+| .mrpack/.zip 导入、仅模组导出 | **P1 基础实现** | 模组列表导出、`.mrpack` 与 CurseForge `.zip` 导入已接入；zip 文件下载未用真实包复测 |
 | 资源包/光影不跳浏览器 | **P1 基础实现** | Modrinth 安装实测；CurseForge 搜索实测；统一源/镜像未迁移 |
 | 下载源可替换、默认可用 | **P0 底座 / P1 扩展** | Rust `DownloadSource` + Modrinth；Electron 尚未全部迁移 |
 | 房间码主界面入口 | **P2 基础实现** | 首页快捷房间卡：创建/粘贴自动分段/加入；未自动启动游戏 |

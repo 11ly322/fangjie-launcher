@@ -38,6 +38,7 @@ import { RustCoreClient, toRustInstance } from './rustCore'
 import { assertOnline, isOffline, setOffline } from './networkPolicy'
 import { applyUpdate, checkForUpdates, downloadUpdate } from './updateManager'
 import { installAsset } from './assets'
+import { importCurseForgeZip } from './modpackImport'
 import { listPlugins, openPluginsFolder } from './plugins'
 import type { TaskManager } from './tasks'
 import { COMMUNITY_RELAYS, measureRelayLatency, multiplayerManager } from './multiplayer'
@@ -474,17 +475,20 @@ export function registerIpcHandlers(context: IpcContext): void {
     const window = getMainWindow()
     const options = {
       title: '选择 Modrinth 整合包',
-      filters: [{ name: 'Modrinth Modpack', extensions: ['mrpack'] }],
+      filters: [{ name: 'Minecraft 整合包', extensions: ['mrpack', 'zip'] }],
       properties: ['openFile' as const]
     }
     const picked = window
       ? await dialog.showOpenDialog(window, options)
       : await dialog.showOpenDialog(options)
     if (picked.canceled || !picked.filePaths[0]) return null
-    const report = await rustCore.request('import_modpack', {
-      instance: toRustInstance(store, instance),
-      archive_path: picked.filePaths[0]
-    })
+    const archivePath = picked.filePaths[0]
+    const report = archivePath.toLowerCase().endsWith('.zip')
+      ? await importCurseForgeZip({ store, instance, archivePath })
+      : await rustCore.request('import_modpack', {
+          instance: toRustInstance(store, instance),
+          archive_path: archivePath
+        })
     notifyChange('modpack-imported')
     return { path: picked.filePaths[0], report }
   })

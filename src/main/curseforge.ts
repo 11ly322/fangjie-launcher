@@ -316,6 +316,22 @@ async function getCfMod(modId: number): Promise<CfMod> {
   return response.data
 }
 
+export async function getCurseForgeFile(
+  projectId: number,
+  fileId: number
+): Promise<{ fileName: string; url: string; sha1?: string }> {
+  const response = await cfFetch<{ data: CfFile }>('/mods/' + projectId + '/files/' + fileId)
+  const file = response.data
+  if (!file?.downloadUrl) {
+    throw new Error('CurseForge 文件没有公开下载地址')
+  }
+  return {
+    fileName: file.fileName,
+    url: file.downloadUrl,
+    sha1: file.hashes?.find((hash) => hash.algo === 1)?.value
+  }
+}
+
 export async function getCurseForgeProject(
   idOrSlug: string,
   instance?: Instance
