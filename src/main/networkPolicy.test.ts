@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { assertOnline, isOffline, setOffline } from './networkPolicy'
+import { assertOnline, installFetchGuard, isOffline, setOffline } from './networkPolicy'
 
 describe('offline network policy', () => {
   beforeEach(() => setOffline(false))
@@ -8,6 +8,12 @@ describe('offline network policy', () => {
     setOffline(true)
     expect(isOffline()).toBe(true)
     expect(() => assertOnline('下载模组')).toThrow('离线模式已开启')
+  })
+
+  it('guards native fetch', async () => {
+    installFetchGuard()
+    setOffline(true)
+    await expect(fetch('http://127.0.0.1:1/never')).rejects.toThrow('离线模式已开启')
   })
 
   it('allows network actions after disabling offline mode', () => {

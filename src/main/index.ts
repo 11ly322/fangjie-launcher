@@ -5,7 +5,7 @@ import { LauncherStore } from './store'
 import { TaskManager } from './tasks'
 import { registerIpcHandlers } from './ipc'
 import { RustCoreClient } from './rustCore'
-import { setOffline } from './networkPolicy'
+import { installFetchGuard, setOffline } from './networkPolicy'
 import { configureNetwork } from './downloadAgent'
 import { configureModrinthBase } from './modrinth'
 import { configureCurseForgeBase } from './curseforge'
@@ -139,6 +139,7 @@ app.whenReady().then(() => {
   installDownloadConcurrencyLimit(20)
 
   store = new LauncherStore()
+  installFetchGuard()
   setOffline(store.settings.offline)
   try {
     configureNetwork(store.settings.proxyUrl)
