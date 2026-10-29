@@ -33,7 +33,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run",
     "package": "npm run build && node scripts/package-portable.cjs",
-    "package:installer": "npm run build && electron-builder --win --x64"
+    "package:installer": "npm run package && node scripts/build-installer.cjs"
   },
   "dependencies": {
     "@xmcl/core": "2.13.0",

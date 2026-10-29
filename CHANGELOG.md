@@ -14,6 +14,7 @@
 - Microsoft 正版账号 OAuth 登录，令牌使用 Electron `safeStorage` 加密。
 - 64×64 本地离线皮肤：自动安装 CustomSkinLoader 并写入 LocalSkin 配置。
 - 下载中心、任务进度、启动日志、模组启停与移除、Java 自动下载与手动路径。
+- Windows NSIS 安装包：按用户安装、桌面/开始菜单快捷方式、卸载入口。
 - 无边框窗口、深色界面与自定义应用图标。
 
 ### 验证

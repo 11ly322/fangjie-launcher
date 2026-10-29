@@ -12,11 +12,13 @@
 
 ## 下载
 
-从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.1-alpha) 下载 `Fangjie-Portable-0.0.1-alpha.zip`，解压后双击 `Fangjie.exe`。
+从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.1-alpha) 选择：
 
-- 系统要求：Windows 10/11 x64
-- 免安装；游戏数据默认写入 Electron 用户数据目录
-- 首次创建实例会自动下载对应 Java 运行时
+- `Fangjie-Launcher-0.0.1-alpha-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建桌面与开始菜单快捷方式，并注册卸载项。
+- `Fangjie-Portable-0.0.1-alpha.zip`：免安装便携版，解压后双击 `Fangjie.exe`。
+- `SHA256SUMS.txt`：两个发布包的 SHA256 校验和。
+
+系统要求：Windows 10/11 x64。首次创建实例会自动下载对应 Java 运行时；安装版默认安装到 `%LOCALAPPDATA%\Programs\Fangjie Launcher`，卸载不会删除游戏存档和用户数据。
 
 ## 界面
 
@@ -64,6 +66,8 @@ npm run package
 ```powershell
 npm run package:installer
 ```
+
+安装包输出到 `release/Fangjie-Launcher-0.0.1-alpha-Setup.exe`。构建脚本会查找 electron-builder 缓存或系统安装的 NSIS 3.x；也可用 `MAKENSIS` 环境变量指定 `makensis.exe`。安装包未做代码签名，Windows SmartScreen 可能提示未知发布者。
 
 > 如果 Electron 二进制下载失败，可配置镜像后重新执行安装：
 >
@@ -114,7 +118,7 @@ npm run package:installer
 - 暂不支持整合包（Modpack）、资源包/光影下载、OptiFine 自动安装、皮肤 3D 预览与 CurseForge 账户 API Key 私有项目。
 - CurseForge 依赖 MCIM 公开镜像，若镜像不可用可切换回 Modrinth。
 - Forge / NeoForge 的安装需要联网下载较大的安装器与前置；首次安装会比 Fabric 慢。
-- 0.0.1-alpha 仅提供免安装便携版，尚未提供自动更新器。
+- 0.0.1-alpha 提供便携版与安装版，但尚未提供自动更新器；安装包未签名。
 
 ## 开发与测试
 
@@ -138,6 +142,6 @@ node scripts/loader-launch-check.cjs # 多加载器启动测试
 - 参与贡献：[CONTRIBUTING.md](CONTRIBUTING.md)
 - 安全问题：[SECURITY.md](SECURITY.md)
 - 更新记录：[CHANGELOG.md](CHANGELOG.md)
-- CI：推送 `v*` 标签会构建 Windows 便携包并上传为 Actions artifact，维护者从 artifact 发布 GitHub Release
+- CI：推送 `v*` 标签会构建 Windows 便携包与 NSIS 安装包，并上传为 Actions artifact；维护者从 artifact 发布 GitHub Release
 
 本项目为非官方启动器，与 Mojang Studios、Microsoft、Modrinth、CurseForge 无隶属关系。Minecraft 相关版权归其各自所有者所有。

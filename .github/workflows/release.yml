@@ -1,4 +1,4 @@
-name: Build release artifact
+name: Build release artifacts
 
 on:
   push:
@@ -32,18 +32,27 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Install NSIS
+        shell: pwsh
+        run: choco install nsis --no-progress -y
+
       - name: Build portable app
         run: npm run package
 
-      - name: Create release archive
+      - name: Build installer
+        run: node scripts/build-installer.cjs
+
+      - name: Create release archives and checksums
         shell: pwsh
         run: |
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-          $archive = "release/Fangjie-Portable-$version.zip"
-          Compress-Archive -Path "release/Fangjie-win32-x64/*" -DestinationPath $archive -CompressionLevel Optimal
-          Get-FileHash $archive -Algorithm SHA256 |
-            ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" } |
-            Set-Content "release/SHA256SUMS.txt"
+          $portable = "release/Fangjie-Portable-$version.zip"
+          $installer = "release/Fangjie-Launcher-$version-Setup.exe"
+          Compress-Archive -Path "release/Fangjie-win32-x64/*" -DestinationPath $portable -CompressionLevel Optimal
+          @($portable, $installer) | ForEach-Object {
+            Get-FileHash $_ -Algorithm SHA256 |
+              ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" }
+          } | Set-Content "release/SHA256SUMS.txt"
 
       - name: Upload portable artifact
         uses: actions/upload-artifact@v4
@@ -51,6 +60,7 @@ jobs:
           name: Fangjie-Portable-${{ github.ref_name }}
           path: |
             release/Fangjie-Portable-*.zip
+            release/Fangjie-Launcher-*-Setup.exe
             release/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30

@@ -11,6 +11,7 @@
 | [undici](https://undici.nodejs.org/) | HTTP 下载 | MIT |
 | [Lucide](https://lucide.dev/) | 图标 | ISC |
 | [CustomSkinLoader](https://github.com/xfl03/CustomSkinLoader) | 本地皮肤加载 | 不随本项目分发；由用户应用皮肤时下载，遵循其自身许可证 |
+| [NSIS](https://nsis.sourceforge.io/) | Windows 安装包 | zlib/libpng |
 
 Minecraft 游戏文件、资源与商标不随本仓库分发。游戏资源通过 Mojang 官方源或镜像在用户本机下载，其版权归 Mojang Studios / Microsoft 所有。
 
