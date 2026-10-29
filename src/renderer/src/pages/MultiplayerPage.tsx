@@ -139,7 +139,7 @@ export function MultiplayerPage(): React.JSX.Element {
       <div className="multiplayer-layout">
         <section className="panel multiplayer-panel">
           {state.active ? (
-            <div className="multiplayer-session">
+            <div className="multiplayer-session" aria-live="polite">
               <div className="multiplayer-session__head">
                 <div className={classNames('multiplayer-role-icon', `is-${activeRole}`)}>
                   {activeRole === 'host' ? <Radio size={22} /> : <LogIn size={22} />}
@@ -238,6 +238,7 @@ export function MultiplayerPage(): React.JSX.Element {
                 <button
                   type="button"
                   className={classNames('segmented__item', tab === 'host' && 'is-active')}
+                  aria-pressed={tab === 'host'}
                   onClick={() => setTab('host')}
                 >
                   <Radio size={16} /> 创建房间
@@ -245,6 +246,7 @@ export function MultiplayerPage(): React.JSX.Element {
                 <button
                   type="button"
                   className={classNames('segmented__item', tab === 'guest' && 'is-active')}
+                  aria-pressed={tab === 'guest'}
                   onClick={() => setTab('guest')}
                 >
                   <LogIn size={16} /> 加入房间
@@ -276,6 +278,7 @@ export function MultiplayerPage(): React.JSX.Element {
                     <TextInput
                       value={playerName}
                       maxLength={16}
+                      aria-label="玩家名"
                       onChange={(event) => setPlayerName(event.target.value)}
                       placeholder="Steve"
                     />
@@ -284,6 +287,7 @@ export function MultiplayerPage(): React.JSX.Element {
                     <TextInput
                       value={mcPort}
                       inputMode="numeric"
+                      aria-label="Minecraft 局域网端口"
                       onChange={(event) => setMcPort(event.target.value.replace(/\D/g, ''))}
                       placeholder="25565"
                     />
@@ -320,6 +324,7 @@ export function MultiplayerPage(): React.JSX.Element {
                     <TextInput
                       className="mono"
                       value={roomCode}
+                      aria-label="房间码"
                       onChange={(event) => setRoomCode(formatRoomCode(event.target.value))}
                       placeholder="U/XXXX-XXXX-XXXX-XXXX"
                       spellCheck={false}
@@ -330,6 +335,7 @@ export function MultiplayerPage(): React.JSX.Element {
                     <TextInput
                       value={playerName}
                       maxLength={16}
+                      aria-label="玩家名"
                       onChange={(event) => setPlayerName(event.target.value)}
                       placeholder="Alex"
                     />
