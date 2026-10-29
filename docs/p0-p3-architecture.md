@@ -129,6 +129,8 @@ src/renderer/src/pages/InstanceDetailPage.tsx
   - 模板 JSON 包含 `jvm_args:["-XX:+UseG1GC","-Xms1G"]`、`width:1920`、`height:1080`。
   - Flight Recorder 两张图、CSV 导出文件 255 bytes。
   - 无 renderer 控制台错误。
+- P1 更新器 apply E2E：本地 fake feed + 假 installer `.exe`，下载/SHA256/`/S` spawn/app quit 全链路通过；不是真实 NSIS 替换。
+- OptiFine 引导 E2E：假 Java 在 junction 目标写入 1.20.1-OptiFine_Test profile，启动器回写实例 versionId；不是真实 OptiFine installer。
 - P1 基础：fake feed 检测 0.0.2、下载 22-byte 资产、Rust SHA256 校验通过；模组列表导出实测；资源包安装实测。
 - 模板中的 JVM 参数、宽高已接入 Electron 实例设置，并传入启动器 `launch()` 的 resolution/extraJVMArgs。
 
@@ -407,8 +409,8 @@ NAT 验证矩阵：[nat-test-matrix.md](nat-test-matrix.md)
 | 批量启停按实例隔离 | **P0 已满足** | E2E：副本禁用 sodium，源实例仍启用 |
 | 复制实例源零污染 | **P0 已满足** | Rust 深拷贝 + 源只读；实例文件状态验证 |
 | Flight Recorder CSV/折线图 | **P0 已满足（读取/导出）** | 两张 SVG 图、CSV 导出 255 bytes；无内置采样器 |
-| OptiFine 本地安装 | **P1 基础实现** | 文件名与 profile 发现均有单测；官方 installer 引导 + junction；真实 installer 未回归 |
-| 自动更新器检测/下载/校验/替换 | **P1 基础实现** | 检查/下载/SHA256/NSIS spawn 已接入；真实安装包替换与签名未实测 |
+| OptiFine 本地安装 | **P1 基础实现** | 文件名/profile 单测；假 Java E2E 验证 junction+profile 回写；真实 installer 未回归 |
+| 自动更新器检测/下载/校验/替换 | **P1 基础实现** | fake feed+假 installer E2E 验证 `/S` spawn/app quit；真实 NSIS 替换与签名未实测 |
 | .mrpack/.zip 导入、仅模组导出 | **P1 基础实现** | 模组列表导出、`.mrpack` 与 CurseForge `.zip` 导入已接入；zip 文件下载未用真实包复测 |
 | 资源包/光影不跳浏览器 | **P1 基础实现** | Modrinth 安装实测；CurseForge 搜索实测；统一源/镜像未迁移 |
 | 下载源可替换、默认可用 | **P1 基础实现** | 代理 + API 基址可配置；native fetch 与流式下载已统一，xmcl 使用同一 dispatcher；仍非完整多源路由 |
