@@ -4,6 +4,7 @@ import { createConnection } from 'node:net'
 import type { Readable } from 'node:stream'
 import { existsSync } from 'node:fs'
 import { createInterface } from 'node:readline'
+import { parseConnectorLine } from './multiplayerParser'
 import { join } from 'node:path'
 import type {
   MultiplayerState,
@@ -234,55 +235,34 @@ class MultiplayerManager {
   }
 
   private handleLine(rawLine: string): void {
-    const line = rawLine.replace(/\u001b\[[0-9;]*m/g, '').trim()
-    if (!line) return
-
-    const room = line.match(/房间码[：:]\s*(U\/[A-HJ-NP-Z0-9-]+)/i)
-    if (room) {
+    const event = parseConnectorLine(rawLine)
+    if (!event) return
+    if (event.kind === 'room') {
       this.clearStartTimer()
       this.setState({
         ...this.state,
         phase: 'ready',
-        roomCode: normalizeRoomCode(room[1]),
+        roomCode: event.roomCode,
         error: undefined
       })
       return
     }
-
-    const direct = line.match(/直连模式[，,]\s*MC\s*地址[：:]\s*([^\s]+)/i)
-    if (direct) {
+    if (event.kind === 'address') {
       this.clearStartTimer()
       this.setState({
         ...this.state,
         phase: 'ready',
-        address: direct[1],
-        path: 'direct',
+        address: event.address,
+        path: event.path,
         error: undefined
       })
       return
     }
-
-    const address = line.match(/MC\s*服务器地址[：:]\s*([^\s]+)/i)
-    if (address) {
-      this.clearStartTimer()
-      this.setState({
-        ...this.state,
-        phase: 'ready',
-        address: address[1],
-        path: 'relay',
-        error: undefined
-      })
+    if (event.kind === 'players') {
+      this.setState({ ...this.state, players: event.players })
       return
     }
-
-    const players = line.match(/玩家数[：:]\s*(\d+)/)
-    if (players) {
-      this.setState({ ...this.state, players: Number(players[1]) })
-      return
-    }
-
-    const error = line.match(/^错误[：:]\s*(.+)$/)
-    if (error) this.fail(error[1].trim())
+    this.fail(event.message)
   }
 
   private fail(message: string): void {
