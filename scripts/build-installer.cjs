@@ -50,7 +50,13 @@ console.log(`Output: ${output}`)
 
 const result = spawnSync(
   makensis,
-  ['/V2', `/DPROJECT_ROOT=${root}`, path.join(root, 'scripts', 'installer.nsi')],
+  [
+    '/V2',
+    `/DPROJECT_ROOT=${root}`,
+    `/DAPP_VERSION=${packageJson.version}`,
+    '/DAPP_VERSION_NUMERIC=0.0.1.0',
+    path.join(root, 'scripts', 'installer.nsi')
+  ],
   { cwd: root, stdio: 'inherit', windowsHide: false }
 )
 

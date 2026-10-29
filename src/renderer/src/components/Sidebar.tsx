@@ -5,7 +5,8 @@ import {
   Home,
   Puzzle,
   Settings,
-  Sparkles
+  Sparkles,
+  Users
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { Account, JavaStatus, TaskView } from '../../../shared/types'
@@ -23,6 +24,7 @@ const NAV_ITEMS: Array<{
   { page: 'home', label: '首页', icon: <Home size={19} /> },
   { page: 'instances', label: '游戏实例', icon: <Boxes size={19} /> },
   { page: 'mods', label: '模组工坊', icon: <Puzzle size={19} /> },
+  { page: 'multiplayer', label: '房间联机', icon: <Users size={19} /> },
   { page: 'downloads', label: '下载中心', icon: <Download size={19} /> }
 ]
 

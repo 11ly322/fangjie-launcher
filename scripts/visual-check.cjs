@@ -111,6 +111,10 @@ async function main() {
     await page.waitForSelector('.mods-filter-panel')
     await shot('13-mods-with-instance')
 
+    await nav.getByRole('button', { name: '房间联机', exact: true }).click()
+    await page.waitForSelector('.multiplayer-page')
+    await shot('14-multiplayer')
+
     fs.writeFileSync(
       path.join(artifacts, 'ui-report.json'),
       JSON.stringify({ consoleErrors, pageErrors, failedRequests }, null, 2)

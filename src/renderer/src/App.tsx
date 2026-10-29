@@ -28,6 +28,7 @@ import { HomePage } from './pages/HomePage'
 import { InstancesPage } from './pages/InstancesPage'
 import { InstanceDetailPage } from './pages/InstanceDetailPage'
 import { ModsPage } from './pages/ModsPage'
+import { MultiplayerPage } from './pages/MultiplayerPage'
 import { DownloadsPage } from './pages/DownloadsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { CreateInstanceModal } from './modals/CreateInstanceModal'
@@ -462,6 +463,7 @@ export default function App(): React.JSX.Element {
               <InstanceDetailPage instance={activeInstance} />
             ) : null}
             {page === 'mods' ? <ModsPage /> : null}
+            {page === 'multiplayer' ? <MultiplayerPage /> : null}
             {page === 'downloads' ? <DownloadsPage /> : null}
             {page === 'settings' ? <SettingsPage /> : null}
           </main>

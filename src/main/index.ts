@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path'
 import { LauncherStore } from './store'
 import { TaskManager } from './tasks'
 import { registerIpcHandlers } from './ipc'
+import { multiplayerManager } from './multiplayer'
 import { installDownloadConcurrencyLimit } from './xmclPatch'
 
 let mainWindow: BrowserWindow | null = null
@@ -155,6 +156,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   log('before-quit event')
+  multiplayerManager.dispose()
   store?.save()
 })
 

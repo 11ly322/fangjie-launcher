@@ -1,7 +1,14 @@
-import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron'
 import type { OpenDialogOptions } from 'electron'
 import { join } from 'node:path'
-import type { CreateInstanceInput, Result, Settings, UpdateInstanceInput } from '../shared/types'
+import type {
+  CreateInstanceInput,
+  Result,
+  Settings,
+  StartGuestInput,
+  StartHostInput,
+  UpdateInstanceInput
+} from '../shared/types'
 import { errorMessage, normalizeJavaPath, scanJavaRuntimes } from './java'
 import {
   cachedLatestVersions,
@@ -25,6 +32,7 @@ import {
 } from './curseforge'
 import type { LauncherStore } from './store'
 import type { TaskManager } from './tasks'
+import { multiplayerManager } from './multiplayer'
 
 interface IpcContext {
   store: LauncherStore
@@ -125,6 +133,17 @@ export function registerIpcHandlers(context: IpcContext): void {
   })
 
   handle('app:snapshot', async () => snapshot())
+
+  handle('app:copy-text', async (text: string) => {
+    clipboard.writeText(text)
+  })
+
+  handle('multiplayer:state', async () => multiplayerManager.getState())
+  handle('multiplayer:host', async (input: StartHostInput) => multiplayerManager.startHost(input))
+  handle('multiplayer:guest', async (input: StartGuestInput) =>
+    multiplayerManager.startGuest(input)
+  )
+  handle('multiplayer:stop', async () => multiplayerManager.stop())
 
   handle('app:window', async (action: 'minimize' | 'maximize' | 'close') => {
     const window = getMainWindow()

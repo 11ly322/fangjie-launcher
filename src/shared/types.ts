@@ -109,6 +109,31 @@ export interface Bootstrap extends AppSnapshot {
   java: JavaStatus
 }
 
+export type MultiplayerRole = 'host' | 'guest'
+export type MultiplayerPhase = 'idle' | 'starting' | 'ready' | 'error'
+
+export interface MultiplayerState {
+  active: boolean
+  role?: MultiplayerRole
+  phase: MultiplayerPhase
+  roomCode?: string
+  address?: string
+  players: number
+  playerName?: string
+  mcPort?: number
+  error?: string
+}
+
+export interface StartHostInput {
+  playerName: string
+  mcPort: number
+}
+
+export interface StartGuestInput {
+  playerName: string
+  roomCode: string
+}
+
 export interface RendererConfig {
   platform: string
   versions: {
@@ -258,8 +283,14 @@ export interface LauncherApi {
   installMod(instanceId: string, projectId: string): Promise<Result<InstallModResult>>
   cancelTask(taskId: string): Promise<Result<void>>
   clearTasks(): Promise<Result<void>>
+  multiplayerState(): Promise<Result<MultiplayerState>>
+  startHost(input: StartHostInput): Promise<Result<MultiplayerState>>
+  startGuest(input: StartGuestInput): Promise<Result<MultiplayerState>>
+  stopMultiplayer(): Promise<Result<MultiplayerState>>
+  copyText(text: string): Promise<Result<void>>
   windowAction(action: WindowAction): Promise<Result<void>>
   onTasks(callback: (tasks: TaskView[]) => void): () => void
+  onMultiplayerState(callback: (state: MultiplayerState) => void): () => void
   onDataChanged(callback: (reason: string) => void): () => void
   onLaunchState(callback: (state: LaunchState) => void): () => void
   onLog(callback: (line: LogLine) => void): () => void

@@ -6,16 +6,16 @@
 
 一个面向 Windows 的 Minecraft 桌面启动器，使用 Electron + React + TypeScript 构建。目标是接近 PCL2 的核心使用体验：游戏实例、加载器安装、模组搜索下载、正版登录与离线皮肤。
 
-> **0.0.1-alpha**：首个开源预览版。主流程已实测，仍可能有兼容性问题；请优先在独立游戏目录中试用，并保留重要存档备份。
+> **0.0.1-beta**：新增房间码联机。主流程与联机控制面已实测，P2P 数据面仍需真实跨机器网络验证；请先备份重要存档。
 
 ![方界启动器](resources/icon.png)
 
 ## 下载
 
-从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.1-alpha) 选择：
+从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.1-beta) 选择：
 
-- `Fangjie-Launcher-0.0.1-alpha-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建桌面与开始菜单快捷方式，并注册卸载项。
-- `Fangjie-Portable-0.0.1-alpha.zip`：免安装便携版，解压后双击 `Fangjie.exe`。
+- `Fangjie-Launcher-0.0.1-beta-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建桌面与开始菜单快捷方式，并注册卸载项。
+- `Fangjie-Portable-0.0.1-beta.zip`：免安装便携版，解压后双击 `Fangjie.exe`。
 - `SHA256SUMS.txt`：两个发布包的 SHA256 校验和。
 
 系统要求：Windows 10/11 x64。首次创建实例会自动下载对应 Java 运行时；安装版默认安装到 `%LOCALAPPDATA%\Programs\Fangjie Launcher`，卸载不会删除游戏存档和用户数据。
@@ -34,6 +34,10 @@
 | --- | --- |
 | ![玩家档案](docs/account.png) | ![Microsoft 登录](docs/account-microsoft.png) |
 
+| 房间联机 |
+| --- |
+| ![房间联机](docs/multiplayer.png) |
+
 ## 当前能力
 
 - **游戏实例**：为每个世界创建独立目录，存档、模组、配置与日志互不干扰。
@@ -41,6 +45,7 @@
 - **模组工坊**：支持 Modrinth 与 CurseForge 两个下载源；按实例加载器与游戏版本过滤；自动安装必需前置。
 - **正版登录**：通过 Microsoft 官方登录窗口完成 Xbox Live 与 Minecraft 服务验证，登录令牌使用 Electron `safeStorage` 加密保存；刷新令牌可维持登录状态。
 - **离线皮肤**：上传 64×64 PNG 皮肤，按实例安装 CustomSkinLoader 并写入本地皮肤配置。仅在自己的客户端显示。
+- **房间联机（实验）**：房主生成 `U/XXXX-XXXX-XXXX-XXXX` 房间码，房客凭码加入并获得可直接粘贴进 Minecraft 的地址。EasyTier 以 Rust 库内嵌；不需要管理员权限、TUN 网卡或第三方 VPN。
 - **实用功能**：实例详情、模组启停/移除、下载中心、资源占用、启动日志、本地 Java 选择、自动 Java 下载。
 
 ## 从源码运行
@@ -67,7 +72,9 @@ npm run package
 npm run package:installer
 ```
 
-安装包输出到 `release/Fangjie-Launcher-0.0.1-alpha-Setup.exe`。构建脚本会查找 electron-builder 缓存或系统安装的 NSIS 3.x；也可用 `MAKENSIS` 环境变量指定 `makensis.exe`。安装包未做代码签名，Windows SmartScreen 可能提示未知发布者。
+安装包输出到 `release/Fangjie-Launcher-0.0.1-beta-Setup.exe`。
+
+联机连接器不提交二进制，需先通过 `.github/workflows/connector-build.yml` 构建到 `resources/bin/qomicex-connector-cli.exe`；发布包中已包含该组件。构建脚本会查找 electron-builder 缓存或系统安装的 NSIS 3.x；也可用 `MAKENSIS` 环境变量指定 `makensis.exe`。安装包未做代码签名，Windows SmartScreen 可能提示未知发布者。
 
 > 如果 Electron 二进制下载失败，可配置镜像后重新执行安装：
 >
@@ -109,6 +116,7 @@ npm run package:installer
 - CurseForge 源搜索与安装 Mouse Tweaks，自动补装 Fabric API；下载文件写入实例 `mods/`。
 - CustomSkinLoader 安装、`CustomSkinLoader.json` 与 `LocalSkin/skins/<玩家名>.png` 写入。
 - Microsoft 登录窗口打开、OAuth 取消后正确返回“已取消 Microsoft 登录”。
+- 房间联机控制面：Host 生成房间码，Guest 通过公共中继加入，SCF 玩家列表显示双方，Guest 获得 `127.0.0.1:<port>` 地址。
 
 ## 已知限制
 
@@ -118,7 +126,9 @@ npm run package:installer
 - 暂不支持整合包（Modpack）、资源包/光影下载、OptiFine 自动安装、皮肤 3D 预览与 CurseForge 账户 API Key 私有项目。
 - CurseForge 依赖 MCIM 公开镜像，若镜像不可用可切换回 Modrinth。
 - Forge / NeoForge 的安装需要联网下载较大的安装器与前置；首次安装会比 Fabric 慢。
-- 0.0.1-alpha 提供便携版与安装版，但尚未提供自动更新器；安装包未签名。
+- 房间联机的 P2P 数据面在真实跨机器 NAT 环境尚未完整验证；本版验证了公共中继下的 Host/Guest 控制面与端口映射。
+- 连接器是 GPL-3.0-or-later 独立组件；启动器主体仍为 MIT。
+- 0.0.1-beta 提供便携版与安装版，但尚未提供自动更新器；安装包未签名。
 
 ## 开发与测试
 
@@ -142,6 +152,7 @@ node scripts/loader-launch-check.cjs # 多加载器启动测试
 - 参与贡献：[CONTRIBUTING.md](CONTRIBUTING.md)
 - 安全问题：[SECURITY.md](SECURITY.md)
 - 更新记录：[CHANGELOG.md](CHANGELOG.md)
+- 联机实现说明：[docs/multiplayer.md](docs/multiplayer.md)
 - CI：推送 `v*` 标签会构建 Windows 便携包与 NSIS 安装包，并上传为 Actions artifact；维护者从 artifact 发布 GitHub Release
 
 本项目为非官方启动器，与 Mojang Studios、Microsoft、Modrinth、CurseForge 无隶属关系。Minecraft 相关版权归其各自所有者所有。

@@ -12,6 +12,7 @@ packager({
   overwrite: true,
   asar: true,
   prune: true,
+  extraResource: [path.join(root, 'resources', 'bin')],
   icon: path.join(root, 'resources', 'icon.ico'),
   appVersion: require(path.join(root, 'package.json')).version,
   ignore: [
@@ -20,6 +21,7 @@ packager({
     /^\/scripts/,
     /^\/src/,
     /^\/docs/,
+    /^\/resources\/bin/,
     /^\/\.git/,
     /^\/\.github/,
     /^\/\.gitattributes$/,

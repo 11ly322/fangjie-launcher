@@ -7,8 +7,12 @@
 !endif
 
 !define APP_NAME "方界启动器"
-!define APP_VERSION "0.0.1-alpha"
-!define APP_VERSION_NUMERIC "0.0.1.0"
+!ifndef APP_VERSION
+  !define APP_VERSION "0.0.1-alpha"
+!endif
+!ifndef APP_VERSION_NUMERIC
+  !define APP_VERSION_NUMERIC "0.0.1.0"
+!endif
 !define APP_PUBLISHER "11ly322"
 !define APP_EXE "Fangjie.exe"
 !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\FangjieLauncher"
@@ -23,8 +27,7 @@ OutFile "${PROJECT_ROOT}\release\Fangjie-Launcher-${APP_VERSION}-Setup.exe"
 InstallDir "$LOCALAPPDATA\Programs\Fangjie Launcher"
 InstallDirRegKey HKCU "${UNINSTALL_KEY}" "InstallLocation"
 RequestExecutionLevel user
-SetCompressor /SOLID lzma
-SetCompressorDictSize 64
+SetCompressor /SOLID zlib
 BrandingText "${APP_NAME} · ${APP_VERSION}"
 
 VIProductVersion "${APP_VERSION_NUMERIC}"
