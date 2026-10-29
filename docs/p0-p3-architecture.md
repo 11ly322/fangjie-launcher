@@ -383,6 +383,10 @@ pub trait AccountProviderPlugin { fn manifest(&self) -> &PluginManifest; ... }
 
 ---
 
+代码签名细节：[code-signing.md](code-signing.md)
+
+NAT 验证矩阵：[nat-test-matrix.md](nat-test-matrix.md)
+
 ## 6. 验收对照
 
 | 验收项 | 状态 | 证据/说明 |
@@ -399,7 +403,7 @@ pub trait AccountProviderPlugin { fn manifest(&self) -> &PluginManifest; ... }
 | 联机状态面板直连/中继/延迟 | **P2 基础实现** | 状态字段/摘要已接入；延迟为公共中继 TCP 测量，P2P 直连状态仍由连接器上报 |
 | 插件版本/权限 | **P3 基础实现** | 本地 `plugins/*/manifest.json` 经 Rust 校验后列出；只加载清单，不执行第三方代码 |
 | 离线无非必要请求 | **P3 基础实现** | Electron 中央 IPC 门禁 + Rust `SourceRegistry`；版本/模组/资源包/登录/更新/联机/导入入口已阻止 |
-| 代码签名/SmartScreen | **P3 流程建议** | 未签名发布 |
+| 代码签名/SmartScreen | **P3 流程+脚本** | `scripts/sign-windows.ps1` 与 `docs/code-signing.md`；证书/CI 未配置 |
 
 **结论：P0 验收项已完成；P1/P2/P3 未伪装成完成。** 这是硬约束“不得把 P1/P2/P3 强行塞进 P0”的直接结果。
 
