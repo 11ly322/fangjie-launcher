@@ -5,6 +5,7 @@ import { LauncherStore } from './store'
 import { TaskManager } from './tasks'
 import { registerIpcHandlers } from './ipc'
 import { RustCoreClient } from './rustCore'
+import { setOffline } from './networkPolicy'
 import { multiplayerManager } from './multiplayer'
 import { installDownloadConcurrencyLimit } from './xmclPatch'
 
@@ -135,6 +136,7 @@ app.whenReady().then(() => {
   installDownloadConcurrencyLimit(20)
 
   store = new LauncherStore()
+  setOffline(store.settings.offline)
   tasks = new TaskManager()
   rustCore = new RustCoreClient()
   registerIpcHandlers({ store, tasks, rustCore, getMainWindow })

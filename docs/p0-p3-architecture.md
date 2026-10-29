@@ -129,15 +129,16 @@ src/renderer/src/pages/InstanceDetailPage.tsx
   - 模板 JSON 包含 `jvm_args:["-XX:+UseG1GC","-Xms1G"]`、`width:1920`、`height:1080`。
   - Flight Recorder 两张图、CSV 导出文件 255 bytes。
   - 无 renderer 控制台错误。
+- P1 基础：fake feed 检测 0.0.2、下载 22-byte 资产、Rust SHA256 校验通过；模组列表导出实测；资源包安装实测。
 - 模板中的 JVM 参数、宽高已接入 Electron 实例设置，并传入启动器 `launch()` 的 resolution/extraJVMArgs。
 
 ---
 
 ## 3. P1：竞品基准线
 
-### 3.1 自动更新器
+### 3.1 自动更新器（P1 基础实现已接入）
 
-已落 Rust 接口文件：`update_manager.rs`。
+已落 Rust 接口文件：`update_manager.rs`，并通过 sidecar 接入 Electron。
 
 ```rust
 pub enum UpdateChannel { Stable, Beta }
@@ -163,7 +164,13 @@ pub fn check_manifest(current_version: &str, manifest: UpdateManifest)
 pub fn verify_asset(path: &Path, asset: &UpdateAsset) -> CoreResult<()>;
 ```
 
-Electron 流程（P1）：
+已实现（P1 基础）：
+
+- `src/main/updateManager.ts`：GitHub Releases/自定义 feed 检查、下载、SHA256 校验、调用 NSIS `/S`。
+- 设置页「软件更新」：检查、下载、安装并重启。
+- 已验证：本地 fake feed 检查到 `0.0.2`，下载 22-byte payload，Rust `verify_asset` 校验通过；真实签名安装包替换未实测。
+
+Electron 流程：
 
 ```text
 update:check
@@ -177,9 +184,12 @@ update:check
       → 下一次启动读取新版本
 ```
 
-实现顺序：更新 feed 抽象 → 下载/校验 → UI 提示 → NSIS 替换 → 签名/回滚。默认更新源为 GitHub Releases，不需要自建服务器。
+实现顺序：更新 feed 抽象 → 下载/校验 → UI 提示 → NSIS 替换 → 签名/回滚。当前已完成前四项的基础路径；签名和真实安装包替换待 P3/发布验证。
 
-### 3.2 整合包导入/导出
+### 3.2 整合包导入/导出（部分实现）
+
+已实现：将 `.mrpack` 应用到现有实例（files + overrides）；已用本地 HTTP 资产测试成功。CurseForge `.zip` 导入仍未实现，仅保留格式检测接口。
+
 
 已落接口：`modpack_importer.rs`。
 
@@ -194,14 +204,16 @@ pub trait ModpackImporter {
 }
 ```
 
-- `.mrpack`：读取 zip 内 `modrinth.index.json`；逐项校验 path 不逃逸实例根；下载走 `DownloadSource`。
+- `.mrpack`：读取 zip 内 `modrinth.index.json`；逐项校验 path 不逃逸实例根；当前基础实现由 Rust importer 直接 ureq 下载，P1.9 需要迁到 `DownloadSource`。
 - CurseForge `.zip`：读取 `manifest.json`，`projectID/fileID` 转 CurseForge 下载源；overrides 复制到实例。
 - “仅导出模组列表”：复用 `ModListExport`，输出 JSON，不打包 JAR。
 - 顺序：格式检测 → manifest 解析 → 实例创建/选择 → 下载 → 冲突预览 → 应用。
 
-### 3.3 资源包/光影下载
+### 3.3 资源包/光影下载（P1 基础实现已接入）
 
-P1 扩展点，不新增独立网络实现：
+已实现 Modrinth + CurseForge 的资源包/光影搜索与安装：ModsPage 顶部类型切换；`installAsset()` 写入 `resourcepacks/` 或 `shaderpacks/`；已用 Fast Better Grass 实测 Modrinth 安装，CurseForge 搜索返回 1 万条结果。网络仍走现有 TS 下载器，P1.9 统一源尚未完成。
+
+接口扩展：
 
 ```rust
 pub enum ProjectKind { Mod, ResourcePack, Shader }
@@ -302,7 +314,10 @@ interface MultiplayerSummary {
 - 延迟由连接器/SCF 心跳提供；没有可靠数据时显示“未知”，不伪造。
 - P2 IPC：`multiplayer:summary`、`multiplayer:copy-room`、`multiplayer:parse-room`、`multiplayer:diagnostics`.
 
-### 4.3 诊断与反馈
+### 4.3 诊断与反馈（基础已接入）
+
+当前 MultiplayerPage 已有「导出网络摘要」，输出 appVersion/platform/relays/state JSON 到剪贴板；不包含令牌或世界路径。延迟和直连/中继仍需连接器上报。
+
 
 - 一键导出 JSON：房间角色、阶段、房间码脱敏、relay、地址族、错误、启动器版本、OS 版本、连接器版本、时间。
 - 不包含令牌、玩家 UUID、世界路径。
@@ -312,7 +327,10 @@ interface MultiplayerSummary {
 
 ## 5. P3：长期差异化
 
-### 5.1 插件契约
+### 5.1 插件契约（P3 基础已接入）
+
+设置页读取 `<data>/plugins/*/manifest.json`，经 Rust `validate_manifest` 校验版本、ID、权限后列出；不执行插件代码。
+
 
 现有 `plugin_api.rs`：
 
@@ -343,7 +361,10 @@ pub trait AccountProviderPlugin { fn manifest(&self) -> &PluginManifest; ... }
 4. `signtool sign /fd SHA256 /tr <timestamp> /td SHA256 /a ...`；安装器签名后再计算 SHA256。
 5. SmartScreen 仍可能对新证书提示；持续发布、稳定 publisher name、EV 证书和下载量建立声誉。不能承诺“签名即无警告”。
 
-### 5.3 完全离线模式
+### 5.3 完全离线模式（P3 基础已接入）
+
+设置页全局开关；Electron 中央 IPC 网络门禁 + Rust `SourceRegistry::set_offline`。已阻止版本列表、模组/资源包安装、登录、更新、联机、整合包导入等入口。
+
 
 - Rust `SourceRegistry::set_offline(true)` 已具备运行时门禁；P3 需要 Electron 全局开关并接入所有路径：版本元数据、Java、模组、资源包、光影、更新、联机资源。
 - 离线时允许本地实例、本地模组、本地 Java、已缓存文件；禁止非必要请求。
@@ -370,14 +391,14 @@ pub trait AccountProviderPlugin { fn manifest(&self) -> &PluginManifest; ... }
 | 批量启停按实例隔离 | **P0 已满足** | E2E：副本禁用 sodium，源实例仍启用 |
 | 复制实例源零污染 | **P0 已满足** | Rust 深拷贝 + 源只读；实例文件状态验证 |
 | Flight Recorder CSV/折线图 | **P0 已满足（读取/导出）** | 两张 SVG 图、CSV 导出 255 bytes；无内置采样器 |
-| 自动更新器检测/下载/校验/替换 | **P1 仅接口** | `update_manager.rs` 有版本比较与 SHA256 校验；NSIS 替换未实现 |
-| .mrpack/.zip 导入、仅模组导出 | **P1 仅接口** | `modpack_importer.rs` 格式/结构；导入未实现 |
-| 资源包/光影不跳浏览器 | **P1 待实现** | 扩展 `ProjectKind` 设计 |
+| 自动更新器检测/下载/校验/替换 | **P1 基础实现** | 检查/下载/SHA256/NSIS spawn 已接入；真实安装包替换与签名未实测 |
+| .mrpack/.zip 导入、仅模组导出 | **部分实现** | 模组列表导出与 `.mrpack` 导入已接入；CurseForge `.zip` 未实现 |
+| 资源包/光影不跳浏览器 | **P1 基础实现** | Modrinth 安装实测；CurseForge 搜索实测；统一源/镜像未迁移 |
 | 下载源可替换、默认可用 | **P0 底座 / P1 扩展** | Rust `DownloadSource` + Modrinth；Electron 尚未全部迁移 |
-| 房间码主界面入口 | **P2 待实现** | 现有房间页和 manager API 可复用 |
-| 联机状态面板直连/中继/延迟 | **P2 待实现** | 设计字段已列 |
-| 插件版本/权限 | **P3 契约已存在** | `plugin_api.rs`；未加载插件 |
-| 离线无非必要请求 | **P0 Rust 门禁 / P3 全局** | `set_offline`；Electron 全路径未接 |
+| 房间码主界面入口 | **P2 基础实现** | 首页快捷房间卡：创建/粘贴自动分段/加入；未自动启动游戏 |
+| 联机状态面板直连/中继/延迟 | **P2 基础实现** | 状态字段/摘要已接入；延迟为公共中继 TCP 测量，P2P 直连状态仍由连接器上报 |
+| 插件版本/权限 | **P3 基础实现** | 本地 `plugins/*/manifest.json` 经 Rust 校验后列出；只加载清单，不执行第三方代码 |
+| 离线无非必要请求 | **P3 基础实现** | Electron 中央 IPC 门禁 + Rust `SourceRegistry`；版本/模组/资源包/登录/更新/联机/导入入口已阻止 |
 | 代码签名/SmartScreen | **P3 流程建议** | 未签名发布 |
 
 **结论：P0 验收项已完成；P1/P2/P3 未伪装成完成。** 这是硬约束“不得把 P1/P2/P3 强行塞进 P0”的直接结果。

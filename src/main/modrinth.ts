@@ -10,7 +10,8 @@ import type {
   ModProject,
   ModSearchHit,
   ModSearchResponse,
-  ModVersion
+  ModVersion,
+  ProjectType
 } from '../shared/types'
 import type { LauncherStore } from './store'
 import { safeFileName } from './store'
@@ -217,11 +218,13 @@ export async function searchMods(options: {
   offset?: number
   limit?: number
   sort?: 'relevance' | 'downloads' | 'newest' | 'updated'
+  projectType?: ProjectType
 }): Promise<ModSearchResponse> {
   const limit = Math.min(48, Math.max(1, options.limit || 20))
   const offset = Math.max(0, options.offset || 0)
-  const facets: string[][] = [['project_type:mod']]
-  if (options.instance && options.instance.loader !== 'vanilla') {
+  const kind = options.projectType || 'mod'
+  const facets: string[][] = [[`project_type:${kind === 'resourcepack' ? 'resourcepack' : kind === 'shader' ? 'shader' : 'mod'}`]]
+  if (kind === 'mod' && options.instance && options.instance.loader !== 'vanilla') {
     facets.push(loadersFor(options.instance).map((loader) => `categories:${loader}`))
   }
   if (options.instance?.mcVersion) facets.push([`versions:${options.instance.mcVersion}`])
@@ -251,12 +254,14 @@ export async function searchMods(options: {
 
 export async function getModProject(
   idOrSlug: string,
-  instance?: Instance
+  instance?: Instance,
+  projectType: ProjectType = 'mod'
 ): Promise<{ project: ModProject; versions: ModVersion[] }> {
+  const effective = projectType === 'mod' ? instance : instance ? { ...instance, loader: 'vanilla' as const } : undefined
   const projectPath = `/project/${encodeURIComponent(idOrSlug)}`
   const raw = await modrinthFetch<ApiProject>(projectPath)
   const project = normalizeProject(raw)
-  const versions = await getVersionsForProject(project.project_id || idOrSlug, instance)
+  const versions = await getVersionsForProject(project.project_id || idOrSlug, effective)
   return { project, versions }
 }
 
@@ -575,7 +580,7 @@ function removeOldModFile(directory: string, fileName: string): void {
   }
 }
 
-async function downloadFile(options: {
+export async function downloadFile(options: {
   url: string
   destination: string
   expectedSha1?: string

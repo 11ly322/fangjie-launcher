@@ -138,18 +138,7 @@ impl InstanceManager {
 
     pub fn export_mod_list(&self, instance_id: &str) -> CoreResult<ModListExport> {
         let instance = self.load(instance_id)?;
-        let scan = ModScanner::scan(&instance)?;
-        Ok(ModListExport {
-            instance_id: instance.id.clone(),
-            game_version: instance.game_version.clone(),
-            loader: instance.loader.as_str().to_string(),
-            mods: scan
-                .mods
-                .into_iter()
-                .filter(|item| item.enabled)
-                .map(exported_mod)
-                .collect(),
-        })
+        export_mod_list_for(&instance)
     }
 }
 
@@ -296,6 +285,21 @@ pub fn set_mods_enabled_for(
         std::fs::rename(from, to)?;
     }
     ModScanner::scan(instance)
+}
+
+pub fn export_mod_list_for(instance: &Instance) -> CoreResult<ModListExport> {
+    let scan = ModScanner::scan(instance)?;
+    Ok(ModListExport {
+        instance_id: instance.id.clone(),
+        game_version: instance.game_version.clone(),
+        loader: instance.loader.as_str().to_string(),
+        mods: scan
+            .mods
+            .into_iter()
+            .filter(|item| item.enabled)
+            .map(exported_mod)
+            .collect(),
+    })
 }
 
 fn exported_mod(item: ScannedMod) -> ExportedMod {

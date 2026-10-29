@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from 'electron'
 import { spawn, type ChildProcessByStdio } from 'node:child_process'
+import { createConnection } from 'node:net'
 import type { Readable } from 'node:stream'
 import { existsSync } from 'node:fs'
 import { createInterface } from 'node:readline'
@@ -15,7 +16,7 @@ import type {
  * endpoints used by the connector; the launcher never runs its own relay,
  * signaling server, TURN server, or VPN service.
  */
-const COMMUNITY_RELAYS = [
+export const COMMUNITY_RELAYS = [
   'tcp://183.66.27.22:39409',
   'tcp://cgk1.clusters.zeabur.com:22171',
   'tcp://tcp.ap-northeast-1.clawcloudrun.com:45146'
@@ -26,6 +27,43 @@ type ConnectorProcess = ChildProcessByStdio<null, Readable, Readable>
 const CONNECTOR_EXE = 'qomicex-connector-cli.exe'
 const ROOM_CODE_PATTERN = /^U\/([A-HJ-NP-Z0-9]{4})-([A-HJ-NP-Z0-9]{4})-([A-HJ-NP-Z0-9]{4})-([A-HJ-NP-Z0-9]{4})$/
 const START_TIMEOUT_MS = 120_000
+
+export interface RelayLatency {
+  relay: string
+  latencyMs: number
+}
+
+function parseRelay(endpoint: string): { host: string; port: number } | null {
+  try {
+    const url = new URL(endpoint.replace(/^tcp:\/\//, 'http://'))
+    const port = Number(url.port)
+    if (!url.hostname || !port) return null
+    return { host: url.hostname, port }
+  } catch {
+    return null
+  }
+}
+
+export async function measureRelayLatency(timeoutMs = 1200): Promise<RelayLatency | null> {
+  for (const endpoint of COMMUNITY_RELAYS) {
+    const target = parseRelay(endpoint)
+    if (!target) continue
+    const latency = await new Promise<number | null>((resolve) => {
+      const started = Date.now()
+      const socket = createConnection({ host: target.host, port: target.port })
+      const finish = (value: number | null): void => {
+        socket.destroy()
+        resolve(value)
+      }
+      socket.setTimeout(timeoutMs)
+      socket.once('connect', () => finish(Date.now() - started))
+      socket.once('timeout', () => finish(null))
+      socket.once('error', () => finish(null))
+    })
+    if (latency !== null) return { relay: endpoint, latencyMs: latency }
+  }
+  return null
+}
 
 const IDLE_STATE: MultiplayerState = {
   active: false,

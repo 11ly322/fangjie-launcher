@@ -1,5 +1,6 @@
 export type LoaderType = 'vanilla' | 'fabric' | 'quilt' | 'forge' | 'neoforge'
 
+export type ProjectType = 'mod' | 'resourcepack' | 'shader'
 export type ModSource = 'modrinth' | 'curseforge'
 
 export type TaskKind = 'instance' | 'mod' | 'java' | 'repair'
@@ -45,6 +46,7 @@ export interface Settings {
   showSnapshots: boolean
   minimizeOnLaunch: boolean
   downloadConcurrency: number
+  offline: boolean
 }
 
 export interface InstalledMod {
@@ -127,7 +129,19 @@ export interface MultiplayerState {
   players: number
   playerName?: string
   mcPort?: number
+  path?: 'direct' | 'relay' | 'unknown'
+  latencyMs?: number
+  relay?: string
   error?: string
+}
+
+export interface MultiplayerDiagnostics {
+  generatedAt: string
+  appVersion: string
+  platform: string
+  arch: string
+  relays: string[]
+  state: MultiplayerState
 }
 
 export interface StartHostInput {
@@ -370,6 +384,69 @@ export interface CoreInstanceTemplate {
   created_at_unix: number
 }
 
+export type PluginKind = 'crash_analyzer' | 'download_source' | 'account_provider'
+export type PluginPermission = 'read_logs' | 'modify_mods' | 'network' | 'read_account_metadata'
+
+export interface PluginManifest {
+  id: string
+  name: string
+  version: string
+  api_version: string
+  kind: PluginKind
+  permissions: PluginPermission[]
+}
+
+export interface PluginRecord {
+  directory: string
+  manifest?: PluginManifest
+  valid: boolean
+  warnings: string[]
+  error?: string
+}
+
+export interface CoreModpackReport {
+  name: string
+  version: string
+  downloaded: number
+  overrides: number
+  skipped: number
+  warnings: string[]
+}
+
+export interface CoreModListExport {
+  instance_id: string
+  game_version: string
+  loader: string
+  mods: Array<{
+    file_name: string
+    mod_id: string
+    name: string
+    version?: string
+    sha1: string
+  }>
+}
+
+export interface CoreUpdateAsset {
+  platform: string
+  url: string
+  sha256: string
+  size: number
+  signature?: string
+}
+
+export interface CoreUpdateManifest {
+  version: string
+  channel: 'stable' | 'beta'
+  notes: string
+  published_at: string
+  assets: CoreUpdateAsset[]
+}
+
+export interface CoreUpdateCheck {
+  current_version: string
+  available?: CoreUpdateManifest | null
+}
+
 export interface CoreFlightSample {
   timestamp_ms: number
   fps: number
@@ -414,6 +491,13 @@ export interface LauncherApi {
   saveInstanceTemplate(instanceId: string): Promise<Result<CoreInstanceTemplate>>
   flightSeries(instanceId: string): Promise<Result<CoreFlightSeries>>
   exportFlightCsv(instanceId: string): Promise<Result<string | null>>
+  exportModList(instanceId: string): Promise<Result<string | null>>
+  importModpack(instanceId: string): Promise<Result<{ path: string; report: CoreModpackReport } | null>>
+  pluginsList(): Promise<Result<PluginRecord[]>>
+  openPluginsFolder(): Promise<Result<void>>
+  updateCheck(): Promise<Result<CoreUpdateCheck>>
+  updateDownload(asset: CoreUpdateAsset): Promise<Result<string>>
+  updateApply(installerPath: string): Promise<Result<void>>
   createInstance(input: CreateInstanceInput): Promise<Result<{ instance: Instance; taskId: string }>>
   updateInstance(id: string, patch: UpdateInstanceInput): Promise<Result<Instance>>
   deleteInstance(id: string): Promise<Result<void>>
@@ -425,12 +509,15 @@ export interface LauncherApi {
   instanceMods(id: string): Promise<Result<InstalledMod[]>>
   setModEnabled(id: string, fileName: string, enabled: boolean): Promise<Result<InstalledMod[]>>
   removeMod(id: string, fileName: string): Promise<Result<InstalledMod[]>>
-  searchMods(query: string, options?: { instanceId?: string; category?: string; offset?: number; limit?: number; sort?: 'relevance' | 'downloads' | 'newest' | 'updated'; source?: ModSource }): Promise<Result<ModSearchResponse>>
-  getModProject(idOrSlug: string, instanceId?: string): Promise<Result<{ project: ModProject; versions: ModVersion[] }>>
+  searchMods(query: string, options?: { instanceId?: string; category?: string; offset?: number; limit?: number; sort?: 'relevance' | 'downloads' | 'newest' | 'updated'; source?: ModSource; projectType?: ProjectType }): Promise<Result<ModSearchResponse>>
+  getModProject(idOrSlug: string, instanceId?: string, projectType?: ProjectType): Promise<Result<{ project: ModProject; versions: ModVersion[] }>>
   installMod(instanceId: string, projectId: string): Promise<Result<InstallModResult>>
+  installAsset(instanceId: string, projectId: string, projectType: ProjectType, source: ModSource): Promise<Result<{ fileName: string; path: string }>>
   cancelTask(taskId: string): Promise<Result<void>>
   clearTasks(): Promise<Result<void>>
   multiplayerState(): Promise<Result<MultiplayerState>>
+  multiplayerDiagnostics(): Promise<Result<MultiplayerDiagnostics>>
+  multiplayerLatency(): Promise<Result<{ relay: string; latencyMs: number } | null>>
   startHost(input: StartHostInput): Promise<Result<MultiplayerState>>
   startGuest(input: StartGuestInput): Promise<Result<MultiplayerState>>
   stopMultiplayer(): Promise<Result<MultiplayerState>>

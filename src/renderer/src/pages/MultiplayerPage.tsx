@@ -1,9 +1,10 @@
-import { Copy, DoorOpen, LogIn, Network, Play, Radio, ShieldCheck, Users } from 'lucide-react'
+import { Copy, DoorOpen, Download, LogIn, Network, Play, Radio, ShieldCheck, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { MultiplayerState } from '../../../shared/types'
 import { useLauncher } from '../state/LauncherContext'
 import { Badge, Button, Field, InlineNotice, Spinner, TextInput } from '../components/ui'
 import { classNames } from '../lib/format'
+import { formatRoomCode, isRoomCode } from '../lib/room'
 
 type MultiplayerTab = 'host' | 'guest'
 
@@ -19,22 +20,6 @@ const RELAY_LABELS = [
   'tcp.ap-northeast-1.clawcloudrun.com:45146'
 ]
 
-function formatRoomCode(value: string): string {
-  const body = value
-    .replace(/^U\//i, '')
-    .replace(/[^0-9A-Za-z]/g, '')
-    .toUpperCase()
-    .slice(0, 16)
-  if (!body) return ''
-  return `U/${body.match(/.{1,4}/g)?.join('-') || body}`
-}
-
-function isRoomCode(value: string): boolean {
-  return /^U\/[A-HJ-NP-Z0-9]{4}-[A-HJ-NP-Z0-9]{4}-[A-HJ-NP-Z0-9]{4}-[A-HJ-NP-Z0-9]{4}$/.test(
-    value
-  )
-}
-
 export function MultiplayerPage(): React.JSX.Element {
   const { boot, toast } = useLauncher()
   const [tab, setTab] = useState<MultiplayerTab>('host')
@@ -43,6 +28,7 @@ export function MultiplayerPage(): React.JSX.Element {
   const [roomCode, setRoomCode] = useState('')
   const [state, setState] = useState<MultiplayerState>(EMPTY_STATE)
   const [busy, setBusy] = useState(false)
+  const [relayLatency, setRelayLatency] = useState<{ relay: string; latencyMs: number } | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -59,7 +45,24 @@ export function MultiplayerPage(): React.JSX.Element {
     }
   }, [])
 
+  useEffect(() => {
+    if (!state.active) {
+      setRelayLatency(null)
+      return
+    }
+    let alive = true
+    void window.fangjie.multiplayerLatency().then((result) => {
+      if (alive && result.ok) setRelayLatency(result.value)
+    })
+    return () => {
+      alive = false
+    }
+  }, [state.active, state.phase])
+
   const activeRole = state.active && state.role ? state.role : tab
+  const latencyLabel = relayLatency ? relayLatency.latencyMs + ' ms' : typeof state.latencyMs === 'number' ? state.latencyMs + ' ms' : '未上报'
+  const pathLabel = relayLatency ? '公共中继' : state.path === 'direct' ? 'P2P 直连' : state.path === 'relay' ? '公共中继' : '连接器未上报'
+  const relayLabel = relayLatency?.relay?.replace(/^tcp:\/\//, '') || state.relay || '社区公共节点'
   const error = state.phase === 'error' ? state.error : undefined
   const portNumber = Number(mcPort)
   const canHost =
@@ -104,6 +107,16 @@ export function MultiplayerPage(): React.JSX.Element {
     }
     setState(result.value)
     setTab('guest')
+  }
+
+  const exportDiagnostics = async (): Promise<void> => {
+    const result = await window.fangjie.multiplayerDiagnostics()
+    if (!result.ok) {
+      toast(result.error, 'error')
+      return
+    }
+    const copied = await window.fangjie.copyText(JSON.stringify(result.value, null, 2))
+    toast(copied.ok ? '网络摘要已复制到剪贴板' : copied.error, copied.ok ? 'success' : 'error')
   }
 
   const stop = async (): Promise<void> => {
@@ -221,7 +234,21 @@ export function MultiplayerPage(): React.JSX.Element {
                 </>
               )}
 
+              <div className="multiplayer-diagnostics">
+                <div><span>连接路径</span><strong>{pathLabel}</strong></div>
+                <div><span>延迟（中继 TCP）</span><strong>{latencyLabel}</strong></div>
+                <div><span>中继节点</span><strong title={relayLabel}>{relayLabel}</strong></div>
+                <div><span>玩家数</span><strong>{state.players || 1}</strong></div>
+              </div>
+
               <div className="multiplayer-actions">
+                <Button
+                  variant="ghost"
+                  icon={<Download size={15} />}
+                  onClick={() => void exportDiagnostics()}
+                >
+                  导出网络摘要
+                </Button>
                 <Button
                   variant="ghost"
                   icon={<DoorOpen size={15} />}

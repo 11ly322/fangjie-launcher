@@ -5,7 +5,9 @@ import {
   Download,
   FolderOpen,
   HardDrive,
+  LogIn,
   Play,
+  Radio,
   Plus,
   Puzzle,
   RefreshCw,
@@ -17,7 +19,7 @@ import { useLauncher } from '../state/LauncherContext'
 import { LOADER_LABEL } from '../../../shared/constants'
 import { WorldArt, InstanceEmblem, PixelAvatar, SkinHead } from '../components/Artwork'
 import { InstanceCard } from '../components/InstanceCard'
-import { Badge, Button, InlineNotice, ProgressBar, SectionHeading, Skeleton, StatusDot } from '../components/ui'
+import { Badge, Button, InlineNotice, ProgressBar, SectionHeading, Skeleton, StatusDot, TextInput } from '../components/ui'
 import {
   formatCompactNumber,
   formatPlaytime,
@@ -26,6 +28,7 @@ import {
   todayLabel
 } from '../lib/format'
 import { categoryLabel } from '../components/ModCard'
+import { formatRoomCode, isRoomCode } from '../lib/room'
 
 export function HomePage(): React.JSX.Element {
   const {
@@ -42,6 +45,8 @@ export function HomePage(): React.JSX.Element {
     toast
   } = useLauncher()
 
+  const [quickRoom, setQuickRoom] = useState('')
+  const [quickBusy, setQuickBusy] = useState(false)
   const activeTask = tasks.find((task) => task.status === 'running' || task.status === 'queued')
   const recent = [...boot.instances]
     .sort((left, right) => (right.lastPlayedAt || right.createdAt) - (left.lastPlayedAt || left.createdAt))
@@ -49,6 +54,36 @@ export function HomePage(): React.JSX.Element {
   const javaRuntime = boot.java.runtimes.find((runtime) => runtime.source === 'manual') || boot.java.runtimes[0]
   const activeRunning = activeInstance ? running.has(activeInstance.id) : false
   const activeLaunching = activeInstance ? launching.has(activeInstance.id) : false
+
+  const quickHost = async (): Promise<void> => {
+    setQuickBusy(true)
+    const result = await window.fangjie.startHost({
+      playerName: boot.account.name,
+      mcPort: 25565
+    })
+    setQuickBusy(false)
+    if (!result.ok) {
+      toast(result.error, 'error')
+      return
+    }
+    toast('房间已创建，请到联机页复制房间码', 'success')
+    navigate('multiplayer')
+  }
+
+  const quickJoin = async (): Promise<void> => {
+    if (!isRoomCode(quickRoom)) return
+    setQuickBusy(true)
+    const result = await window.fangjie.startGuest({
+      playerName: boot.account.name,
+      roomCode: quickRoom
+    })
+    setQuickBusy(false)
+    if (!result.ok) {
+      toast(result.error, 'error')
+      return
+    }
+    navigate('multiplayer')
+  }
 
   const openData = async (): Promise<void> => {
     const result = await window.fangjie.openDataFolder()
@@ -268,6 +303,48 @@ export function HomePage(): React.JSX.Element {
                 </span>
               </button>
             </div>
+          </div>
+
+          <div className="panel room-quick-panel">
+            <div className="panel__header">
+              <div>
+                <div className="panel__eyebrow">ROOM LINK</div>
+                <h3>房间联机</h3>
+              </div>
+              <Badge tone="accent">免管理员</Badge>
+            </div>
+            <div className="room-quick-actions">
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={<Radio size={14} />}
+                loading={quickBusy}
+                onClick={() => void quickHost()}
+              >
+                创建房间
+              </Button>
+              <span>默认端口 25565</span>
+            </div>
+            <div className="room-quick-join">
+              <TextInput
+                className="mono"
+                value={quickRoom}
+                aria-label="输入房间码"
+                placeholder="U/XXXX-XXXX-XXXX-XXXX"
+                onChange={(event) => setQuickRoom(formatRoomCode(event.target.value))}
+                spellCheck={false}
+              />
+              <Button
+                size="sm"
+                variant="primary"
+                icon={<LogIn size={14} />}
+                disabled={!isRoomCode(quickRoom) || quickBusy}
+                onClick={() => void quickJoin()}
+              >
+                加入
+              </Button>
+            </div>
+            <p className="room-quick-hint">粘贴房间码会自动分段；房主请先在游戏内开放局域网。</p>
           </div>
         </aside>
       </section>

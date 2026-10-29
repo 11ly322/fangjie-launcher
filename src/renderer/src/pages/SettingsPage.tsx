@@ -3,13 +3,16 @@ import {
   Check,
   ChevronRight,
   Cpu,
+  Download,
   FolderOpen,
   HardDrive,
   Palette,
+  Puzzle,
   RefreshCw,
   ShieldCheck,
   SlidersHorizontal,
-  UserRound
+  UserRound,
+  WifiOff
 } from 'lucide-react'
 import { useLauncher } from '../state/LauncherContext'
 import { PixelAvatar, SkinHead } from '../components/Artwork'
@@ -23,7 +26,7 @@ import {
 } from '../components/ui'
 import { classNames, rangeProgress } from '../lib/format'
 import { applyTheme, THEMES } from '../lib/theme'
-import type { ThemeId } from '../../../shared/types'
+import type { CoreUpdateCheck, PluginRecord, ThemeId } from '../../../shared/types'
 
 export function SettingsPage(): React.JSX.Element {
   const { boot, confirm, openAccount, refreshJava, saveSettings, toast } = useLauncher()
@@ -31,9 +34,15 @@ export function SettingsPage(): React.JSX.Element {
   const [javaPath, setJavaPath] = useState(boot.settings.javaPath)
   const [showSnapshots, setShowSnapshots] = useState(boot.settings.showSnapshots)
   const [minimizeOnLaunch, setMinimizeOnLaunch] = useState(boot.settings.minimizeOnLaunch)
+  const [offlineMode, setOfflineMode] = useState(boot.settings.offline)
   const [theme, setTheme] = useState<ThemeId>(boot.settings.theme)
   const [saving, setSaving] = useState(false)
   const [changingData, setChangingData] = useState(false)
+  const [update, setUpdate] = useState<CoreUpdateCheck | null>(null)
+  const [updating, setUpdating] = useState(false)
+  const [updateError, setUpdateError] = useState('')
+  const [updatePath, setUpdatePath] = useState('')
+  const [plugins, setPlugins] = useState<PluginRecord[]>([])
   const [pendingDataPath, setPendingDataPath] = useState(() => {
     try {
       return window.sessionStorage.getItem('fangjie-pending-data') || ''
@@ -50,6 +59,16 @@ export function SettingsPage(): React.JSX.Element {
   useEffect(() => {
     setTheme(boot.settings.theme)
   }, [boot.settings.theme])
+
+  useEffect(() => {
+    let active = true
+    void window.fangjie.pluginsList().then((result) => {
+      if (active && result.ok) setPlugins(result.value)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
 
   const dirty =
     memoryMb !== boot.settings.memoryMb ||
@@ -137,6 +156,51 @@ export function SettingsPage(): React.JSX.Element {
       /* session-only hint */
     }
     toast('数据已迁移，重启启动器后生效', 'success')
+  }
+
+  const changeOffline = async (next: boolean): Promise<void> => {
+    setOfflineMode(next)
+    const ok = await saveSettings({ offline: next })
+    if (!ok) setOfflineMode(!next)
+  }
+
+  const checkUpdate = async (): Promise<void> => {
+    setUpdating(true)
+    setUpdateError('')
+    setUpdatePath('')
+    const result = await window.fangjie.updateCheck()
+    setUpdating(false)
+    if (!result.ok) {
+      setUpdateError(result.error)
+      return
+    }
+    setUpdate(result.value)
+  }
+
+  const downloadUpdatePackage = async (): Promise<void> => {
+    const asset = update?.available?.assets?.[0]
+    if (!asset) return
+    setUpdating(true)
+    setUpdateError('')
+    const result = await window.fangjie.updateDownload(asset)
+    setUpdating(false)
+    if (!result.ok) {
+      setUpdateError(result.error)
+      return
+    }
+    setUpdatePath(result.value)
+    toast('更新包已下载并通过校验', 'success')
+  }
+
+  const installUpdate = async (): Promise<void> => {
+    if (!updatePath) return
+    const result = await window.fangjie.updateApply(updatePath)
+    if (!result.ok) setUpdateError(result.error)
+  }
+
+  const openPlugins = async (): Promise<void> => {
+    const result = await window.fangjie.openPluginsFolder()
+    if (!result.ok) toast(result.error, 'error')
   }
 
   const restart = async (): Promise<void> => {
@@ -449,6 +513,145 @@ export function SettingsPage(): React.JSX.Element {
             ) : null}
             <p className="settings-hint">
               每个实例的存档与模组位于 <code>instances/&lt;实例ID&gt;/.minecraft</code>，游戏版本与运行库在实例之间共享。更改位置会完整复制当前数据，旧目录保留。
+            </p>
+          </div>
+        </section>
+
+        <section className="settings-section">
+          <div className="settings-section__heading">
+            <div className="settings-section__icon">
+              <WifiOff size={18} />
+            </div>
+            <div>
+              <h2>离线模式</h2>
+              <p>阻止非必要的网络请求</p>
+            </div>
+          </div>
+          <div className="settings-card">
+            <ToggleRow
+              title="完全离线模式"
+              description="阻止版本元数据、模组、资源包、更新、Microsoft 登录与联机请求；已有本地文件仍可启动。"
+              checked={offlineMode}
+              onChange={(value) => void changeOffline(value)}
+            />
+            <p className="settings-hint">
+              离线模式是全局开关，立即写入配置。关闭后恢复正常网络能力；不会删除已缓存或已安装的文件。
+            </p>
+          </div>
+        </section>
+
+        <section className="settings-section">
+          <div className="settings-section__heading">
+            <div className="settings-section__icon">
+              <Download size={18} />
+            </div>
+            <div>
+              <h2>软件更新</h2>
+              <p>从 GitHub Releases 检查安装版更新</p>
+            </div>
+          </div>
+          <div className="settings-card update-panel">
+            <div className="update-line">
+              <div>
+                <span>当前版本</span>
+                <strong>v{boot.appVersion}</strong>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<RefreshCw size={14} />}
+                loading={updating}
+                onClick={() => void checkUpdate()}
+              >
+                检查更新
+              </Button>
+            </div>
+            {updateError ? <InlineNotice tone="danger" title="更新失败">{updateError}</InlineNotice> : null}
+            {update && !update.available ? (
+              <InlineNotice tone="success" title="已是最新版本">
+                当前 v{update.current_version} 没有更高版本的 Windows 安装包。
+              </InlineNotice>
+            ) : null}
+            {update?.available ? (
+              <div className="update-available">
+                <div className="update-version">
+                  <div>
+                    <span>可用版本</span>
+                    <strong>v{update.available.version}</strong>
+                  </div>
+                  <Badge tone="accent">{update.available.channel === 'beta' ? 'Beta' : 'Stable'}</Badge>
+                </div>
+                {update.available.notes ? (
+                  <p className="update-notes">{update.available.notes}</p>
+                ) : null}
+                <div className="settings-form__actions">
+                  <Button
+                    variant="primary"
+                    icon={<Download size={15} />}
+                    loading={updating}
+                    onClick={() => void downloadUpdatePackage()}
+                  >
+                    下载更新
+                  </Button>
+                  {updatePath ? (
+                    <Button variant="secondary" onClick={() => void installUpdate()}>
+                      安装并重启
+                    </Button>
+                  ) : null}
+                </div>
+                {updatePath ? <code className="update-path" title={updatePath}>{updatePath}</code> : null}
+              </div>
+            ) : null}
+            <p className="settings-hint">
+              默认从 GitHub Releases 获取安装包；下载后由 Rust 核心校验大小与 SHA256。自动替换目前只支持安装版 .exe，便携版请手动替换。
+            </p>
+          </div>
+        </section>
+
+        <section className="settings-section">
+          <div className="settings-section__heading">
+            <div className="settings-section__icon">
+              <Puzzle size={18} />
+            </div>
+            <div>
+              <h2>插件</h2>
+              <p>版本与权限声明的本地清单</p>
+            </div>
+            <div className="settings-section__actions">
+              <Button size="sm" variant="ghost" icon={<FolderOpen size={14} />} onClick={() => void openPlugins()}>
+                打开目录
+              </Button>
+            </div>
+          </div>
+          <div className="settings-card">
+            {plugins.length ? (
+              <div className="plugin-list">
+                {plugins.map((plugin) => (
+                  <div className="plugin-row" key={plugin.directory}>
+                    <div>
+                      <strong>{plugin.manifest?.name || plugin.directory}</strong>
+                      <span>
+                        {plugin.manifest ? 'v' + plugin.manifest.version + ' · API ' + plugin.manifest.api_version + ' · ' + plugin.manifest.kind : plugin.directory}
+                      </span>
+                    </div>
+                    <div className="plugin-row__permissions">
+                      {(plugin.manifest?.permissions || []).map((permission) => (
+                        <Badge tone="outline" key={permission}>{permission}</Badge>
+                      ))}
+                      <Badge tone={plugin.valid ? 'success' : 'warn'}>{plugin.valid ? '清单有效' : '无效'}</Badge>
+                    </div>
+                    {plugin.warnings.length ? <p>{plugin.warnings.join(' · ')}</p> : null}
+                    {plugin.error ? <p className="plugin-row__error">{plugin.error}</p> : null}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="settings-hint">
+                还没有插件。将包含 <code>manifest.json</code> 的目录放入插件目录即可被识别；P3 仅做版本/权限校验，尚不执行第三方代码。
+              </p>
+            )}
+            <p className="settings-hint">
+              插件 API 目前为 1.0.0；支持的扩展点：崩溃分析、下载源、账号 Provider。权限必须在清单中显式声明。
             </p>
           </div>
         </section>

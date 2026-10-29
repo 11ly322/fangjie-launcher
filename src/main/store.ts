@@ -101,7 +101,8 @@ export class LauncherStore {
         javaPath: '',
         showSnapshots: false,
         minimizeOnLaunch: false,
-        downloadConcurrency: 16
+        downloadConcurrency: 16,
+        offline: false
       },
       account: createDefaultAccount(),
       instances: []
@@ -139,6 +140,7 @@ export class LauncherStore {
           ...settings,
           memoryMb: clampMemory(Number(settings.memoryMb)),
           theme: normalizeTheme(settings.theme),
+          offline: settings.offline === true,
           downloadConcurrency: Math.min(64, Math.max(4, Number(settings.downloadConcurrency) || 16))
         },
         account: {

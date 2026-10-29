@@ -9,13 +9,17 @@ use std::path::PathBuf;
 
 use fangjie_core::crash_diagnosis::{self, CrashDiagnosisReport};
 use fangjie_core::download_source::{DownloadConfig, SourceRegistry};
-use fangjie_core::error::CoreResult;
+use fangjie_core::error::{CoreError, CoreResult};
 use fangjie_core::flight_recorder::{self, ChartSeries};
 use fangjie_core::instance_manager::{
-    copy_instance_data, save_template_for, set_mods_enabled_for, InstanceTemplate, ModEnableChange,
+    copy_instance_data, export_mod_list_for, save_template_for, set_mods_enabled_for,
+    InstanceTemplate, ModEnableChange,
 };
 use fangjie_core::model::Instance;
 use fangjie_core::mod_scanner::{ModScanReport, ModScanner};
+use fangjie_core::modpack_importer::apply_mrpack;
+use fangjie_core::plugin_api::{validate_manifest, PluginManifest, PluginValidation};
+use fangjie_core::update_manager::{check_manifest, verify_asset, UpdateAsset, UpdateManifest};
 use fangjie_core::repair_engine::{
     RepairEngine, RepairOptions, RepairPlan, RepairReceipt,
 };
@@ -65,10 +69,28 @@ enum Request {
         new_id: String,
         new_name: String,
     },
+    ExportModList {
+        instance: Instance,
+    },
     SaveTemplate {
         instance: Instance,
         templates_root: PathBuf,
         template_id: String,
+    },
+    CheckUpdate {
+        current_version: String,
+        manifest: UpdateManifest,
+    },
+    VerifyUpdate {
+        path: PathBuf,
+        asset: UpdateAsset,
+    },
+    ValidatePlugin {
+        manifest: PluginManifest,
+    },
+    ImportModpack {
+        instance: Instance,
+        archive_path: PathBuf,
     },
 }
 
@@ -174,6 +196,29 @@ fn execute(
             let template: InstanceTemplate =
                 save_template_for(&instance, &templates_root, &template_id)?;
             Ok(serde_json::to_value(template)?)
+        }
+        Request::ExportModList { instance } => {
+            Ok(serde_json::to_value(export_mod_list_for(&instance)?)?)
+        }
+        Request::CheckUpdate {
+            current_version,
+            manifest,
+        } => Ok(serde_json::to_value(check_manifest(
+            &current_version,
+            manifest,
+        )?)?),
+        Request::VerifyUpdate { path, asset } => {
+            verify_asset(&path, &asset)?;
+            Ok(serde_json::json!({ "verified": true }))
+        }
+        Request::ImportModpack {
+            instance,
+            archive_path,
+        } => Ok(serde_json::to_value(apply_mrpack(&instance, &archive_path)?)?),
+        Request::ValidatePlugin { manifest } => {
+            let validation: PluginValidation = validate_manifest(&manifest)
+                .map_err(|error| CoreError::InvalidInput(error.to_string()))?;
+            Ok(serde_json::to_value(validation)?)
         }
     }
 }

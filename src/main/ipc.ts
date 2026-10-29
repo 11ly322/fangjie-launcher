@@ -1,7 +1,7 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron'
 import type { OpenDialogOptions } from 'electron'
 import { join } from 'node:path'
-import { copyFileSync, existsSync } from 'node:fs'
+import { copyFileSync, existsSync, writeFileSync } from 'node:fs'
 import { migrateDataLocation } from './dataLocation'
 import type {
   CreateInstanceInput,
@@ -9,6 +9,7 @@ import type {
   Settings,
   StartGuestInput,
   StartHostInput,
+  CoreModListExport,
   UpdateInstanceInput
 } from '../shared/types'
 import { errorMessage, normalizeJavaPath, scanJavaRuntimes } from './java'
@@ -34,8 +35,12 @@ import {
 } from './curseforge'
 import { normalizeTheme, type LauncherStore } from './store'
 import { RustCoreClient, toRustInstance } from './rustCore'
+import { assertOnline, isOffline, setOffline } from './networkPolicy'
+import { applyUpdate, checkForUpdates, downloadUpdate } from './updateManager'
+import { installAsset } from './assets'
+import { listPlugins, openPluginsFolder } from './plugins'
 import type { TaskManager } from './tasks'
-import { multiplayerManager } from './multiplayer'
+import { COMMUNITY_RELAYS, measureRelayLatency, multiplayerManager } from './multiplayer'
 
 interface IpcContext {
   store: LauncherStore
@@ -50,9 +55,29 @@ function broadcast(channel: string, payload: unknown): void {
   }
 }
 
+const NETWORK_CHANNELS = new Set([
+  'versions:list',
+  'instances:create',
+  'instances:import-modpack',
+  'mods:search',
+  'mods:project',
+  'mods:install',
+  'assets:install',
+  'auth:microsoft-login',
+  'update:check',
+  'update:download',
+  'multiplayer:host',
+  'multiplayer:guest',
+  'crash:preview',
+  'crash:apply'
+])
+
 function handle<T>(channel: string, callback: (...args: any[]) => Promise<T> | T): void {
   ipcMain.handle(channel, async (_event, ...args): Promise<Result<T>> => {
     try {
+      if (isOffline() && NETWORK_CHANNELS.has(channel)) {
+        throw new Error('离线模式已开启，已阻止网络请求')
+      }
       return { ok: true, value: await callback(...args) }
     } catch (error) {
       return { ok: false, error: errorMessage(error) }
@@ -143,6 +168,15 @@ export function registerIpcHandlers(context: IpcContext): void {
   })
 
   handle('multiplayer:state', async () => multiplayerManager.getState())
+  handle('multiplayer:latency', async () => measureRelayLatency())
+  handle('multiplayer:diagnostics', async () => ({
+    generatedAt: new Date().toISOString(),
+    appVersion: app.getVersion(),
+    platform: process.platform,
+    arch: process.arch,
+    relays: [...COMMUNITY_RELAYS],
+    state: multiplayerManager.getState()
+  }))
   handle('multiplayer:host', async (input: StartHostInput) => multiplayerManager.startHost(input))
   handle('multiplayer:guest', async (input: StartGuestInput) =>
     multiplayerManager.startGuest(input)
@@ -192,8 +226,10 @@ export function registerIpcHandlers(context: IpcContext): void {
     if (typeof patch.showSnapshots === 'boolean') safePatch.showSnapshots = patch.showSnapshots
     if (typeof patch.minimizeOnLaunch === 'boolean') safePatch.minimizeOnLaunch = patch.minimizeOnLaunch
     if (typeof patch.downloadConcurrency === 'number') safePatch.downloadConcurrency = patch.downloadConcurrency
+    if (typeof patch.offline === 'boolean') safePatch.offline = patch.offline
     if (patch.theme !== undefined) safePatch.theme = normalizeTheme(patch.theme)
     const settings = store.setSettings(safePatch)
+    setOffline(settings.offline)
     notifyChange('settings')
     return settings
   })
@@ -310,6 +346,35 @@ export function registerIpcHandlers(context: IpcContext): void {
 
   handle('core:status', async () => rustCore.status())
 
+  handle('plugins:list', async () => listPlugins(store, rustCore))
+  handle('plugins:open-folder', async () => openPluginsFolder(store))
+
+  handle('update:check', async () => checkForUpdates(rustCore))
+
+  handle('update:download', async (asset) => downloadUpdate(rustCore, asset))
+
+  handle('update:apply', async (installerPath: string) => applyUpdate(installerPath))
+
+  handle('instances:export-mod-list', async (instanceId: string) => {
+    const instance = store.getInstance(instanceId)
+    if (!instance) throw new Error('找不到这个实例')
+    const data = await rustCore.request<CoreModListExport>('export_mod_list', {
+      instance: toRustInstance(store, instance)
+    })
+    const window = getMainWindow()
+    const options = {
+      title: '导出模组列表',
+      defaultPath: instance.name + '-mods.json',
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    }
+    const result = window
+      ? await dialog.showSaveDialog(window, options)
+      : await dialog.showSaveDialog(options)
+    if (result.canceled || !result.filePath) return null
+    writeFileSync(result.filePath, JSON.stringify(data, null, 2), 'utf8')
+    return result.filePath
+  })
+
   handle('flight:export', async (instanceId: string) => {
     const instance = store.getInstance(instanceId)
     if (!instance) throw new Error('找不到这个实例')
@@ -401,6 +466,27 @@ export function registerIpcHandlers(context: IpcContext): void {
     if (installed.length) store.updateInstance(newId, (current) => ({ ...current, mods: installed }))
     notifyChange('instance-copied')
     return { ...record, mods: installed }
+  })
+
+  handle('instances:import-modpack', async (instanceId: string) => {
+    const instance = store.getInstance(instanceId)
+    if (!instance) throw new Error('找不到这个实例')
+    const window = getMainWindow()
+    const options = {
+      title: '选择 Modrinth 整合包',
+      filters: [{ name: 'Modrinth Modpack', extensions: ['mrpack'] }],
+      properties: ['openFile' as const]
+    }
+    const picked = window
+      ? await dialog.showOpenDialog(window, options)
+      : await dialog.showOpenDialog(options)
+    if (picked.canceled || !picked.filePaths[0]) return null
+    const report = await rustCore.request('import_modpack', {
+      instance: toRustInstance(store, instance),
+      archive_path: picked.filePaths[0]
+    })
+    notifyChange('modpack-imported')
+    return { path: picked.filePaths[0], report }
   })
 
   handle('instances:save-template', async (instanceId: string) => {
@@ -495,6 +581,7 @@ export function registerIpcHandlers(context: IpcContext): void {
         limit?: number
         sort?: 'relevance' | 'downloads' | 'newest' | 'updated'
         source?: 'modrinth' | 'curseforge'
+        projectType?: 'mod' | 'resourcepack' | 'shader'
       } = {}
     ) => {
       const instance = options.instanceId ? store.getInstance(options.instanceId) : undefined
@@ -505,7 +592,8 @@ export function registerIpcHandlers(context: IpcContext): void {
           category: options.category,
           offset: options.offset,
           limit: options.limit,
-          sort: options.sort
+          sort: options.sort,
+          projectType: options.projectType
         })
       }
       return searchMods({
@@ -514,15 +602,20 @@ export function registerIpcHandlers(context: IpcContext): void {
         category: options.category,
         offset: options.offset,
         limit: options.limit,
-        sort: options.sort
+        sort: options.sort,
+        projectType: options.projectType
       })
     }
   )
 
-  handle('mods:project', async (idOrSlug: string, instanceId?: string) => {
+  handle('mods:project', async (idOrSlug: string, instanceId?: string, projectType?: 'mod' | 'resourcepack' | 'shader') => {
     const instance = instanceId ? store.getInstance(instanceId) : undefined
-    if (idOrSlug.startsWith('cf-')) return getCurseForgeProject(idOrSlug, instance)
-    return getModProject(idOrSlug, instance)
+    const effective =
+      projectType && projectType !== 'mod' && instance
+        ? { ...instance, loader: 'vanilla' as const }
+        : instance
+    if (idOrSlug.startsWith('cf-')) return getCurseForgeProject(idOrSlug, effective)
+    return getModProject(idOrSlug, effective, projectType)
   })
 
   handle('mods:install', async (instanceId: string, projectId: string) => {
@@ -544,6 +637,26 @@ export function registerIpcHandlers(context: IpcContext): void {
     notifyChange('task')
     return result
   })
+
+  handle(
+    'assets:install',
+    async (
+      instanceId: string,
+      projectId: string,
+      projectType: 'mod' | 'resourcepack' | 'shader',
+      source: 'modrinth' | 'curseforge'
+    ) => {
+      const result = await installAsset({
+        store,
+        instanceId,
+        projectId,
+        projectType,
+        source
+      })
+      notifyChange('assets')
+      return result
+    }
+  )
 
   handle('tasks:cancel', async (taskId: string) => {
     tasks.cancel(taskId)

@@ -12,6 +12,10 @@ import type {
   CoreRepairPlan,
   CoreRepairReceipt,
   CoreStatus,
+  CoreModListExport,
+  CoreModpackReport,
+  CoreUpdateAsset,
+  CoreUpdateCheck,
   JavaStatus,
   LaunchState,
   LauncherApi,
@@ -19,6 +23,9 @@ import type {
   ModProject,
   ModSearchResponse,
   ModVersion,
+  MultiplayerDiagnostics,
+  ProjectType,
+  PluginRecord,
   MultiplayerState,
   Result,
   Settings,
@@ -95,19 +102,34 @@ const api: LauncherApi = {
     invoke<CoreFlightSeries>('flight:series', instanceId),
   exportFlightCsv: (instanceId: string) =>
     invoke<string | null>('flight:export', instanceId),
+  exportModList: (instanceId: string) =>
+    invoke<string | null>('instances:export-mod-list', instanceId),
+  importModpack: (instanceId: string) =>
+    invoke<{ path: string; report: CoreModpackReport } | null>('instances:import-modpack', instanceId),
+  pluginsList: () => invoke<PluginRecord[]>('plugins:list'),
+  openPluginsFolder: () => invoke<void>('plugins:open-folder'),
+  updateCheck: () => invoke<CoreUpdateCheck>('update:check'),
+  updateDownload: (asset: CoreUpdateAsset) => invoke<string>('update:download', asset),
+  updateApply: (installerPath: string) => invoke<void>('update:apply', installerPath),
   openLogsFolder: (id: string) => invoke<void>('instances:open-logs', id),
   instanceMods: (id: string) => invoke<InstalledMod[]>('mods:list', id),
   setModEnabled: (id: string, fileName: string, enabled: boolean) =>
     invoke<InstalledMod[]>('mods:set-enabled', id, fileName, enabled),
   removeMod: (id: string, fileName: string) => invoke<InstalledMod[]>('mods:remove', id, fileName),
   searchMods: (query, options) => invoke<ModSearchResponse>('mods:search', query, options || {}),
-  getModProject: (idOrSlug: string, instanceId?: string) =>
-    invoke<{ project: ModProject; versions: ModVersion[] }>('mods:project', idOrSlug, instanceId),
+  getModProject: (idOrSlug: string, instanceId?: string, projectType?: ProjectType) =>
+    invoke<{ project: ModProject; versions: ModVersion[] }>('mods:project', idOrSlug, instanceId, projectType),
   installMod: (instanceId: string, projectId: string) =>
     invoke<InstallModResult>('mods:install', instanceId, projectId),
+  installAsset: (instanceId: string, projectId: string, projectType, source) =>
+    invoke<{ fileName: string; path: string }>('assets:install', instanceId, projectId, projectType, source),
   cancelTask: (taskId: string) => invoke<void>('tasks:cancel', taskId),
   clearTasks: () => invoke<void>('tasks:clear'),
   multiplayerState: () => invoke<MultiplayerState>('multiplayer:state'),
+  multiplayerDiagnostics: () =>
+    invoke<MultiplayerDiagnostics>('multiplayer:diagnostics'),
+  multiplayerLatency: () =>
+    invoke<{ relay: string; latencyMs: number } | null>('multiplayer:latency'),
   startHost: (input: StartHostInput) => invoke<MultiplayerState>('multiplayer:host', input),
   startGuest: (input: StartGuestInput) => invoke<MultiplayerState>('multiplayer:guest', input),
   stopMultiplayer: () => invoke<MultiplayerState>('multiplayer:stop'),

@@ -62,6 +62,7 @@ export function ModsPage(): React.JSX.Element {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
   const [sort, setSort] = useState<SortMode>('downloads')
+  const [projectType, setProjectType] = useState<'mod' | 'resourcepack' | 'shader'>('mod')
   const [source, setSource] = useState<ModSource>(() =>
     localStorage.getItem('fangjie.modSource') === 'curseforge' ? 'curseforge' : 'modrinth'
   )
@@ -105,7 +106,7 @@ export function ModsPage(): React.JSX.Element {
     }, 280)
     return () => window.clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, category, sort, source, selectedInstance?.id])
+  }, [query, category, sort, source, projectType, selectedInstance?.id])
 
   const installedIds = useMemo(() => new Set(installed.map((mod) => mod.projectId)), [installed])
 
@@ -142,7 +143,8 @@ export function ModsPage(): React.JSX.Element {
       offset: nextOffset,
       limit: PAGE_SIZE,
       sort,
-      source
+      source,
+      projectType
     })
     if (current !== requestId.current) return
     setLoading(false)
@@ -162,20 +164,32 @@ export function ModsPage(): React.JSX.Element {
       toast('先选择一个带模组加载器的实例，才能安装模组', 'info')
       return
     }
-    if (installedIds.has(project.project_id) || installingIds.has(project.project_id)) return
-    void window.fangjie.installMod(selectedInstance.id, project.project_id).then((result) => {
-      if (!result.ok) {
-        toast(result.error, 'error')
-        return
-      }
-      toast(`已开始安装「${project.title}」`, 'success')
-    })
+    if (projectType === 'mod') {
+      if (installedIds.has(project.project_id) || installingIds.has(project.project_id)) return
+      void window.fangjie.installMod(selectedInstance.id, project.project_id).then((result) => {
+        if (!result.ok) {
+          toast(result.error, 'error')
+          return
+        }
+        toast(`已开始安装「${project.title}」`, 'success')
+      })
+      return
+    }
+    void window.fangjie
+      .installAsset(selectedInstance.id, project.project_id, projectType, source)
+      .then((result) => {
+        if (!result.ok) {
+          toast(result.error, 'error')
+          return
+        }
+        toast(`已安装「${project.title}」到 ${selectedInstance.name}`, 'success')
+      })
   }
 
   async function openDetail(hit: ModSearchHit): Promise<void> {
     setDetail({ hit, loading: true, error: '' })
     const lookupId = hit.source === 'curseforge' ? hit.project_id : hit.slug || hit.project_id
-    const result = await window.fangjie.getModProject(lookupId, selectedInstance?.id)
+    const result = await window.fangjie.getModProject(lookupId, selectedInstance?.id, projectType)
     if (!result.ok) {
       setDetail((current) =>
         current && current.hit.project_id === hit.project_id
@@ -220,6 +234,29 @@ export function ModsPage(): React.JSX.Element {
         </InlineNotice>
       ) : null}
 
+      <div className="asset-kind-tabs segmented" role="group" aria-label="项目类型">
+        {([
+          ['mod', '模组'],
+          ['resourcepack', '资源包'],
+          ['shader', '光影']
+        ] as const).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            className={classNames('segmented__item', projectType === value && 'is-active')}
+            aria-pressed={projectType === value}
+            onClick={() => {
+              setProjectType(value)
+              setCategory('')
+              setHits([])
+              setOffset(0)
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <section className="mods-filter-panel">
         <div className="mods-filter-row">
           <div className="instance-target">
@@ -259,8 +296,8 @@ export function ModsPage(): React.JSX.Element {
             <TextInput
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="搜索模组，例如 Sodium、Create、地图…"
-              aria-label="搜索模组"
+              placeholder={projectType === 'mod' ? '搜索模组，例如 Sodium、Create、地图…' : projectType === 'resourcepack' ? '搜索资源包，例如 Faithful、Stay True…' : '搜索光影，例如 Complementary、BSL…'}
+              aria-label={projectType === 'mod' ? '搜索模组' : projectType === 'resourcepack' ? '搜索资源包' : '搜索光影'}
             />
           </div>
 
@@ -275,7 +312,7 @@ export function ModsPage(): React.JSX.Element {
               setHits([])
               setOffset(0)
             }}
-            aria-label="模组下载源"
+            aria-label="项目下载源"
           >
             <option value="modrinth">Modrinth 源</option>
             <option value="curseforge">CurseForge 源</option>
@@ -294,7 +331,8 @@ export function ModsPage(): React.JSX.Element {
           </Select>
         </div>
 
-        <div className="category-chips" role="group" aria-label="模组分类">
+        {projectType === 'mod' ? (
+          <div className="category-chips" role="group" aria-label="模组分类">
           {MOD_CATEGORIES.map((item) => (
             <button
               key={item.id || 'all'}
@@ -306,7 +344,8 @@ export function ModsPage(): React.JSX.Element {
               {item.label}
             </button>
           ))}
-        </div>
+          </div>
+        ) : null}
       </section>
 
       <div className="mods-result-bar">
@@ -316,8 +355,8 @@ export function ModsPage(): React.JSX.Element {
           </span>
           {selectedInstance ? (
             <span className="result-context">
-              兼容 <strong>{LOADER_LABEL[selectedInstance.loader]}</strong> /{' '}
-              <strong>{selectedInstance.mcVersion}</strong>
+              {projectType === 'mod' ? '兼容' : '游戏版本'} <strong>{selectedInstance.mcVersion}</strong>
+              {projectType === 'mod' ? <> / <strong>{LOADER_LABEL[selectedInstance.loader]}</strong></> : null}
             </span>
           ) : (
             <span className="result-context">浏览全部模组项目</span>
@@ -417,8 +456,9 @@ export function ModsPage(): React.JSX.Element {
         onClose={() => setDetail(null)}
         selectedInstanceName={selectedInstance?.name}
         selectedInstanceVersion={selectedInstance?.mcVersion}
-        selectedLoader={selectedInstance ? LOADER_LABEL[selectedInstance.loader] : '模组'}
-        installed={detail ? installed.find((mod) => mod.projectId === detail.hit.project_id) : undefined}
+        selectedLoader={projectType === 'mod' ? (selectedInstance ? LOADER_LABEL[selectedInstance.loader] : '模组') : projectType === 'resourcepack' ? '资源包' : '光影'}
+        projectType={projectType}
+        installed={projectType === 'mod' && detail ? installed.find((mod) => mod.projectId === detail.hit.project_id) : undefined}
         installing={Boolean(
           detail?.hit.project_id && installingIds.has(detail.hit.project_id)
         )}
@@ -443,6 +483,7 @@ function ModDetailModal({
   selectedInstanceName,
   selectedInstanceVersion,
   selectedLoader,
+  projectType,
   installed,
   installing,
   canInstall,
@@ -454,6 +495,7 @@ function ModDetailModal({
   selectedInstanceName?: string
   selectedInstanceVersion?: string
   selectedLoader: string
+  projectType: 'mod' | 'resourcepack' | 'shader'
   installed?: InstalledMod
   installing: boolean
   canInstall: boolean
@@ -467,11 +509,12 @@ function ModDetailModal({
   const body = project?.body ? stripMarkdown(project.body) : ''
   const paragraphs = body.split(/\n{2,}/).filter(Boolean).slice(0, 8)
   const isCurseForge = project?.source === 'curseforge' || detail?.hit.source === 'curseforge'
+  const kindPath = projectType === 'resourcepack' ? 'resourcepack' : projectType === 'shader' ? 'shader' : 'mod'
   const externalUrl =
     project?.website_url ||
     (isCurseForge
-      ? `https://www.curseforge.com/minecraft/mc-mods/${project?.slug || detail?.hit.slug}`
-      : `https://modrinth.com/mod/${project?.slug || detail?.hit.slug}`)
+      ? `https://www.curseforge.com/minecraft/${projectType === 'mod' ? 'mc-mods' : projectType === 'resourcepack' ? 'texture-packs' : 'shaders'}/${project?.slug || detail?.hit.slug}`
+      : `https://modrinth.com/${kindPath}/${project?.slug || detail?.hit.slug}`)
 
   return (
     <Modal
@@ -507,7 +550,9 @@ function ModDetailModal({
                 ? '先选择模组实例'
                 : installing
                   ? '正在安装'
-                  : `安装到${selectedInstanceName ? ` ${selectedInstanceName}` : ''}`}
+                  : projectType === 'mod'
+                    ? `安装到${selectedInstanceName ? ` ${selectedInstanceName}` : ''}`
+                    : `安装${projectType === 'resourcepack' ? '资源包' : '光影'}${selectedInstanceName ? `到 ${selectedInstanceName}` : ''}`}
           </Button>
         </>
       }

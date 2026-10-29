@@ -11,6 +11,7 @@
 - P0 故障诊断 UI：Rust sidecar 接入崩溃模式、JAR 扫描、diff 预览、备份/回滚。
 - P0 模组勾选批量启停、实例深复制与模板、Flight Recorder 折线图与 CSV 导出。
 - 实例设置新增 JVM 参数、窗口宽高字段。
+- P1 基础更新器：GitHub Releases 检查、下载、SHA256 校验与 NSIS `/S` 安装入口。
 
 ## 0.0.1-beta — 2026-10-30
 

@@ -5,6 +5,7 @@ import {
   Clock3,
   Copy,
   Cpu,
+  Download,
   FolderOpen,
   HardDrive,
   Play,
@@ -78,6 +79,7 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
   const [copyName, setCopyName] = useState(instance.name + ' 副本')
   const [copying, setCopying] = useState(false)
   const [templateSaving, setTemplateSaving] = useState(false)
+  const [importingModpack, setImportingModpack] = useState(false)
 
   const isRunning = running.has(instance.id)
   const isLaunching = launching.has(instance.id)
@@ -185,6 +187,29 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
     toast('已复制为「' + result.value.name + '」', 'success')
     await refresh()
     navigate('instances')
+  }
+
+  const exportMods = async (): Promise<void> => {
+    const result = await window.fangjie.exportModList(instance.id)
+    if (!result.ok) {
+      toast(result.error, 'error')
+      return
+    }
+    if (result.value) toast('模组列表已导出', 'success')
+  }
+
+  const importModpack = async (): Promise<void> => {
+    setImportingModpack(true)
+    const result = await window.fangjie.importModpack(instance.id)
+    setImportingModpack(false)
+    if (!result.ok) {
+      toast(result.error, 'error')
+      return
+    }
+    if (!result.value) return
+    const report = result.value.report
+    toast('已导入 ' + report.downloaded + ' 个文件 / ' + report.overrides + ' 个覆盖文件', 'success')
+    await reloadMods()
   }
 
   const saveTemplate = async (): Promise<void> => {
@@ -772,6 +797,17 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
                 </Button>
                 <Button variant="secondary" icon={<Puzzle size={16} />} onClick={() => openMods(instance.id)}>
                   管理模组
+                </Button>
+                <Button variant="secondary" icon={<Download size={16} />} onClick={() => void exportMods()}>
+                  导出模组列表
+                </Button>
+                <Button
+                  variant="secondary"
+                  icon={<Download size={16} />}
+                  loading={importingModpack}
+                  onClick={() => void importModpack()}
+                >
+                  导入 .mrpack
                 </Button>
               </div>
             </section>

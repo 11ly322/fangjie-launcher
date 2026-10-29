@@ -11,7 +11,8 @@ import type {
   ModSearchHit,
   ModSearchResponse,
   ModVersion,
-  ModVersionFile
+  ModVersionFile,
+  ProjectType
 } from '../shared/types'
 import type { LauncherStore } from './store'
 import { safeFileName } from './store'
@@ -247,18 +248,21 @@ export async function searchCurseForge(options: {
   offset?: number
   limit?: number
   sort?: 'relevance' | 'downloads' | 'newest' | 'updated'
+  projectType?: ProjectType
 }): Promise<ModSearchResponse> {
   const params = new URLSearchParams({
     gameId: '432',
-    classId: '6',
+    classId: options.projectType === 'resourcepack' ? '12' : options.projectType === 'shader' ? '6552' : '6',
     index: String(Math.max(0, options.offset || 0)),
     pageSize: String(Math.min(48, Math.max(1, options.limit || 20)))
   })
   if (options.query) params.set('searchFilter', options.query)
   if (options.instance?.mcVersion) params.set('gameVersion', options.instance.mcVersion)
-  if (options.instance && options.instance.loader !== 'vanilla') {
-    const loaderId = LOADER_IDS[options.instance.loader]
-    if (loaderId) params.set('modLoaderType', String(loaderId))
+  if (!options.projectType || options.projectType === 'mod') {
+    if (options.instance && options.instance.loader !== 'vanilla') {
+      const loaderId = LOADER_IDS[options.instance.loader]
+      if (loaderId) params.set('modLoaderType', String(loaderId))
+    }
   }
   if (options.category && CATEGORY_IDS[options.category]) {
     params.set('categoryId', String(CATEGORY_IDS[options.category]))
@@ -270,7 +274,7 @@ export async function searchCurseForge(options: {
 
   const response = await cfFetch<CfSearchResponse>(`/mods/search?${params.toString()}`)
   const filteredLoaders =
-    options.instance && options.instance.loader !== 'vanilla'
+    (!options.projectType || options.projectType === 'mod') && options.instance && options.instance.loader !== 'vanilla'
       ? [options.instance.loader]
       : undefined
   const hits: ModSearchHit[] = (response.data || []).map((mod) => {
