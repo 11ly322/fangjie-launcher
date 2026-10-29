@@ -9,7 +9,7 @@
 - **房间联机（实验）**：房主创建 `U/XXXX-XXXX-XXXX-XXXX` 房间码，房客凭码加入。
 - Rust 原生连接器内嵌 EasyTier 库，强制 no-tun + smoltcp，不创建 TUN 网卡、不请求管理员权限。
 - 复用 EasyTier 社区公共中继节点；启动器不运营中转、信令或 TURN 服务。
-- E2E 验证：Host 生成房间码，Guest 加入后取得 `127.0.0.1:<port>` 地址，SCF 玩家列表显示双方。
+- E2E 验证：Host 生成房间码，Guest 加入后取得 `127.0.0.1:<port>` 地址，SCF 玩家列表显示双方；公共中继下完成 TCP 双向回显。
 - 连接器补丁移除 faketcp/wireguard/proxy-packet/vpn-portal/tun feature，避免 `packet.dll` 与 Npcap 依赖。
 
 ### 说明

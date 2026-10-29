@@ -117,6 +117,7 @@ npm run package:installer
 - CustomSkinLoader 安装、`CustomSkinLoader.json` 与 `LocalSkin/skins/<玩家名>.png` 写入。
 - Microsoft 登录窗口打开、OAuth 取消后正确返回“已取消 Microsoft 登录”。
 - 房间联机控制面：Host 生成房间码，Guest 通过公共中继加入，SCF 玩家列表显示双方，Guest 获得 `127.0.0.1:<port>` 地址。
+- 房间联机数据面：同机经公共中继完成 Guest 转发端口到 Host 本地 TCP 服务的双向回显；真实跨机器 NAT 仍未验证。
 
 ## 已知限制
 
