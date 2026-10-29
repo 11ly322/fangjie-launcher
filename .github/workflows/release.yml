@@ -1,0 +1,56 @@
+name: Build release artifact
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Windows portable build
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build portable app
+        run: npm run package
+
+      - name: Create release archive
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $archive = "release/Fangjie-Portable-$version.zip"
+          Compress-Archive -Path "release/Fangjie-win32-x64/*" -DestinationPath $archive -CompressionLevel Optimal
+          Get-FileHash $archive -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" } |
+            Set-Content "release/SHA256SUMS.txt"
+
+      - name: Upload portable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Fangjie-Portable-${{ github.ref_name }}
+          path: |
+            release/Fangjie-Portable-*.zip
+            release/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30

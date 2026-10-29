@@ -1,0 +1,30 @@
+name: Feature request
+description: 提议一个功能或兼容性改进
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 想解决的问题
+      description: 当前体验哪里不方便？请描述场景，而不只是功能名称。
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+      description: 你期望的交互、行为或兼容范围。
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 考虑过的替代方案
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 确认
+      options:
+        - label: 这不是一个可以私下报告的安全漏洞
+          required: true

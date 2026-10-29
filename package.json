@@ -1,0 +1,95 @@
+{
+  "name": "fangjie-launcher",
+  "version": "0.0.1-alpha",
+  "description": "方界 — 支持游戏实例、模组下载、多加载器、正版登录与本地皮肤的 Minecraft 启动器",
+  "main": "./out/main/index.js",
+  "author": "11ly322 (https://github.com/11ly322)",
+  "license": "MIT",
+  "private": true,
+  "homepage": "https://github.com/11ly322/fangjie-launcher#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/11ly322/fangjie-launcher.git"
+  },
+  "bugs": {
+    "url": "https://github.com/11ly322/fangjie-launcher/issues"
+  },
+  "keywords": [
+    "minecraft",
+    "launcher",
+    "electron",
+    "fabric",
+    "forge",
+    "neoforge",
+    "quilt"
+  ],
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "vitest run",
+    "package": "npm run build && node scripts/package-portable.cjs",
+    "package:installer": "npm run build && electron-builder --win --x64"
+  },
+  "dependencies": {
+    "@xmcl/core": "2.13.0",
+    "@xmcl/installer": "5.4.0",
+    "@xmcl/task": "4.1.0",
+    "@xmcl/unzip": "2.1.2",
+    "lucide-react": "^1.64.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "undici": "6.0.1"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "@types/node": "^24.9.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "electron": "^45.1.0",
+    "electron-builder": "^26.18.0",
+    "electron-vite": "^6.0.0",
+    "playwright-core": "^1.64.1",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.5",
+    "vitest": "^4.1.11"
+  },
+  "build": {
+    "appId": "com.fangjie.launcher",
+    "productName": "方界启动器",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "resources/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/@xmcl/**"
+    ],
+    "win": {
+      "icon": "resources/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Fangjie-Launcher-${version}-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "方界启动器"
+    }
+  }
+}

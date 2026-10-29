@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全问题
+    url: https://github.com/11ly322/fangjie-launcher/security/advisories/new
+    about: 请不要公开披露安全漏洞，使用私密安全公告。
+  - name: 使用与构建文档
+    url: https://github.com/11ly322/fangjie-launcher#readme
+    about: 先查看 README 中的运行方式、数据位置和已知限制。
