@@ -27,7 +27,7 @@
 $env:FJ_SIGN_CERT_PATH = 'C:\secure\fangjie.pfx'
 $env:FJ_SIGN_CERT_PASSWORD = '<from secret store>'
 ./scripts/sign-windows.ps1 -Path 'release\Fangjie-win32-x64\Fangjie.exe'
-./scripts/sign-windows.ps1 -Path 'release\Fangjie-Launcher-0.0.3-beta-Setup.exe'
+./scripts/sign-windows.ps1 -Path 'release\Fangjie-Launcher-0.0.4-Setup.exe'
 ```
 
 CI 中不要把 PFX 写入磁盘明文；优先使用 Azure Trusted Signing 的 GitHub Action 或短期证书挂载。时间戳必须使用 RFC3161 服务。

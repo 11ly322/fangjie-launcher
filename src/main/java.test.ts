@@ -8,7 +8,7 @@ import type { LauncherStore } from './store'
 vi.mock('electron', () => ({
   app: {
     getPath: () => tmpdir(),
-    getVersion: () => '0.0.3-beta'
+    getVersion: () => '0.0.4'
   },
   safeStorage: {
     isEncryptionAvailable: () => false,

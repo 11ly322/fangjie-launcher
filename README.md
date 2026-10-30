@@ -8,16 +8,16 @@
 
 一个面向 Windows 的 Minecraft 桌面启动器，使用 Electron + React + TypeScript 构建。目标是接近 PCL2 的核心使用体验：游戏实例、加载器安装、模组搜索下载、正版登录与离线皮肤。
 
-> **0.0.3-beta**：修复系统根证书环境下更新检查的 `fetch failed`；保留模组前置索引与跳转、版本选择、CurseForge 源和已安装版本切换；整合包、资源包/光影、OptiFine、插件与离线模式已接入。真实签名更新与跨机器 NAT 仍需按文档实测，请先备份重要存档。
+> **0.0.4**：新增已安装模组更新中心、实例/世界快照与性能基础优化；保留双模组源、版本选择、前置索引、CurseForge、整合包、资源包/光影、OptiFine、插件与离线模式。真实签名更新与跨机器 NAT 仍需按文档实测，请先备份重要存档。
 
 ![方界启动器](resources/icon.png)
 
 ## 下载
 
-从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.3-beta) 选择：
+从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.4) 选择：
 
-- `Fangjie-Launcher-0.0.3-beta-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建桌面与开始菜单快捷方式，并注册卸载项。
-- `Fangjie-Portable-0.0.3-beta.zip`：免安装便携版，解压后双击 `Fangjie.exe`。
+- `Fangjie-Launcher-0.0.4-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建桌面与开始菜单快捷方式，并注册卸载项。
+- `Fangjie-Portable-0.0.4.zip`：免安装便携版，解压后双击 `Fangjie.exe`。
 - `SHA256SUMS.txt`：两个发布包的 SHA256 校验和。
 
 系统要求：Windows 10/11 x64。首次创建实例会自动下载对应 Java 运行时；安装版默认安装到 `%LOCALAPPDATA%\Programs\Fangjie Launcher`，卸载不会删除游戏存档和用户数据。
@@ -45,6 +45,9 @@
 - **游戏实例**：为每个世界创建独立目录，存档、模组、配置与日志互不干扰。
 - **多加载器**：原版、Fabric、Quilt、Forge、NeoForge。安装时自动准备 Java 运行时。
 - **模组工坊**：支持 Modrinth 与 CurseForge 两个下载源；按实例加载器与游戏版本过滤；提供版本选择、必需前置索引与跳转、介绍页；已安装模组可直接切换版本并替换旧文件；资源包/光影同样支持双源。
+- **模组更新中心**：批量检查已安装模组的兼容更新，分组展示可更新/已是最新/不可自动更新；支持单个或全部更新、跳过版本、固定版本，更新前自动备份旧 JAR 并支持手动回滚。
+- **世界快照**：手动或启动前自动快照存档、`options.txt`、`config/` 与模组清单；恢复前预览创建/覆盖项并自动生成安全快照；删除实例时可保留并归档快照。
+- **性能基础**：每实例模组索引、首屏快照瘦身与按需详情加载、Modrinth/CurseForge 磁盘缓存、Java 检测缓存、下载任务事件合并。
 - **整合包**：导入 `.mrpack` 或 CurseForge `.zip` 到现有实例；导出模组列表。
 - **OptiFine**：选择官方 installer，无窗口调用本地安装接口并绑定生成的 profile。
 - **网络设置**：HTTP(S) 代理、Modrinth/CurseForge API 基址；所有主进程 native fetch 走统一 seam。
@@ -86,7 +89,7 @@ npm run package
 npm run package:installer
 ```
 
-安装包输出到 `release/Fangjie-Launcher-0.0.3-beta-Setup.exe`。
+安装包输出到 `release/Fangjie-Launcher-0.0.4-Setup.exe`。
 
 联机连接器不提交二进制，需先通过 `.github/workflows/connector-build.yml` 构建到 `resources/bin/qomicex-connector-cli.exe`；发布包中已包含该组件。构建脚本会查找 electron-builder 缓存或系统安装的 NSIS 3.x；也可用 `MAKENSIS` 环境变量指定 `makensis.exe`。安装包未做代码签名，Windows SmartScreen 可能提示未知发布者。
 
