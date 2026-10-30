@@ -6826,3 +6826,200 @@ img {
     margin-left: 0;
   }
 }
+
+/* Instance and world snapshots */
+.snapshot-center {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.snapshot-create {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(var(--line-rgb), 0.025);
+}
+.snapshot-create > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 11px;
+}
+.snapshot-create > div:first-child strong {
+  font-size: 13px;
+  color: var(--text);
+}
+.snapshot-create > div:first-child span,
+.snapshot-hint {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.snapshot-create__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.snapshot-create__row .text-input,
+.snapshot-create__row input {
+  flex: 1;
+}
+.snapshot-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.snapshot-list,
+.snapshot-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.snapshot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(var(--line-rgb), 0.02);
+}
+.snapshot-row__main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.snapshot-row__title,
+.snapshot-row__meta,
+.snapshot-row__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.snapshot-row__title strong {
+  font-size: 13px;
+  color: var(--text);
+}
+.snapshot-row__title span {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 360px;
+}
+.snapshot-row__meta {
+  font-size: 11px;
+  color: var(--muted-dark);
+  gap: 12px;
+}
+.snapshot-row__actions {
+  flex: 0 0 auto;
+}
+.snapshot-loading,
+.snapshot-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 92px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+.snapshot-preview__summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(var(--line-rgb), 0.025);
+}
+.snapshot-preview__summary > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.snapshot-preview__summary strong {
+  font-size: 14px;
+  color: var(--text);
+}
+.snapshot-preview__summary span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.snapshot-preview__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.snapshot-diff {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.snapshot-diff__head,
+.snapshot-diff__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px 92px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+}
+.snapshot-diff__head {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--muted-dark);
+  text-transform: uppercase;
+  background: rgba(var(--line-rgb), 0.035);
+}
+.snapshot-diff__row {
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--text-soft);
+}
+.snapshot-diff__row code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+}
+.snapshot-diff__row > span:last-child {
+  text-align: right;
+  color: var(--muted);
+}
+.snapshot-hint {
+  margin: 0;
+}
+@media (max-width: 760px) {
+  .snapshot-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .snapshot-row__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .snapshot-preview__summary {
+    flex-direction: column;
+  }
+  .snapshot-diff__head,
+  .snapshot-diff__row {
+    grid-template-columns: minmax(0, 1fr) 70px 72px;
+  }
+}

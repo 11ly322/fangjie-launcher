@@ -101,6 +101,7 @@ export class LauncherStore {
         javaPath: '',
         showSnapshots: false,
         minimizeOnLaunch: false,
+        autoSnapshotBeforeLaunch: false,
         downloadConcurrency: 16,
         offline: false,
         proxyUrl: '',

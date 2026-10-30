@@ -6,6 +6,7 @@ import {
   Copy,
   Cpu,
   Download,
+  Archive,
   FolderOpen,
   HardDrive,
   Play,
@@ -41,6 +42,7 @@ import { classNames, formatDate, formatPlaytime, formatRelative, rangeProgress }
 import { CrashDiagnosticsModal } from '../components/CrashDiagnosticsModal'
 import { FlightRecorderModal } from '../components/FlightRecorderModal'
 import { ModUpdateCenter } from '../components/ModUpdateCenter'
+import { SnapshotCenter } from '../components/SnapshotCenter'
 
 type DetailTab = 'overview' | 'mods' | 'settings'
 
@@ -415,6 +417,7 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
         >
           性能记录
         </Button>
+        <SnapshotCenter instance={instance} />
         <Button
           variant="ghost"
           size="sm"
@@ -899,15 +902,26 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
               </div>
               <p className="muted-copy">
                 删除实例会一并移除存档、模组与日志。共享的游戏版本和 Java 运行时会保留。
+                如需保留世界快照，可选择下方“保留快照并删除”。
               </p>
-              <Button
-                variant="danger"
-                icon={<Trash2 size={16} />}
-                disabled={isRunning}
-                onClick={() => void requestDeleteInstance(instance.id)}
-              >
-                {isRunning ? '游戏运行时无法删除' : '删除这个实例'}
-              </Button>
+              <div className="settings-form__actions">
+                <Button
+                  variant="danger"
+                  icon={<Trash2 size={16} />}
+                  disabled={isRunning}
+                  onClick={() => void requestDeleteInstance(instance.id)}
+                >
+                  {isRunning ? '游戏运行时无法删除' : '删除这个实例'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  icon={<Archive size={16} />}
+                  disabled={isRunning}
+                  onClick={() => void requestDeleteInstance(instance.id, true)}
+                >
+                  保留快照并删除
+                </Button>
+              </div>
             </section>
           </div>
         </div>

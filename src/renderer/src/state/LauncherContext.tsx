@@ -57,7 +57,7 @@ export interface LauncherContextValue {
   saveSettings: (patch: Partial<Settings>) => Promise<boolean>
   launch: (id: string) => Promise<void>
   stop: (id: string) => Promise<void>
-  requestDeleteInstance: (id: string) => Promise<void>
+  requestDeleteInstance: (id: string, keepSnapshots?: boolean) => Promise<void>
   toast: (message: string, tone?: ToastTone) => void
   confirm: (options: ConfirmOptions) => Promise<boolean>
   closeLaunchError: () => void

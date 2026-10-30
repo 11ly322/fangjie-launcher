@@ -24,6 +24,14 @@ import {
 } from './minecraft'
 import { deleteInstanceData, listInstanceMods, removeMod, setModEnabled } from './mods'
 import {
+  archiveSnapshots,
+  createSnapshot,
+  deleteSnapshot,
+  listSnapshots,
+  previewSnapshot,
+  restoreSnapshot
+} from './snapshots'
+import {
   getModProject,
   searchMods,
   startModInstall
@@ -249,6 +257,9 @@ export function registerIpcHandlers(context: IpcContext): void {
     if (typeof patch.javaPath === 'string') safePatch.javaPath = patch.javaPath
     if (typeof patch.showSnapshots === 'boolean') safePatch.showSnapshots = patch.showSnapshots
     if (typeof patch.minimizeOnLaunch === 'boolean') safePatch.minimizeOnLaunch = patch.minimizeOnLaunch
+    if (typeof patch.autoSnapshotBeforeLaunch === 'boolean') {
+      safePatch.autoSnapshotBeforeLaunch = patch.autoSnapshotBeforeLaunch
+    }
     if (typeof patch.downloadConcurrency === 'number') safePatch.downloadConcurrency = patch.downloadConcurrency
     if (typeof patch.offline === 'boolean') safePatch.offline = patch.offline
     if (typeof patch.proxyUrl === 'string') safePatch.proxyUrl = patch.proxyUrl.trim()
@@ -311,10 +322,17 @@ export function registerIpcHandlers(context: IpcContext): void {
     return instance
   })
 
-  handle('instances:delete', async (id: string) => {
+  handle('instances:delete', async (id: string, keepSnapshots = false) => {
     const instance = store.getInstance(id)
     if (!instance) throw new Error('找不到这个实例')
     if (isGameRunning(id)) throw new Error('请先结束正在运行的游戏')
+    if (keepSnapshots) {
+      try {
+        await archiveSnapshots(store, instance, join(store.dataPath, 'snapshots-archive'))
+      } catch (error) {
+        throw new Error(`保留快照失败，实例未删除：${errorMessage(error)}`)
+      }
+    }
     deleteInstanceData(store, instance)
     store.removeInstance(id)
     notifyChange('instance-deleted')
@@ -324,6 +342,13 @@ export function registerIpcHandlers(context: IpcContext): void {
     const instance = store.getInstance(id)
     if (!instance) throw new Error('找不到这个实例')
     if (isGameRunning(id)) throw new Error('这个实例已经在运行了')
+    if (store.settings.autoSnapshotBeforeLaunch) {
+      try {
+        await createSnapshot(store, id, '启动前自动快照', 'auto')
+      } catch (error) {
+        throw new Error(`启动前自动快照失败，已取消启动：${errorMessage(error)}`)
+      }
+    }
 
     try {
       const state = await launchInstance({
@@ -666,6 +691,32 @@ export function registerIpcHandlers(context: IpcContext): void {
     notifyChange('mods')
     notifyChange('task')
     return result
+  })
+
+  handle('snapshots:list', async (instanceId: string) => {
+    return listSnapshots(store, instanceId)
+  })
+
+  handle('snapshots:create', async (instanceId: string, note?: string) => {
+    const snapshot = await createSnapshot(store, instanceId, typeof note === 'string' ? note : '')
+    notifyChange('snapshots')
+    return snapshot
+  })
+
+  handle('snapshots:preview', async (instanceId: string, snapshotId: string) => {
+    return previewSnapshot(store, instanceId, snapshotId)
+  })
+
+  handle('snapshots:restore', async (instanceId: string, snapshotId: string) => {
+    const result = await restoreSnapshot(store, instanceId, snapshotId)
+    notifyChange('snapshots')
+    notifyChange('instance-updated')
+    return result
+  })
+
+  handle('snapshots:delete', async (instanceId: string, snapshotId: string) => {
+    await deleteSnapshot(store, instanceId, snapshotId)
+    notifyChange('snapshots')
   })
 
   handle(

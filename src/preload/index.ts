@@ -35,6 +35,9 @@ import type {
   MultiplayerState,
   Result,
   Settings,
+  SnapshotMeta,
+  SnapshotPreview,
+  SnapshotRestoreResult,
   StartGuestInput,
   StartHostInput,
   TaskView,
@@ -80,7 +83,8 @@ const api: LauncherApi = {
     invoke<{ instance: Bootstrap['instances'][number]; taskId: string }>('instances:create', input),
   updateInstance: (id: string, patch: UpdateInstanceInput) =>
     invoke<Bootstrap['instances'][number]>('instances:update', id, patch),
-  deleteInstance: (id: string) => invoke<void>('instances:delete', id),
+  deleteInstance: (id: string, keepSnapshots?: boolean) =>
+    invoke<void>('instances:delete', id, keepSnapshots),
   launchInstance: (id: string) => invoke<LaunchState>('instances:launch', id),
   stopInstance: (id: string) => invoke<void>('instances:stop', id),
   openInstanceFolder: (id: string) => invoke<void>('instances:open-folder', id),
@@ -143,6 +147,15 @@ const api: LauncherApi = {
       instanceId,
       backupId
     ),
+  snapshotsList: (instanceId: string) => invoke<SnapshotMeta[]>('snapshots:list', instanceId),
+  snapshotsCreate: (instanceId: string, note?: string) =>
+    invoke<SnapshotMeta>('snapshots:create', instanceId, note),
+  snapshotsPreview: (instanceId: string, snapshotId: string) =>
+    invoke<SnapshotPreview>('snapshots:preview', instanceId, snapshotId),
+  snapshotsRestore: (instanceId: string, snapshotId: string) =>
+    invoke<SnapshotRestoreResult>('snapshots:restore', instanceId, snapshotId),
+  snapshotsDelete: (instanceId: string, snapshotId: string) =>
+    invoke<void>('snapshots:delete', instanceId, snapshotId),
   searchMods: (query, options) => invoke<ModSearchResponse>('mods:search', query, options || {}),
   getModProject: (idOrSlug: string, instanceId?: string, projectType?: ProjectType) =>
     invoke<{ project: ModProject; versions: ModVersion[] }>('mods:project', idOrSlug, instanceId, projectType),

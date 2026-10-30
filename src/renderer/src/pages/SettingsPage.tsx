@@ -36,6 +36,9 @@ export function SettingsPage(): React.JSX.Element {
   const [javaPath, setJavaPath] = useState(boot.settings.javaPath)
   const [showSnapshots, setShowSnapshots] = useState(boot.settings.showSnapshots)
   const [minimizeOnLaunch, setMinimizeOnLaunch] = useState(boot.settings.minimizeOnLaunch)
+  const [autoSnapshotBeforeLaunch, setAutoSnapshotBeforeLaunch] = useState(
+    boot.settings.autoSnapshotBeforeLaunch
+  )
   const [proxyUrl, setProxyUrl] = useState(boot.settings.proxyUrl)
   const [modrinthBase, setModrinthBase] = useState(boot.settings.modrinthBase)
   const [curseforgeBase, setCurseforgeBase] = useState(boot.settings.curseforgeBase)
@@ -80,6 +83,7 @@ export function SettingsPage(): React.JSX.Element {
     javaPath !== boot.settings.javaPath ||
     showSnapshots !== boot.settings.showSnapshots ||
     minimizeOnLaunch !== boot.settings.minimizeOnLaunch ||
+    autoSnapshotBeforeLaunch !== boot.settings.autoSnapshotBeforeLaunch ||
     proxyUrl !== boot.settings.proxyUrl ||
     modrinthBase !== boot.settings.modrinthBase ||
     curseforgeBase !== boot.settings.curseforgeBase
@@ -92,6 +96,7 @@ export function SettingsPage(): React.JSX.Element {
       javaPath,
       showSnapshots,
       minimizeOnLaunch,
+      autoSnapshotBeforeLaunch,
       proxyUrl,
       modrinthBase,
       curseforgeBase
@@ -404,6 +409,13 @@ export function SettingsPage(): React.JSX.Element {
               description="给游戏窗口让出空间，适合单人游玩。"
               checked={minimizeOnLaunch}
               onChange={setMinimizeOnLaunch}
+            />
+            <div className="setting-divider" />
+            <ToggleRow
+              title="启动前自动创建世界快照"
+              description="默认关闭；开启后每次启动前备份存档与配置，自动快照最多保留最近 5 份。"
+              checked={autoSnapshotBeforeLaunch}
+              onChange={setAutoSnapshotBeforeLaunch}
             />
             <div className="setting-divider" />
             <ToggleRow
@@ -740,6 +752,7 @@ export function SettingsPage(): React.JSX.Element {
               setJavaPath(boot.settings.javaPath)
               setShowSnapshots(boot.settings.showSnapshots)
               setMinimizeOnLaunch(boot.settings.minimizeOnLaunch)
+              setAutoSnapshotBeforeLaunch(boot.settings.autoSnapshotBeforeLaunch)
             }}
           >
             还原

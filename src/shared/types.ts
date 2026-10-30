@@ -45,6 +45,7 @@ export interface Settings {
   javaPath: string
   showSnapshots: boolean
   minimizeOnLaunch: boolean
+  autoSnapshotBeforeLaunch: boolean
   downloadConcurrency: number
   offline: boolean
   proxyUrl: string
@@ -126,6 +127,61 @@ export interface ModBackupEntry {
   status: 'committed' | 'rolled_back'
   rolledBackAt?: number
   updatedVersionId?: string
+}
+
+export type SnapshotKind = 'manual' | 'auto' | 'safety'
+
+export interface SnapshotWorld {
+  name: string
+  bytes: number
+}
+
+export interface SnapshotMeta {
+  schemaVersion: 1
+  id: string
+  instanceId: string
+  createdAt: number
+  kind: SnapshotKind
+  note: string
+  size: number
+  totalBytes: number
+  fileCount: number
+  modsCount: number
+  gameVersion: string
+  loader: LoaderType
+  loaderVersion?: string
+  javaPath: string
+  worlds: SnapshotWorld[]
+  configFiles: number
+  available: boolean
+}
+
+export type SnapshotDiffAction = 'create' | 'overwrite' | 'unchanged'
+
+export interface SnapshotDiffItem {
+  path: string
+  kind: 'world' | 'config' | 'file'
+  action: SnapshotDiffAction
+  incomingBytes: number
+  existingBytes?: number
+}
+
+export interface SnapshotPreview {
+  snapshot: SnapshotMeta
+  items: SnapshotDiffItem[]
+  createCount: number
+  overwriteCount: number
+  unchangedCount: number
+  gameRunning: boolean
+  canRestore: boolean
+  blockedReason?: string
+}
+
+export interface SnapshotRestoreResult {
+  snapshot: SnapshotMeta
+  safetySnapshotId: string
+  restoredFiles: number
+  restoredBytes: number
 }
 
 export interface Instance {
@@ -575,7 +631,7 @@ export interface LauncherApi {
   updateApply(installerPath: string): Promise<Result<void>>
   createInstance(input: CreateInstanceInput): Promise<Result<{ instance: Instance; taskId: string }>>
   updateInstance(id: string, patch: UpdateInstanceInput): Promise<Result<Instance>>
-  deleteInstance(id: string): Promise<Result<void>>
+  deleteInstance(id: string, keepSnapshots?: boolean): Promise<Result<void>>
   launchInstance(id: string): Promise<Result<LaunchState>>
   stopInstance(id: string): Promise<Result<void>>
   openInstanceFolder(id: string): Promise<Result<void>>
@@ -597,6 +653,11 @@ export interface LauncherApi {
     instanceId: string,
     backupId: string
   ): Promise<Result<{ mods: InstalledMod[]; backup: ModBackupEntry }>>
+  snapshotsList(instanceId: string): Promise<Result<SnapshotMeta[]>>
+  snapshotsCreate(instanceId: string, note?: string): Promise<Result<SnapshotMeta>>
+  snapshotsPreview(instanceId: string, snapshotId: string): Promise<Result<SnapshotPreview>>
+  snapshotsRestore(instanceId: string, snapshotId: string): Promise<Result<SnapshotRestoreResult>>
+  snapshotsDelete(instanceId: string, snapshotId: string): Promise<Result<void>>
   searchMods(query: string, options?: { instanceId?: string; category?: string; offset?: number; limit?: number; sort?: 'relevance' | 'downloads' | 'newest' | 'updated'; source?: ModSource; projectType?: ProjectType }): Promise<Result<ModSearchResponse>>
   getModProject(idOrSlug: string, instanceId?: string, projectType?: ProjectType): Promise<Result<{ project: ModProject; versions: ModVersion[] }>>
   installMod(instanceId: string, projectId: string, versionId?: string, source?: ModSource, force?: boolean): Promise<Result<InstallModResult>>

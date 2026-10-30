@@ -349,18 +349,19 @@ export default function App(): React.JSX.Element {
   )
 
   const requestDeleteInstance = useCallback(
-    async (id: string) => {
+    async (id: string, keepSnapshots = false) => {
       const instance = bootRef.current?.instances.find((item) => item.id === id)
       if (!instance) return
       const approved = await confirm({
         title: `删除「${instance.name}」？`,
-        description:
-          '这会删除该实例的存档、模组、配置和日志文件。已下载的共享游戏版本与运行库会保留。此操作无法撤销。',
-        confirmLabel: '删除实例',
+        description: keepSnapshots
+          ? '这会删除该实例的存档、模组、配置和日志，但世界快照会先迁移到数据目录的 snapshots-archive。此操作无法撤销。'
+          : '这会删除该实例的存档、模组、配置、日志和世界快照。已下载的共享游戏版本与运行库会保留。此操作无法撤销。',
+        confirmLabel: keepSnapshots ? '保留快照并删除' : '删除实例',
         danger: true
       })
       if (!approved) return
-      const result = await window.fangjie.deleteInstance(id)
+      const result = await window.fangjie.deleteInstance(id, keepSnapshots)
       if (!result.ok) {
         toast(result.error, 'error')
         return
