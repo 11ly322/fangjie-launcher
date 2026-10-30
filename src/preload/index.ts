@@ -123,10 +123,10 @@ const api: LauncherApi = {
   searchMods: (query, options) => invoke<ModSearchResponse>('mods:search', query, options || {}),
   getModProject: (idOrSlug: string, instanceId?: string, projectType?: ProjectType) =>
     invoke<{ project: ModProject; versions: ModVersion[] }>('mods:project', idOrSlug, instanceId, projectType),
-  installMod: (instanceId: string, projectId: string, versionId?: string, source?: ModSource) =>
-    invoke<InstallModResult>('mods:install', instanceId, projectId, versionId, source),
-  installAsset: (instanceId: string, projectId: string, projectType, source) =>
-    invoke<{ fileName: string; path: string }>('assets:install', instanceId, projectId, projectType, source),
+  installMod: (instanceId: string, projectId: string, versionId?: string, source?: ModSource, force?: boolean) =>
+    invoke<InstallModResult>('mods:install', instanceId, projectId, versionId, source, force),
+  installAsset: (instanceId: string, projectId: string, projectType, source, versionId?: string) =>
+    invoke<{ fileName: string; path: string }>('assets:install', instanceId, projectId, projectType, source, versionId),
   cancelTask: (taskId: string) => invoke<void>('tasks:cancel', taskId),
   clearTasks: () => invoke<void>('tasks:clear'),
   multiplayerState: () => invoke<MultiplayerState>('multiplayer:state'),

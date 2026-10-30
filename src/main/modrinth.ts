@@ -323,14 +323,15 @@ async function resolveInstallTree(options: {
   visited: Set<string>
   depth: number
   selectedVersionId?: string
+  replaceProjectId?: string
 }): Promise<InstallNode[]> {
-  const { projectId, instance, installedProjectIds, visited, depth, selectedVersionId } = options
+  const { projectId, instance, installedProjectIds, visited, depth, selectedVersionId, replaceProjectId } = options
   if (depth > 4) throw new Error('模组依赖层级过深，请手动检查依赖关系')
   if (visited.has(projectId)) return []
   visited.add(projectId)
 
   const project = await getProjectById(projectId)
-  if (installedProjectIds.has(project.project_id)) return []
+  if (installedProjectIds.has(project.project_id) && project.project_id !== replaceProjectId) return []
 
   const versions = await getVersionsForProject(project.project_id, instance)
   if (!versions.length) {
@@ -391,9 +392,10 @@ export async function startModInstall(options: {
   instanceId: string
   projectId: string
   versionId?: string
+  force?: boolean
   onChange: (reason: string) => void
 }): Promise<InstallModResult> {
-  const { store, tasks, instanceId, projectId, versionId, onChange } = options
+  const { store, tasks, instanceId, projectId, versionId, force, onChange } = options
   const instance = store.getInstance(instanceId)
   if (!instance) throw new Error('找不到目标实例')
   if (!MODDED_LOADERS.includes(instance.loader as (typeof MODDED_LOADERS)[number])) {
@@ -428,6 +430,7 @@ export async function startModInstall(options: {
     instance,
     projectId,
     versionId,
+    force,
     onChange
   }).catch((error) => {
     const task = tasks.get(taskId)
@@ -446,9 +449,10 @@ async function installModInBackground(options: {
   instance: Instance
   projectId: string
   versionId?: string
+  force?: boolean
   onChange: (reason: string) => void
 }): Promise<void> {
-  const { store, tasks, taskId, instance, projectId, versionId, onChange } = options
+  const { store, tasks, taskId, instance, projectId, versionId, force, onChange } = options
   const controller = new AbortController()
   tasks.setCancel(taskId, () => controller.abort())
 
@@ -472,7 +476,8 @@ async function installModInBackground(options: {
     installedProjectIds,
     visited: new Set(),
     depth: 0,
-    selectedVersionId: versionId
+    selectedVersionId: versionId,
+    replaceProjectId: force ? project.project_id : undefined
   })
   if (!nodes.length) throw new Error('这个模组已经安装，无需重复下载')
 

@@ -665,7 +665,7 @@ export function registerIpcHandlers(context: IpcContext): void {
     return getModProject(idOrSlug, effective, projectType)
   })
 
-  handle('mods:install', async (instanceId: string, projectId: string, versionId?: string, source?: 'modrinth' | 'curseforge') => {
+  handle('mods:install', async (instanceId: string, projectId: string, versionId?: string, source?: 'modrinth' | 'curseforge', force?: boolean) => {
     const useCurseForge = source === 'curseforge' || projectId.startsWith('cf-')
     const result = useCurseForge
       ? await startCurseForgeInstall({
@@ -674,6 +674,7 @@ export function registerIpcHandlers(context: IpcContext): void {
           instanceId,
           projectId,
           versionId,
+          force,
           onChange: notifyChange
         })
       : await startModInstall({
@@ -682,6 +683,7 @@ export function registerIpcHandlers(context: IpcContext): void {
           instanceId,
           projectId,
           versionId,
+          force,
           onChange: notifyChange
         })
     notifyChange('task')

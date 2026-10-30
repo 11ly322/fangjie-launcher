@@ -90,6 +90,15 @@ export function ModsPage(): React.JSX.Element {
     }
   }, [moddedInstances, modsInstanceId, setModsInstanceId])
 
+  const modTaskState = useMemo(
+    () =>
+      tasks
+        .filter((task) => task.kind === 'mod')
+        .map((task) => `${task.id}:${task.status}`)
+        .join('|'),
+    [tasks]
+  )
+
   useEffect(() => {
     if (!selectedInstance) {
       setInstalled([])
@@ -102,7 +111,7 @@ export function ModsPage(): React.JSX.Element {
     return () => {
       active = false
     }
-  }, [selectedInstance?.id, selectedInstance?.mods.length])
+  }, [selectedInstance?.id, selectedInstance?.mods.length, modTaskState])
 
   useEffect(() => {
     setDetail(null)
@@ -167,14 +176,14 @@ export function ModsPage(): React.JSX.Element {
     setOffset(nextOffset)
   }
 
-  function install(project: ModSearchHit | ModProject, versionId?: string): void {
+  function install(project: ModSearchHit | ModProject, versionId?: string, force?: boolean): void {
     if (!selectedInstance) {
       toast('先选择一个带模组加载器的实例，才能安装模组', 'info')
       return
     }
     if (projectType === 'mod') {
-      if (installedIds.has(project.project_id) || installingIds.has(project.project_id)) return
-      void window.fangjie.installMod(selectedInstance.id, project.project_id, versionId, project.source || source).then((result) => {
+      if ((installedIds.has(project.project_id) && !force) || installingIds.has(project.project_id)) return
+      void window.fangjie.installMod(selectedInstance.id, project.project_id, versionId, project.source || source, force).then((result) => {
         if (!result.ok) {
           toast(result.error, 'error')
           return
@@ -226,6 +235,11 @@ export function ModsPage(): React.JSX.Element {
 
   async function openDetail(hit: ModSearchHit): Promise<void> {
     setDetail({ hit, loading: true, error: '' })
+    if (selectedInstance) {
+      void window.fangjie.instanceMods(selectedInstance.id).then((result) => {
+        if (result.ok) setInstalled(result.value)
+      })
+    }
     const lookupId = hit.source === 'curseforge' ? hit.project_id : hit.slug || hit.project_id
     const result = await window.fangjie.getModProject(lookupId, selectedInstance?.id, projectType)
     if (!result.ok) {
@@ -502,9 +516,9 @@ export function ModsPage(): React.JSX.Element {
           detail?.hit.project_id && installingIds.has(detail.hit.project_id)
         )}
         canInstall={Boolean(selectedInstance)}
-        onInstall={(versionId) => {
+        onInstall={(versionId, force) => {
           if (!detail) return
-          install(detail.project || detail.hit, versionId)
+          install(detail.project || detail.hit, versionId, force)
         }}
         onOpenDependency={(projectId) => void openDependency(projectId)}
         onOpenFolder={
@@ -542,7 +556,7 @@ function ModDetailModal({
   installed?: InstalledMod
   installing: boolean
   canInstall: boolean
-  onInstall: (versionId?: string) => void
+  onInstall: (versionId?: string, force?: boolean) => void
   onOpenFolder?: () => void
   onOpenDependency: (projectId: string) => void
 }): React.JSX.Element {
@@ -556,6 +570,7 @@ function ModDetailModal({
   }, [detail?.hit.project_id])
 
   const selectedVersion = versions.find((version) => version.id === selectedVersionId) || versions[0]
+  const selectedInstalled = Boolean(installed && selectedVersion && installed.versionId === selectedVersion.id)
   const primaryFile = selectedVersion?.files.find((file) => file.primary) || selectedVersion?.files[0]
 
   useEffect(() => {
@@ -624,21 +639,23 @@ function ModDetailModal({
             </Button>
           ) : null}
           <Button
-            variant={installed ? 'secondary' : 'primary'}
-            icon={installed ? <Check size={16} /> : <Download size={16} />}
-            disabled={!canInstall || Boolean(installed) || installing}
+            variant={selectedInstalled ? 'secondary' : 'primary'}
+            icon={selectedInstalled ? <Check size={16} /> : <Download size={16} />}
+            disabled={!canInstall || selectedInstalled || installing}
             loading={installing}
-            onClick={() => onInstall(selectedVersion?.id)}
+            onClick={() => onInstall(selectedVersion?.id, Boolean(installed) && !selectedInstalled)}
           >
-            {installed
-              ? '已安装'
+            {selectedInstalled
+              ? '已安装此版本'
               : !canInstall
                 ? '先选择模组实例'
                 : installing
                   ? '正在安装'
-                  : projectType === 'mod'
-                    ? `安装到${selectedInstanceName ? ` ${selectedInstanceName}` : ''}`
-                    : `安装${projectType === 'resourcepack' ? '资源包' : '光影'}${selectedInstanceName ? `到 ${selectedInstanceName}` : ''}`}
+                  : installed
+                    ? `切换到此版本${selectedVersion ? ` ${selectedVersion.version_number}` : ''}`
+                    : projectType === 'mod'
+                      ? `安装到${selectedInstanceName ? ` ${selectedInstanceName}` : ''}`
+                      : `安装${projectType === 'resourcepack' ? '资源包' : '光影'}${selectedInstanceName ? `到 ${selectedInstanceName}` : ''}`}
           </Button>
         </>
       }
