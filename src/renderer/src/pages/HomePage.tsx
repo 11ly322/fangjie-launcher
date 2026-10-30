@@ -18,7 +18,6 @@ import type { ModSearchHit, TaskView } from '../../../shared/types'
 import { useLauncher } from '../state/LauncherContext'
 import { LOADER_LABEL } from '../../../shared/constants'
 import { PixelShelfArt, InstanceEmblem, PixelAvatar, SkinHead } from '../components/Artwork'
-import { InstanceCard } from '../components/InstanceCard'
 import { Badge, Button, InlineNotice, ProgressBar, SectionHeading, Skeleton, StatusDot, TextInput } from '../components/ui'
 import {
   formatCompactNumber,
@@ -37,6 +36,8 @@ export function HomePage(): React.JSX.Element {
     running,
     launching,
     activeInstance,
+    activeInstanceId,
+    selectInstance,
     navigate,
     openInstance,
     openMods,
@@ -48,9 +49,9 @@ export function HomePage(): React.JSX.Element {
   const [quickRoom, setQuickRoom] = useState('')
   const [quickBusy, setQuickBusy] = useState(false)
   const activeTask = tasks.find((task) => task.status === 'running' || task.status === 'queued')
-  const recent = [...boot.instances]
+  const shelfInstances = [...boot.instances]
     .sort((left, right) => (right.lastPlayedAt || right.createdAt) - (left.lastPlayedAt || left.createdAt))
-    .slice(0, 3)
+    .slice(0, 7)
   const javaRuntime = boot.java.runtimes.find((runtime) => runtime.source === 'manual') || boot.java.runtimes[0]
   const activeRunning = activeInstance ? running.has(activeInstance.id) : false
   const activeLaunching = activeInstance ? launching.has(activeInstance.id) : false
@@ -118,24 +119,45 @@ export function HomePage(): React.JSX.Element {
 
       {activeTask ? <ActiveTaskStrip task={activeTask} onClick={() => navigate('downloads')} /> : null}
 
-      <div className="book-shelf" aria-hidden="true">
+      <div className="book-shelf" role="group" aria-label="选择游戏实例">
         <div className="book-shelf__caption">
           <span>UBL · YOUR LIBRARY</span>
-          <span>{recent.length ? '把喜欢的世界摆在手边' : '书架还空着，创建第一个世界吧'}</span>
+          <span className="book-shelf__meta">
+            {shelfInstances.length ? '点击书脊切换实例' : '书架还空着，创建第一个世界吧'}
+            {boot.instances.length > shelfInstances.length ? ` · 共 ${boot.instances.length} 个` : ''}
+            <button type="button" className="text-action" onClick={() => navigate('instances')}>
+              全部实例
+            </button>
+          </span>
         </div>
         <div className="book-shelf__row">
-          {recent.map((instance, index) => (
-            <span
+          {shelfInstances.map((instance, index) => (
+            <button
               key={instance.id}
-              className="book-spine"
-              style={{ '--book-accent': instance.accent, '--book-height': `${86 + (index % 3) * 14}px` } as React.CSSProperties}
+              type="button"
+              className={
+                instance.id === activeInstanceId
+                  ? 'book-spine book-spine--interactive is-active'
+                  : 'book-spine book-spine--interactive'
+              }
+              style={{
+                '--book-accent': instance.accent,
+                '--book-height': `${86 + (index % 4) * 12}px`
+              } as React.CSSProperties}
+              onClick={() => selectInstance(instance.id)}
+              aria-pressed={instance.id === activeInstanceId}
+              title={`${instance.name} · Minecraft ${instance.mcVersion}`}
             >
               <i>{instance.name}</i>
-            </span>
+              <span className="book-spine__mark" />
+            </button>
           ))}
-          <span className="book-spine book-spine--blank" />
-          <span className="book-spine book-spine--blank book-spine--short" />
-          <span className="book-spine book-spine--blank" />
+          {Array.from({ length: Math.max(0, 4 - shelfInstances.length) }).map((_, index) => (
+            <span
+              key={`blank-${index}`}
+              className={index % 2 ? 'book-spine book-spine--blank book-spine--short' : 'book-spine book-spine--blank'}
+            />
+          ))}
           <span className="book-shelf__lamp" />
         </div>
         <div className="book-shelf__plank" />
@@ -372,34 +394,7 @@ export function HomePage(): React.JSX.Element {
         </aside>
       </section>
 
-      {recent.length ? (
-        <section className="home-section">
-          <SectionHeading
-            eyebrow="你的书架"
-            title="最近实例"
-            description="按最近游玩时间排列"
-            action={
-              <Button variant="ghost" size="sm" onClick={() => navigate('instances')}>
-                全部实例
-                <ArrowRight size={14} />
-              </Button>
-            }
-          />
-          <div className="instance-grid instance-grid--home">
-            {recent.map((instance) => (
-              <InstanceCard
-                key={instance.id}
-                instance={instance}
-                compact
-                running={running.has(instance.id)}
-                launching={launching.has(instance.id)}
-                onLaunch={() => void launch(instance.id)}
-                onOpen={() => openInstance(instance.id)}
-              />
-            ))}
-          </div>
-        </section>
-      ) : (
+      {!shelfInstances.length ? (
         <section className="home-section">
           <SectionHeading eyebrow="三步开始" title="从零到进入世界" />
           <div className="steps-grid">
@@ -408,7 +403,7 @@ export function HomePage(): React.JSX.Element {
             <StepCard index="03" title="启动游戏" description="Java 与内存都准备好了，点击启动，去创造你的世界。" />
           </div>
         </section>
-      )}
+      ) : null}
 
       <FeaturedMods />
     </div>

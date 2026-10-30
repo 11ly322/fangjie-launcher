@@ -46,6 +46,7 @@ export interface LauncherContextValue {
   launchError: LaunchError | null
   navigate: (page: PageName) => void
   openInstance: (id: string) => void
+  selectInstance: (id: string) => void
   openMods: (instanceId?: string) => void
   openCreateInstance: () => void
   closeCreateInstance: () => void

@@ -20,7 +20,8 @@ import type {
   ModProject,
   ModSearchHit,
   ModSource,
-  ModVersion
+  ModVersion,
+  ProjectType
 } from '../../../shared/types'
 import type { ModFilterEnvironment, ModSearchFilters } from '../../../shared/modSearch'
 import { hasChinese, translateModText, translateModTitle, translateSearchQuery } from '../../../shared/modI18n'
@@ -76,7 +77,7 @@ export function ModsPage(): React.JSX.Element {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
   const [sort, setSort] = useState<SortMode>('downloads')
-  const [projectType, setProjectType] = useState<'mod' | 'resourcepack' | 'shader'>('mod')
+  const [projectType, setProjectType] = useState<ProjectType>('mod')
   const [source, setSource] = useState<ModSource>(() =>
     localStorage.getItem('fangjie.modSource') === 'curseforge' ? 'curseforge' : 'modrinth'
   )
@@ -96,6 +97,14 @@ export function ModsPage(): React.JSX.Element {
     () => localStorage.getItem('fangjie.modTranslate') !== '0'
   )
   const requestId = useRef(0)
+  const searchPlaceholder =
+    projectType === 'mod'
+      ? '搜索模组，例如 Sodium、Create、地图…'
+      : projectType === 'modpack'
+        ? '搜索整合包，例如 Fabulously Optimized、ATM…'
+        : projectType === 'resourcepack'
+          ? '搜索资源包，例如 Faithful、Stay True…'
+          : '搜索光影，例如 Complementary、BSL…'
 
   useEffect(() => {
     if (!modsInstanceId && moddedInstances.length) {
@@ -333,6 +342,7 @@ export function ModsPage(): React.JSX.Element {
       <div className="asset-kind-tabs segmented" role="group" aria-label="项目类型">
         {([
           ['mod', '模组'],
+          ['modpack', '整合包'],
           ['resourcepack', '资源包'],
           ['shader', '光影']
         ] as const).map(([value, label]) => (
@@ -392,8 +402,8 @@ export function ModsPage(): React.JSX.Element {
             <TextInput
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder={projectType === 'mod' ? '搜索模组，例如 Sodium、Create、地图…' : projectType === 'resourcepack' ? '搜索资源包，例如 Faithful、Stay True…' : '搜索光影，例如 Complementary、BSL…'}
-              aria-label={projectType === 'mod' ? '搜索模组' : projectType === 'resourcepack' ? '搜索资源包' : '搜索光影'}
+              placeholder={searchPlaceholder}
+              aria-label={`搜索${projectType === 'modpack' ? '整合包' : projectType === 'resourcepack' ? '资源包' : projectType === 'shader' ? '光影' : '模组'}`}
             />
           </div>
 
@@ -668,7 +678,17 @@ export function ModsPage(): React.JSX.Element {
         selectedInstanceId={selectedInstance?.id}
         selectedInstanceName={selectedInstance?.name}
         selectedInstanceVersion={selectedInstance?.mcVersion}
-        selectedLoader={projectType === 'mod' ? (selectedInstance ? LOADER_LABEL[selectedInstance.loader] : '模组') : projectType === 'resourcepack' ? '资源包' : '光影'}
+        selectedLoader={
+          projectType === 'mod'
+            ? selectedInstance
+              ? LOADER_LABEL[selectedInstance.loader]
+              : '模组'
+            : projectType === 'modpack'
+              ? '整合包'
+              : projectType === 'resourcepack'
+                ? '资源包'
+                : '光影'
+        }
         projectType={projectType}
         autoTranslate={autoTranslate}
         installed={projectType === 'mod' && detail ? installed.find((mod) => mod.projectId === detail.hit.project_id) : undefined}
@@ -713,7 +733,7 @@ function ModDetailModal({
   selectedInstanceName?: string
   selectedInstanceVersion?: string
   selectedLoader: string
-  projectType: 'mod' | 'resourcepack' | 'shader'
+  projectType: ProjectType
   autoTranslate: boolean
   installed?: InstalledMod
   installing: boolean
@@ -788,7 +808,8 @@ function ModDetailModal({
       const result = await window.fangjie.downloadModFile({
         source: isCurseForge ? 'curseforge' : 'modrinth',
         projectId: project.project_id,
-        versionId: selectedVersion.id
+        versionId: selectedVersion.id,
+        projectType
       })
       if (!result.ok) {
         toast(result.error, 'error')
@@ -799,11 +820,26 @@ function ModDetailModal({
       setDownloadingOnly(false)
     }
   }
-  const kindPath = projectType === 'resourcepack' ? 'resourcepack' : projectType === 'shader' ? 'shader' : 'mod'
+  const kindPath =
+    projectType === 'modpack'
+      ? 'modpack'
+      : projectType === 'resourcepack'
+        ? 'resourcepack'
+        : projectType === 'shader'
+          ? 'shader'
+          : 'mod'
   const externalUrl =
     project?.website_url ||
     (isCurseForge
-      ? `https://www.curseforge.com/minecraft/${projectType === 'mod' ? 'mc-mods' : projectType === 'resourcepack' ? 'texture-packs' : 'shaders'}/${project?.slug || detail?.hit.slug}`
+      ? `https://www.curseforge.com/minecraft/${
+          projectType === 'modpack'
+            ? 'modpacks'
+            : projectType === 'mod'
+              ? 'mc-mods'
+              : projectType === 'resourcepack'
+                ? 'texture-packs'
+                : 'shaders'
+        }/${project?.slug || detail?.hit.slug}`
       : `https://modrinth.com/${kindPath}/${project?.slug || detail?.hit.slug}`)
 
   return (
@@ -827,7 +863,7 @@ function ModDetailModal({
               打开实例文件夹
             </Button>
           ) : null}
-          {projectType === 'mod' && project ? (
+          {projectType === 'mod' || projectType === 'modpack' ? (
             <Button
               variant="secondary"
               icon={<Download size={16} />}
@@ -835,28 +871,30 @@ function ModDetailModal({
               disabled={!selectedVersion || downloadingOnly}
               loading={downloadingOnly}
             >
-              仅下载文件
+              {projectType === 'modpack' ? '下载整合包' : '仅下载文件'}
             </Button>
           ) : null}
-          <Button
-            variant={selectedInstalled ? 'secondary' : 'primary'}
-            icon={selectedInstalled ? <Check size={16} /> : <Download size={16} />}
-            disabled={!canInstall || selectedInstalled || installing}
-            loading={installing}
-            onClick={() => onInstall(selectedVersion?.id, Boolean(installed) && !selectedInstalled)}
-          >
-            {selectedInstalled
-              ? '已安装此版本'
-              : !canInstall
-                ? '先选择模组实例'
-                : installing
-                  ? '正在安装'
-                  : installed
-                    ? `切换到此版本${selectedVersion ? ` ${selectedVersion.version_number}` : ''}`
-                    : projectType === 'mod'
-                      ? `安装到${selectedInstanceName ? ` ${selectedInstanceName}` : ''}`
-                      : `安装${projectType === 'resourcepack' ? '资源包' : '光影'}${selectedInstanceName ? `到 ${selectedInstanceName}` : ''}`}
-          </Button>
+          {projectType !== 'modpack' ? (
+            <Button
+              variant={selectedInstalled ? 'secondary' : 'primary'}
+              icon={selectedInstalled ? <Check size={16} /> : <Download size={16} />}
+              disabled={!canInstall || selectedInstalled || installing}
+              loading={installing}
+              onClick={() => onInstall(selectedVersion?.id, Boolean(installed) && !selectedInstalled)}
+            >
+              {selectedInstalled
+                ? '已安装此版本'
+                : !canInstall
+                  ? '先选择模组实例'
+                  : installing
+                    ? '正在安装'
+                    : installed
+                      ? `切换到此版本${selectedVersion ? ` ${selectedVersion.version_number}` : ''}`
+                      : projectType === 'mod'
+                        ? `安装到${selectedInstanceName ? ` ${selectedInstanceName}` : ''}`
+                        : `安装${projectType === 'resourcepack' ? '资源包' : '光影'}${selectedInstanceName ? `到 ${selectedInstanceName}` : ''}`}
+            </Button>
+          ) : null}
         </>
       }
     >
@@ -916,14 +954,15 @@ function ModDetailModal({
             <p className="muted-copy">这个项目还没有提供详细介绍。</p>
           )}
 
-          <div className="mod-dependency-panel">
-            <div className="mod-version-panel__header">
-              <div>
-                <div className="panel__eyebrow">DEPENDENCIES</div>
-                <h3>前置索引</h3>
+          {projectType !== 'modpack' ? (
+            <div className="mod-dependency-panel">
+              <div className="mod-version-panel__header">
+                <div>
+                  <div className="panel__eyebrow">DEPENDENCIES</div>
+                  <h3>前置索引</h3>
+                </div>
+                <Badge tone="outline">{dependencies.length} 项</Badge>
               </div>
-              <Badge tone="outline">{dependencies.length} 项</Badge>
-            </div>
             {dependencies.length ? (
               <div className="dependency-list">
                 {dependencies.map((entry) => {
@@ -973,6 +1012,7 @@ function ModDetailModal({
             )}
             <p className="mod-version-panel__hint">必需前置会随安装自动解析并补装；可选与不兼容项需手动判断。</p>
           </div>
+          ) : null}
           <div className="mod-version-panel">
             <div className="mod-version-panel__header">
               <div>

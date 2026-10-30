@@ -257,7 +257,14 @@ export async function searchCurseForge(options: {
 }): Promise<ModSearchResponse> {
   const params = new URLSearchParams({
     gameId: '432',
-    classId: options.projectType === 'resourcepack' ? '12' : options.projectType === 'shader' ? '6552' : '6',
+    classId:
+      options.projectType === 'modpack'
+        ? '4471'
+        : options.projectType === 'resourcepack'
+          ? '12'
+          : options.projectType === 'shader'
+            ? '6552'
+            : '6',
     index: String(Math.max(0, options.offset || 0)),
     pageSize: String(Math.min(48, Math.max(1, options.limit || 20)))
   })

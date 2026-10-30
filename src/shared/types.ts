@@ -4,7 +4,7 @@ export type { ModSearchOptions } from './modSearch'
 
 export type LoaderType = 'vanilla' | 'fabric' | 'quilt' | 'forge' | 'neoforge'
 
-export type ProjectType = 'mod' | 'resourcepack' | 'shader'
+export type ProjectType = 'mod' | 'resourcepack' | 'shader' | 'modpack'
 export type ModSource = 'modrinth' | 'curseforge'
 
 export type TaskKind = 'instance' | 'mod' | 'java' | 'repair'
@@ -43,6 +43,7 @@ export interface Account {
 
 export type ThemeId = 'moss' | 'ocean' | 'ember'
 export type ColorMode = 'dark' | 'light'
+export type MemoryPreset = 'balanced' | 'g1gc' | 'lowlatency' | 'zgc'
 
 export interface Settings {
   memoryMb: number
@@ -201,6 +202,14 @@ export interface Instance {
   accent: string
   memoryMb?: number
   jvmArgs?: string[]
+  gameArgs?: string[]
+  preLaunchCommand?: string
+  javaPath?: string
+  memoryPreset?: MemoryPreset
+  versionIsolation?: boolean
+  disableJavaLaunchWrapper?: boolean
+  disableLwjglUnsafeAgent?: boolean
+  highPerformanceGpu?: boolean
   width?: number
   height?: number
   createdAt: number
@@ -393,6 +402,7 @@ export interface StandaloneModDownloadRequest {
   source: ModSource
   projectId: string
   versionId?: string
+  projectType?: ProjectType
 }
 
 export interface StandaloneModDownloadResult {
@@ -416,6 +426,7 @@ export interface CreateInstanceInput {
   memoryMb: number
   accent?: string
   icon?: string
+  versionIsolation?: boolean
 }
 
 export interface UpdateInstanceInput {
@@ -424,6 +435,14 @@ export interface UpdateInstanceInput {
   icon?: string
   accent?: string
   jvmArgs?: string[]
+  gameArgs?: string[]
+  preLaunchCommand?: string
+  javaPath?: string
+  memoryPreset?: MemoryPreset
+  versionIsolation?: boolean
+  disableJavaLaunchWrapper?: boolean
+  disableLwjglUnsafeAgent?: boolean
+  highPerformanceGpu?: boolean
   width?: number
   height?: number
 }

@@ -53,6 +53,7 @@ export function SettingsPage(): React.JSX.Element {
   const [updating, setUpdating] = useState(false)
   const [updateError, setUpdateError] = useState('')
   const [updatePath, setUpdatePath] = useState('')
+  const [applyingUpdate, setApplyingUpdate] = useState(false)
   const [plugins, setPlugins] = useState<PluginRecord[]>([])
   const [pendingDataPath, setPendingDataPath] = useState(() => {
     try {
@@ -228,9 +229,16 @@ export function SettingsPage(): React.JSX.Element {
   }
 
   const installUpdate = async (): Promise<void> => {
-    if (!updatePath) return
+    if (!updatePath || applyingUpdate) return
+    setApplyingUpdate(true)
+    setUpdateError('')
     const result = await window.fangjie.updateApply(updatePath)
-    if (!result.ok) setUpdateError(result.error)
+    if (!result.ok) {
+      setApplyingUpdate(false)
+      setUpdateError(result.error)
+      return
+    }
+    toast('正在安装更新，完成后会自动重启', 'success')
   }
 
   const openPlugins = async (): Promise<void> => {
@@ -691,8 +699,13 @@ export function SettingsPage(): React.JSX.Element {
                     下载更新
                   </Button>
                   {updatePath ? (
-                    <Button variant="secondary" onClick={() => void installUpdate()}>
-                      安装并重启
+                    <Button
+                      variant="secondary"
+                      loading={applyingUpdate}
+                      disabled={applyingUpdate}
+                      onClick={() => void installUpdate()}
+                    >
+                      {applyingUpdate ? '正在安装并重启…' : '安装并重启'}
                     </Button>
                   ) : null}
                 </div>

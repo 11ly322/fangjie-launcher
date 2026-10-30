@@ -286,6 +286,7 @@ export class LauncherStore {
   }
 
   instanceGamePath(instance: Instance): string {
+    if (instance.versionIsolation === false) return this.minecraftPath
     return join(this.instancesPath, instance.id, '.minecraft')
   }
 
@@ -302,6 +303,7 @@ export class LauncherStore {
     accent: string
     icon: string
     memoryMb: number
+    versionIsolation?: boolean
   }): Instance {
     const now = Date.now()
     return {
@@ -315,6 +317,14 @@ export class LauncherStore {
       icon: input.icon,
       memoryMb: input.memoryMb,
       jvmArgs: [],
+      gameArgs: [],
+      preLaunchCommand: '',
+      javaPath: '',
+      memoryPreset: 'balanced',
+      versionIsolation: input.versionIsolation !== false,
+      disableJavaLaunchWrapper: false,
+      disableLwjglUnsafeAgent: false,
+      highPerformanceGpu: false,
       width: 1280,
       height: 720,
       createdAt: now,

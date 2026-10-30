@@ -71,11 +71,12 @@ export async function downloadStandaloneMod(
   request: StandaloneModDownloadRequest
 ): Promise<StandaloneModDownloadResult> {
   const source: ModSource = request.source === 'curseforge' ? 'curseforge' : 'modrinth'
+  const projectType = request.projectType || 'mod'
   if (!request.projectId) throw new Error('缺少项目 ID')
   const { project, versions } =
     source === 'curseforge'
       ? await getCurseForgeProject(request.projectId)
-      : await getModProject(request.projectId)
+      : await getModProject(request.projectId, undefined, projectType)
   const version = request.versionId
     ? versions.find((item) => item.id === request.versionId)
     : versions[0]
@@ -83,12 +84,16 @@ export async function downloadStandaloneMod(
   const file = version.files.find((item) => item.primary) || version.files[0]
   if (!file) throw new Error('这个版本没有可下载的文件')
 
-  const directory = join(store.dataPath, 'downloads', 'mods')
+  const directory = join(
+    store.dataPath,
+    'downloads',
+    projectType === 'modpack' ? 'modpacks' : 'mods'
+  )
   mkdirSync(directory, { recursive: true })
   const destination = uniqueDestination(directory, file.filename)
   const taskId = tasks.create({
     kind: 'mod',
-    title: `仅下载「${project.title}」`,
+    title: `${projectType === 'modpack' ? '下载整合包' : '仅下载'}「${project.title}」`,
     subtitle: `${file.filename} · ${source === 'curseforge' ? 'CurseForge' : 'Modrinth'}`
   })
   tasks.start(taskId, '正在下载文件…')

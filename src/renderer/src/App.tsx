@@ -277,6 +277,10 @@ export default function App(): React.JSX.Element {
     setPage('instance')
   }, [])
 
+  const selectInstance = useCallback((id: string) => {
+    setActiveInstanceId(id)
+  }, [])
+
   const openMods = useCallback((instanceId?: string) => {
     const instances = bootRef.current?.instances || []
     const candidate = instanceId
@@ -404,6 +408,7 @@ export default function App(): React.JSX.Element {
       launchError,
       navigate,
       openInstance,
+      selectInstance,
       openMods,
       openCreateInstance: () => setCreateOpen(true),
       closeCreateInstance: () => setCreateOpen(false),
@@ -436,6 +441,7 @@ export default function App(): React.JSX.Element {
     launchError,
     navigate,
     openInstance,
+    selectInstance,
     openMods,
     refresh,
     refreshJava,

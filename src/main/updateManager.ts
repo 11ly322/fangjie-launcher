@@ -1,6 +1,6 @@
 import { app } from 'electron'
-import { existsSync, mkdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { basename, dirname, join } from 'node:path'
 import { spawn } from 'node:child_process'
 import type { CoreUpdateAsset, CoreUpdateCheck, CoreUpdateManifest } from '../shared/types'
 import type { RustCoreClient } from './rustCore'
@@ -153,16 +153,116 @@ export async function downloadUpdate(
   return destination
 }
 
+const APPLY_HELPER_SOURCE = String.raw`const { spawn } = require('node:child_process')
+const fs = require('node:fs')
+const [parentPid, installer, installDir, appExe, logPath, relaunchArgsJson] = process.argv.slice(2)
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const log = (message) => {
+  try {
+    fs.appendFileSync(logPath, new Date().toISOString() + ' ' + message + '\n')
+  } catch {
+    /* logging must never block the install */
+  }
+}
+const alive = (pid) => {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (error) {
+    return error && error.code === 'EPERM'
+  }
+}
+async function main() {
+  const pid = Number(parentPid)
+  for (let i = 0; i < 160 && Number.isFinite(pid) && alive(pid); i += 1) await sleep(250)
+  await sleep(1200)
+  log('parent exited; running installer with /D=' + installDir)
+  const installerProcess = spawn(installer, ['/S', '/D=' + installDir], {
+    stdio: 'ignore',
+    windowsHide: true
+  })
+  installerProcess.on('error', (error) => {
+    log('installer failed to start: ' + error.message)
+    process.exit(1)
+  })
+  installerProcess.on('close', async (code) => {
+    log('installer exit ' + code)
+    if (code !== 0) process.exit(code || 1)
+    for (let i = 0; i < 40 && !fs.existsSync(appExe); i += 1) await sleep(250)
+    if (!fs.existsSync(appExe)) {
+      log('target executable missing: ' + appExe)
+      process.exit(1)
+    }
+    const env = { ...process.env }
+    delete env.ELECTRON_RUN_AS_NODE
+    delete env.ELECTRON_NO_ATTACH_CONSOLE
+    let relaunchArgs = []
+    try {
+      const parsed = JSON.parse(relaunchArgsJson || '[]')
+      if (Array.isArray(parsed)) relaunchArgs = parsed.filter((item) => typeof item === 'string')
+    } catch {
+      /* relaunch without optional arguments */
+    }
+    try {
+      const launched = spawn(appExe, relaunchArgs, {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: false,
+        env
+      })
+      launched.unref()
+      log('relaunched ' + appExe)
+    } catch (error) {
+      log('relaunch failed: ' + error.message)
+      process.exit(1)
+    }
+    process.exit(0)
+  })
+}
+main()
+`
+
 export async function applyUpdate(installerPath: string): Promise<void> {
   if (!existsSync(installerPath)) throw new Error('更新包不存在')
   if (process.platform !== 'win32' || !/\.exe$/i.test(installerPath)) {
     throw new Error('自动替换目前只支持 Windows 安装版 .exe；便携版请手动替换')
   }
-  const child = spawn(installerPath, ['/S'], {
-    detached: true,
-    stdio: 'ignore',
-    windowsHide: true
+  if (!app.isPackaged) {
+    throw new Error('自动安装更新只在已安装版本中可用；开发模式请手动运行安装包')
+  }
+  const installDir = dirname(process.execPath)
+  const appExe = join(installDir, basename(process.execPath))
+  const workDir = dirname(installerPath)
+  const helperPath = join(workDir, 'ubl-update-apply.cjs')
+  const logPath = join(workDir, 'ubl-update-apply.log')
+  writeFileSync(helperPath, APPLY_HELPER_SOURCE, 'utf8')
+  try {
+    writeFileSync(logPath, '', 'utf8')
+  } catch {
+    /* an existing log is still useful */
+  }
+  const helper = spawn(
+    process.execPath,
+    [
+      helperPath,
+      String(process.pid),
+      installerPath,
+      installDir,
+      appExe,
+      logPath,
+      JSON.stringify(process.argv.filter((argument) => argument.startsWith('--user-data-dir=')))
+    ],
+    {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }
+    }
+  )
+  await new Promise<void>((resolve, reject) => {
+    helper.once('spawn', resolve)
+    helper.once('error', (error) => reject(new Error(`无法启动更新助手：${error.message}`)))
   })
-  child.unref()
-  setTimeout(() => app.quit(), 500)
+  helper.unref()
+  setTimeout(() => app.quit(), 800)
 }

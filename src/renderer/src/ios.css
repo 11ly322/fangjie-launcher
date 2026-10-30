@@ -475,6 +475,22 @@ body {
   border-bottom: 1px solid var(--line);
 }
 
+.modal__footer {
+  background: color-mix(in srgb, var(--surface-solid) 82%, transparent);
+}
+
+:root[data-mode='light'] .modal-overlay {
+  background: rgba(242, 242, 247, 0.62);
+}
+
+:root[data-mode='light'] .modal {
+  background: #ffffff;
+}
+
+:root[data-mode='light'] .modal__footer {
+  background: #f7f7fa;
+}
+
 /* Hero: flat gradient + low-bit pixel shelf ------------------------- */
 
 .hero-play,
@@ -580,6 +596,56 @@ body {
 .book-spine--blank {
   --book-accent: color-mix(in srgb, var(--text) 18%, var(--surface-raised));
   opacity: 1;
+}
+
+.book-spine--interactive {
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 160ms ease, outline-color 160ms ease, filter 160ms ease;
+}
+
+.book-spine--interactive:hover {
+  transform: translateY(-4px);
+  filter: brightness(1.06);
+}
+
+.book-spine--interactive:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.book-spine--interactive.is-active {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+  box-shadow:
+    0 0 0 7px var(--accent-dim),
+    4px 5px 0 rgba(0, 0, 0, 0.16);
+}
+
+.book-spine__mark {
+  position: absolute;
+  bottom: 7px;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.55;
+  transform: translateX(-50%);
+}
+
+.book-shelf__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.book-shelf__meta .text-action {
+  padding: 0;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: none;
 }
 
 .book-shelf__lamp {

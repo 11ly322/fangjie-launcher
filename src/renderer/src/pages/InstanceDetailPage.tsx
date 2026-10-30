@@ -34,7 +34,9 @@ import {
   IconButton,
   InlineNotice,
   ProgressBar,
+  Select,
   Spinner,
+  TextArea,
   TextInput,
   Toggle
 } from '../components/ui'
@@ -69,6 +71,14 @@ export function InstanceDetailPage({ instance }: { instance: InstanceSummary }):
   const [name, setName] = useState(instance.name)
   const [memory, setMemory] = useState(instance.memoryMb || 4096)
   const [jvmArgs, setJvmArgs] = useState((instance.jvmArgs || []).join(' '))
+  const [gameArgs, setGameArgs] = useState((instance.gameArgs || []).join(' '))
+  const [preLaunchCommand, setPreLaunchCommand] = useState(instance.preLaunchCommand || '')
+  const [javaPath, setJavaPath] = useState(instance.javaPath || '')
+  const [memoryPreset, setMemoryPreset] = useState(instance.memoryPreset || 'balanced')
+  const [versionIsolation, setVersionIsolation] = useState(instance.versionIsolation !== false)
+  const [disableJavaLaunchWrapper, setDisableJavaLaunchWrapper] = useState(instance.disableJavaLaunchWrapper === true)
+  const [disableLwjglUnsafeAgent, setDisableLwjglUnsafeAgent] = useState(instance.disableLwjglUnsafeAgent === true)
+  const [highPerformanceGpu, setHighPerformanceGpu] = useState(instance.highPerformanceGpu === true)
   const [width, setWidth] = useState(instance.width || 1280)
   const [height, setHeight] = useState(instance.height || 720)
   const [icon, setIcon] = useState(instance.icon)
@@ -95,6 +105,14 @@ export function InstanceDetailPage({ instance }: { instance: InstanceSummary }):
     setName(instance.name)
     setMemory(instance.memoryMb || 4096)
     setJvmArgs((instance.jvmArgs || []).join(' '))
+    setGameArgs((instance.gameArgs || []).join(' '))
+    setPreLaunchCommand(instance.preLaunchCommand || '')
+    setJavaPath(instance.javaPath || '')
+    setMemoryPreset(instance.memoryPreset || 'balanced')
+    setVersionIsolation(instance.versionIsolation !== false)
+    setDisableJavaLaunchWrapper(instance.disableJavaLaunchWrapper === true)
+    setDisableLwjglUnsafeAgent(instance.disableLwjglUnsafeAgent === true)
+    setHighPerformanceGpu(instance.highPerformanceGpu === true)
     setWidth(instance.width || 1280)
     setHeight(instance.height || 720)
     setIcon(instance.icon)
@@ -260,6 +278,14 @@ export function InstanceDetailPage({ instance }: { instance: InstanceSummary }):
       icon,
       accent,
       jvmArgs: jvmArgs.split(/\s+/).map((arg) => arg.trim()).filter(Boolean),
+      gameArgs: gameArgs.split(/\s+/).map((arg) => arg.trim()).filter(Boolean),
+      preLaunchCommand: preLaunchCommand.trim(),
+      javaPath: javaPath.trim(),
+      memoryPreset,
+      versionIsolation,
+      disableJavaLaunchWrapper,
+      disableLwjglUnsafeAgent,
+      highPerformanceGpu,
       width,
       height
     })
@@ -719,6 +745,67 @@ export function InstanceDetailPage({ instance }: { instance: InstanceSummary }):
                   placeholder="-XX:+UseG1GC -XX:+ParallelRefProcEnabled"
                 />
               </Field>
+              <Field label="游戏参数" hint="追加到 Minecraft 启动参数末尾">
+                <TextInput
+                  value={gameArgs}
+                  onChange={(event) => setGameArgs(event.target.value)}
+                  placeholder="--width 1280 --height 720"
+                />
+              </Field>
+              <Field label="启动前执行命令" hint="在实例目录执行；失败会中止启动">
+                <TextArea
+                  rows={2}
+                  value={preLaunchCommand}
+                  onChange={(event) => setPreLaunchCommand(event.target.value)}
+                  placeholder="可选，例如：powershell -File ./prepare.ps1"
+                />
+              </Field>
+              <div className="dimension-grid">
+                <Field label="Java 运行时" hint="留空自动选择匹配版本">
+                  <Select value={javaPath} onChange={(event) => setJavaPath(event.target.value)}>
+                    <option value="">自动选择（推荐）</option>
+                    {boot.java.runtimes.map((runtime) => (
+                      <option key={runtime.path} value={runtime.path}>
+                        Java {runtime.majorVersion} · {runtime.source}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="内存管理预设">
+                  <Select
+                    value={memoryPreset}
+                    onChange={(event) => setMemoryPreset(event.target.value as typeof memoryPreset)}
+                  >
+                    <option value="balanced">均衡（默认）</option>
+                    <option value="g1gc">调优 G1GC</option>
+                    <option value="lowlatency">低延迟 G1GC</option>
+                    <option value="zgc">ZGC（Java 21+）</option>
+                  </Select>
+                </Field>
+              </div>
+              <Toggle
+                checked={versionIsolation}
+                onChange={setVersionIsolation}
+                label="版本隔离（每个实例独立存档、模组与配置）"
+              />
+              <Toggle
+                checked={highPerformanceGpu}
+                onChange={setHighPerformanceGpu}
+                label="使用高性能显卡（Windows 兼容性标记）"
+              />
+              <Toggle
+                checked={disableJavaLaunchWrapper}
+                onChange={setDisableJavaLaunchWrapper}
+                label="禁用 Java Launch Wrapper（旧版 Forge 兼容）"
+              />
+              <Toggle
+                checked={disableLwjglUnsafeAgent}
+                onChange={setDisableLwjglUnsafeAgent}
+                label="禁用 LWJGL Unsafe Agent（实验）"
+              />
+              <p className="settings-hint">
+                版本隔离关闭后，该实例会与其它关闭隔离的实例共享 <code>saves</code>、<code>mods</code>、<code>config</code>；删除实例不会删除共享目录。
+              </p>
               <div className="dimension-grid">
                 <Field label="窗口宽度">
                   <TextInput
@@ -794,6 +881,14 @@ export function InstanceDetailPage({ instance }: { instance: InstanceSummary }):
                     setName(instance.name)
                     setMemory(instance.memoryMb || 4096)
                     setJvmArgs((instance.jvmArgs || []).join(' '))
+                    setGameArgs((instance.gameArgs || []).join(' '))
+                    setPreLaunchCommand(instance.preLaunchCommand || '')
+                    setJavaPath(instance.javaPath || '')
+                    setMemoryPreset(instance.memoryPreset || 'balanced')
+                    setVersionIsolation(instance.versionIsolation !== false)
+                    setDisableJavaLaunchWrapper(instance.disableJavaLaunchWrapper === true)
+                    setDisableLwjglUnsafeAgent(instance.disableLwjglUnsafeAgent === true)
+                    setHighPerformanceGpu(instance.highPerformanceGpu === true)
                     setWidth(instance.width || 1280)
                     setHeight(instance.height || 720)
                     setIcon(instance.icon)

@@ -324,15 +324,44 @@ export function registerIpcHandlers(context: IpcContext): void {
         typeof patch.memoryMb === 'number'
           ? Math.min(32768, Math.max(1024, Math.round(patch.memoryMb / 256) * 256))
           : current.memoryMb
+      const cleanArgs = (value: unknown): string[] | undefined =>
+        Array.isArray(value)
+          ? value
+              .filter((arg): arg is string => typeof arg === 'string' && arg.trim().length > 0)
+              .map((arg) => arg.trim())
+              .slice(0, 64)
+          : undefined
+      const preset = ['balanced', 'g1gc', 'lowlatency', 'zgc'].includes(String(patch.memoryPreset))
+        ? patch.memoryPreset
+        : current.memoryPreset
       return {
         ...current,
         name,
         memoryMb: memory,
         icon: typeof patch.icon === 'string' ? patch.icon : current.icon,
         accent: typeof patch.accent === 'string' ? patch.accent : current.accent,
-        jvmArgs: Array.isArray(patch.jvmArgs)
-          ? patch.jvmArgs.filter((arg): arg is string => typeof arg === 'string').slice(0, 64)
-          : current.jvmArgs,
+        jvmArgs: cleanArgs(patch.jvmArgs) ?? current.jvmArgs,
+        gameArgs: cleanArgs(patch.gameArgs) ?? current.gameArgs,
+        preLaunchCommand:
+          typeof patch.preLaunchCommand === 'string'
+            ? patch.preLaunchCommand.trim().slice(0, 2000)
+            : current.preLaunchCommand,
+        javaPath: typeof patch.javaPath === 'string' ? patch.javaPath.trim() : current.javaPath,
+        memoryPreset: preset,
+        versionIsolation:
+          typeof patch.versionIsolation === 'boolean' ? patch.versionIsolation : current.versionIsolation !== false,
+        disableJavaLaunchWrapper:
+          typeof patch.disableJavaLaunchWrapper === 'boolean'
+            ? patch.disableJavaLaunchWrapper
+            : current.disableJavaLaunchWrapper === true,
+        disableLwjglUnsafeAgent:
+          typeof patch.disableLwjglUnsafeAgent === 'boolean'
+            ? patch.disableLwjglUnsafeAgent
+            : current.disableLwjglUnsafeAgent === true,
+        highPerformanceGpu:
+          typeof patch.highPerformanceGpu === 'boolean'
+            ? patch.highPerformanceGpu
+            : current.highPerformanceGpu === true,
         width: typeof patch.width === 'number' ? Math.min(7680, Math.max(320, Math.round(patch.width))) : current.width,
         height: typeof patch.height === 'number' ? Math.min(4320, Math.max(240, Math.round(patch.height))) : current.height
       }

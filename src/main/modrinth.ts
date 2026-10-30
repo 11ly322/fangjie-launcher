@@ -228,7 +228,13 @@ export async function searchMods(options: {
   const limit = Math.min(48, Math.max(1, options.limit || 20))
   const offset = Math.max(0, options.offset || 0)
   const kind = options.projectType || 'mod'
-  const facets: string[][] = [[`project_type:${kind === 'resourcepack' ? 'resourcepack' : kind === 'shader' ? 'shader' : 'mod'}`]]
+  const facets: string[][] = [
+    [
+      `project_type:${
+        kind === 'modpack' ? 'modpack' : kind === 'resourcepack' ? 'resourcepack' : kind === 'shader' ? 'shader' : 'mod'
+      }`
+    ]
+  ]
   const gameVersion =
     options.filters?.gameVersion === '*'
       ? ''

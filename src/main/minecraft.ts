@@ -1,6 +1,7 @@
 import { accessSync, constants, createWriteStream, existsSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import type { ChildProcess } from 'node:child_process'
+import { exec, type ChildProcess } from 'node:child_process'
+import { promisify } from 'node:util'
 import { Version, createMinecraftProcessWatcher, launch } from '@xmcl/core'
 import {
   getVersionList,
@@ -17,7 +18,7 @@ import type {
   LogLine,
   VersionSummary
 } from '../shared/types'
-import { ensureJavaRuntime, errorMessage, requiredJavaMajor, scanJavaRuntimes } from './java'
+import { ensureJavaRuntime, errorMessage, normalizeJavaPath, requiredJavaMajor, scanJavaRuntimes } from './java'
 import { installModLoader } from './loaders'
 import { XMCL_HEADERS, xmclDownloadAgent } from './downloadAgent'
 import { ensureMicrosoftSession } from './microsoft'
@@ -25,6 +26,22 @@ import { APP_VERSION } from './version'
 import type { LauncherStore } from './store'
 import type { TaskManager } from './tasks'
 import { requestResponse } from './downloadSource'
+
+const execAsync = promisify(exec)
+
+function memoryPresetArgs(preset: Instance['memoryPreset']): string[] {
+  switch (preset) {
+    case 'g1gc':
+      return ['-XX:+UseG1GC', '-XX:+ParallelRefProcEnabled', '-XX:MaxGCPauseMillis=200']
+    case 'lowlatency':
+      return ['-XX:+UseG1GC', '-XX:MaxGCPauseMillis=50', '-XX:G1NewSizePercent=30', '-XX:G1MaxNewSizePercent=40']
+    case 'zgc':
+      return ['-XX:+UseZGC', '-XX:+ZGenerational']
+    default:
+      return []
+  }
+}
+
 
 interface VersionCache {
   at: number
@@ -122,7 +139,8 @@ export async function startInstanceInstall(options: {
     versionId: input.mcVersion,
     accent: input.accent || look.accent,
     icon: input.icon || look.icon,
-    memoryMb
+    memoryMb,
+    versionIsolation: input.versionIsolation !== false
   })
 
   const taskId = tasks.create({
@@ -382,6 +400,32 @@ export async function launchInstance(options: {
   const logStream = createWriteStream(logPath, { flags: 'a' })
   callbacks.onState({ instanceId: instance.id, status: 'launching', message: '正在校验游戏文件…' })
 
+  if (instance.preLaunchCommand?.trim()) {
+    callbacks.onState({ instanceId: instance.id, status: 'launching', message: '正在执行启动前命令…' })
+    callbacks.onLog({
+      instanceId: instance.id,
+      line: `[launcher] 执行启动前命令：${instance.preLaunchCommand.trim()}`,
+      at: Date.now()
+    })
+    try {
+      const result = await execAsync(instance.preLaunchCommand.trim(), {
+        cwd: gamePath,
+        timeout: 120000,
+        windowsHide: true,
+        maxBuffer: 4 * 1024 * 1024,
+        env: process.env
+      })
+      const output = `${result.stdout || ''}${result.stderr || ''}`.trim()
+      if (output) {
+        logStream.write(`[launcher] 启动前命令输出：\n${output}\n`)
+        callbacks.onLog({ instanceId: instance.id, line: output.slice(0, 1200), at: Date.now() })
+      }
+    } catch (error) {
+      logStream.end()
+      throw new Error(`启动前命令执行失败：${errorMessage(error)}`)
+    }
+  }
+
   let resolved
   try {
     resolved = await Version.parse(store.minecraftPath, instance.versionId)
@@ -392,9 +436,19 @@ export async function launchInstance(options: {
 
   const requiredMajor = requiredJavaMajor(resolved)
   const javaStatus = await scanJavaRuntimes(store)
+  const selectedJavaPath = normalizeJavaPath(instance.javaPath || '')
+  const selectedRuntime = selectedJavaPath
+    ? javaStatus.runtimes.find((runtime) => normalizeJavaPath(runtime.path) === selectedJavaPath)
+    : undefined
   const configured = javaStatus.configuredPath ? javaStatus.runtimes.find((runtime) => runtime.source === 'manual') : undefined
   const automatic = javaStatus.runtimes.filter((runtime) => runtime.path.includes(`${join('runtime')}`) && runtime.majorVersion === requiredMajor)
-  const java = configured || automatic[0] || javaStatus.runtimes.find((runtime) => runtime.majorVersion === requiredMajor)
+  const java =
+    (selectedJavaPath && existsSync(selectedJavaPath)
+      ? selectedRuntime || { path: selectedJavaPath, majorVersion: requiredMajor, component: 'manual', source: 'manual' as const }
+      : undefined) ||
+    configured ||
+    automatic[0] ||
+    javaStatus.runtimes.find((runtime) => runtime.majorVersion === requiredMajor)
   if (!java) {
     logStream.end()
     throw new Error(`没有找到适用于该版本的 Java ${requiredMajor} 运行时，请重新安装实例或前往设置指定 Java 路径`)
@@ -428,6 +482,26 @@ export async function launchInstance(options: {
 
   replaceLaunchPlaceholders(resolved, profile.id, xuid || '0')
 
+  const presetArgs = memoryPresetArgs(instance.memoryPreset)
+  const extraJvmArgs = ['-Dfile.encoding=UTF-8', ...presetArgs, ...(instance.jvmArgs || [])]
+  if (instance.disableJavaLaunchWrapper) {
+    extraJvmArgs.push('-Dforge.disableLaunchWrapper=true')
+  }
+  if (instance.disableLwjglUnsafeAgent) {
+    extraJvmArgs.push('-Dorg.lwjgl.system.unsafe=false')
+  }
+  const launchEnv: NodeJS.ProcessEnv = { ...process.env }
+  if (instance.highPerformanceGpu) {
+    launchEnv.SHIM_MCCOMPAT = '0x800000001'
+  }
+  callbacks.onLog({
+    instanceId: instance.id,
+    line: `[launcher] Java ${java.path} · 内存 ${memory} MB · 预设 ${instance.memoryPreset || 'balanced'} · 版本隔离 ${
+      instance.versionIsolation === false ? '关闭' : '开启'
+    }`,
+    at: Date.now()
+  })
+
   try {
     const child = await launch({
       gamePath,
@@ -449,10 +523,12 @@ export async function launchInstance(options: {
         instance.width && instance.height
           ? { width: instance.width, height: instance.height }
           : undefined,
-      extraJVMArgs: ['-Dfile.encoding=UTF-8', ...(instance.jvmArgs || [])],
+      extraJVMArgs: extraJvmArgs,
+      extraMCArgs: instance.gameArgs || [],
       extraExecOption: {
         cwd: gamePath,
-        windowsHide: false
+        windowsHide: false,
+        env: launchEnv
       }
     })
 
