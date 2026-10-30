@@ -8,16 +8,16 @@
 
 一个面向 Windows 的 Minecraft 桌面启动器，使用 Electron + React + TypeScript 构建。目标是接近 PCL2 的核心使用体验：游戏实例、加载器安装、模组搜索下载、正版登录与离线皮肤。
 
-> **0.0.2-beta**：模组工坊新增前置索引与跳转、版本选择、CurseForge 源和已安装版本切换；整合包、资源包/光影、OptiFine、插件与离线模式已接入。真实签名更新与跨机器 NAT 仍需按文档实测，请先备份重要存档。
+> **0.0.3-beta**：修复系统根证书环境下更新检查的 `fetch failed`；保留模组前置索引与跳转、版本选择、CurseForge 源和已安装版本切换；整合包、资源包/光影、OptiFine、插件与离线模式已接入。真实签名更新与跨机器 NAT 仍需按文档实测，请先备份重要存档。
 
 ![方界启动器](resources/icon.png)
 
 ## 下载
 
-从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.2-beta) 选择：
+从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.3-beta) 选择：
 
-- `Fangjie-Launcher-0.0.2-beta-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建桌面与开始菜单快捷方式，并注册卸载项。
-- `Fangjie-Portable-0.0.2-beta.zip`：免安装便携版，解压后双击 `Fangjie.exe`。
+- `Fangjie-Launcher-0.0.3-beta-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建桌面与开始菜单快捷方式，并注册卸载项。
+- `Fangjie-Portable-0.0.3-beta.zip`：免安装便携版，解压后双击 `Fangjie.exe`。
 - `SHA256SUMS.txt`：两个发布包的 SHA256 校验和。
 
 系统要求：Windows 10/11 x64。首次创建实例会自动下载对应 Java 运行时；安装版默认安装到 `%LOCALAPPDATA%\Programs\Fangjie Launcher`，卸载不会删除游戏存档和用户数据。
@@ -54,7 +54,7 @@
 - **房间联机（实验）**：房主生成 `U/XXXX-XXXX-XXXX-XXXX` 房间码，房客凭码加入并获得可直接粘贴进 Minecraft 的地址。EasyTier 以 Rust 库内嵌；不需要管理员权限、TUN 网卡或第三方 VPN。
 - **故障诊断（P0）**：崩溃模式映射、JAR 依赖扫描、修复 diff 预览、逐文件备份与回滚；需要 `npm run build:core` 构建 Rust sidecar。
 - **实例工具（P0）**：模组勾选批量启停、实例深复制、实例模板（JVM 参数/模组列表/内存/分辨率）。
-- **软件更新（P1 基础）**：从 GitHub Releases 检查安装版更新，下载后由 Rust 校验 SHA256，支持 NSIS 静默替换；真实签名安装包替换与公开 feed 仍待发布验证。
+- **软件更新（P1 基础）**：从 GitHub Releases 检查安装版更新；Node 证书库失败时自动使用 Electron Chromium 网络栈；下载后由 Rust 校验 SHA256，支持 NSIS 静默替换；真实签名安装包替换仍待实测。
 - **Flight Recorder（P0）**：读取 `logs/flight-recorder.csv`，展示 FPS、1% lows、帧时间折线图并导出 CSV。
 - **三套主题**：苔原、深海、余烬，立即切换并写入本地配置；下次启动保持。
 - **可选数据目录**：设置中可把游戏数据迁移到任意空文件夹；完整复制后重启生效，旧目录保留，删除前可自行确认。
@@ -86,7 +86,7 @@ npm run package
 npm run package:installer
 ```
 
-安装包输出到 `release/Fangjie-Launcher-0.0.2-beta-Setup.exe`。
+安装包输出到 `release/Fangjie-Launcher-0.0.3-beta-Setup.exe`。
 
 联机连接器不提交二进制，需先通过 `.github/workflows/connector-build.yml` 构建到 `resources/bin/qomicex-connector-cli.exe`；发布包中已包含该组件。构建脚本会查找 electron-builder 缓存或系统安装的 NSIS 3.x；也可用 `MAKENSIS` 环境变量指定 `makensis.exe`。安装包未做代码签名，Windows SmartScreen 可能提示未知发布者。
 

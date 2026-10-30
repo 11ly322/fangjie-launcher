@@ -1,6 +1,6 @@
 {
   "name": "fangjie-launcher",
-  "version": "0.0.2-beta",
+  "version": "0.0.3-beta",
   "description": "方界 — 支持游戏实例、模组下载、多加载器、正版登录与本地皮肤的 Minecraft 启动器",
   "main": "./out/main/index.js",
   "author": "11ly322 (https://github.com/11ly322)",
