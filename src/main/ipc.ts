@@ -37,6 +37,7 @@ import { normalizeTheme, type LauncherStore } from './store'
 import { RustCoreClient, toRustInstance } from './rustCore'
 import { assertOnline, isOffline, setOffline } from './networkPolicy'
 import { configureNetwork } from './downloadAgent'
+import { configureNetworkConcurrency } from './networkQueue'
 import { configureModrinthBase } from './modrinth'
 import { configureCurseForgeBase } from './curseforge'
 import { applyUpdate, checkForUpdates, downloadUpdate } from './updateManager'
@@ -44,6 +45,13 @@ import { installAsset } from './assets'
 import { importCurseForgeZip } from './modpackImport'
 import { installOptiFine } from './optifine'
 import { listPlugins, openPluginsFolder } from './plugins'
+import {
+  checkModUpdates,
+  listModBackups,
+  rollbackModUpdate,
+  setModUpdatePreference,
+  updateInstalledMod
+} from './modUpdates'
 import type { TaskManager } from './tasks'
 import { COMMUNITY_RELAYS, measureAddressLatency, measureRelayLatency, multiplayerManager } from './multiplayer'
 
@@ -67,6 +75,7 @@ const NETWORK_CHANNELS = new Set([
   'mods:search',
   'mods:project',
   'mods:install',
+  'mods:update',
   'assets:install',
   'auth:microsoft-login',
   'update:check',
@@ -250,6 +259,7 @@ export function registerIpcHandlers(context: IpcContext): void {
     configureModrinthBase(safePatch.modrinthBase ?? store.settings.modrinthBase)
     configureCurseForgeBase(safePatch.curseforgeBase ?? store.settings.curseforgeBase)
     const settings = store.setSettings(safePatch)
+    configureNetworkConcurrency(settings.downloadConcurrency)
     setOffline(settings.offline)
     notifyChange('settings')
     return settings
@@ -614,6 +624,47 @@ export function registerIpcHandlers(context: IpcContext): void {
     if (!instance) throw new Error('找不到这个实例')
     const result = removeMod(store, instance, fileName)
     notifyChange('mods')
+    return result
+  })
+
+  handle('mods:check-updates', async (instanceId: string) => {
+    return checkModUpdates(store, instanceId)
+  })
+
+  handle('mods:update', async (instanceId: string, projectId: string) => {
+    const result = await updateInstalledMod(store, tasks, instanceId, projectId, notifyChange)
+    notifyChange('task')
+    return result
+  })
+
+  handle(
+    'mods:update-preference',
+    async (
+      instanceId: string,
+      projectId: string,
+      action: 'skip' | 'pin' | 'unpin' | 'unskip',
+      versionId?: string
+    ) => {
+      const result = await setModUpdatePreference(
+        store,
+        instanceId,
+        projectId,
+        action,
+        versionId
+      )
+      notifyChange('mods')
+      return result
+    }
+  )
+
+  handle('mods:backups', async (instanceId: string) => {
+    return listModBackups(store, instanceId)
+  })
+
+  handle('mods:rollback', async (instanceId: string, backupId: string) => {
+    const result = await rollbackModUpdate(store, instanceId, backupId)
+    notifyChange('mods')
+    notifyChange('task')
     return result
   })
 

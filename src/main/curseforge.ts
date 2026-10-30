@@ -595,6 +595,7 @@ async function installCfInBackground(options: {
       iconUrl: project.icon_url || undefined,
       enabled: true,
       installedAt: Date.now(),
+      source: 'curseforge',
       dependencies: (node.file.dependencies || [])
         .filter((dependency) => dependency.relationType === 3)
         .map((dependency) => `cf-${dependency.modId}`)

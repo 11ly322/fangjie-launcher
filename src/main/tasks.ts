@@ -30,6 +30,50 @@ export class TaskManager extends EventEmitter {
     return this.records.get(id)
   }
 
+  /**
+   * Wait for an install task to reach a terminal state. Used by the update
+   * transaction so it can restore the previous JAR when a download fails.
+   */
+  waitFor(id: string): Promise<TaskView> {
+    const initial = this.get(id)
+    if (!initial) return Promise.reject(new Error('任务不存在或已被清理'))
+    if (isTerminal(initial.status)) {
+      return initial.status === 'success'
+        ? Promise.resolve(initial)
+        : Promise.reject(new Error(initial.error || (initial.status === 'cancelled' ? '任务已取消' : '任务失败')))
+    }
+
+    return new Promise<TaskView>((resolve, reject) => {
+      let settled = false
+      const cleanup = (): void => {
+        this.off('update', onUpdate)
+      }
+      const settle = (task: TaskView): void => {
+        if (settled) return
+        settled = true
+        cleanup()
+        if (task.status === 'success') resolve(task)
+        else reject(new Error(task.error || (task.status === 'cancelled' ? '任务已取消' : '任务失败')))
+      }
+      const onUpdate = (tasks: TaskView[]): void => {
+        const task = tasks.find((item) => item.id === id)
+        if (!task) {
+          if (!settled) {
+            settled = true
+            cleanup()
+            reject(new Error('任务已结束，但找不到结果'))
+          }
+          return
+        }
+        if (isTerminal(task.status)) settle(task)
+      }
+
+      this.on('update', onUpdate)
+      const current = this.get(id)
+      if (current && isTerminal(current.status)) settle(current)
+    })
+  }
+
   create(input: {
     kind: TaskKind
     title: string
@@ -170,4 +214,8 @@ export class TaskManager extends EventEmitter {
   private emitAll(): void {
     this.emit('update', this.list())
   }
+}
+
+function isTerminal(status: TaskStatus): boolean {
+  return status === 'success' || status === 'error' || status === 'cancelled'
 }

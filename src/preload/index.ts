@@ -20,9 +20,13 @@ import type {
   LaunchState,
   LauncherApi,
   LogLine,
+  ModBackupEntry,
   ModProject,
   ModSearchResponse,
   ModSource,
+  ModUpdatePreference,
+  ModUpdateReport,
+  ModUpdateResult,
   ModVersion,
   MultiplayerDiagnostics,
   ProjectType,
@@ -120,6 +124,25 @@ const api: LauncherApi = {
   setModEnabled: (id: string, fileName: string, enabled: boolean) =>
     invoke<InstalledMod[]>('mods:set-enabled', id, fileName, enabled),
   removeMod: (id: string, fileName: string) => invoke<InstalledMod[]>('mods:remove', id, fileName),
+  checkModUpdates: (instanceId: string) =>
+    invoke<ModUpdateReport>('mods:check-updates', instanceId),
+  updateMod: (instanceId: string, projectId: string) =>
+    invoke<ModUpdateResult>('mods:update', instanceId, projectId),
+  setModUpdatePreference: (
+    instanceId: string,
+    projectId: string,
+    action: ModUpdatePreference,
+    versionId?: string
+  ) =>
+    invoke<InstalledMod[]>('mods:update-preference', instanceId, projectId, action, versionId),
+  modUpdateBackups: (instanceId: string) =>
+    invoke<ModBackupEntry[]>('mods:backups', instanceId),
+  rollbackModUpdate: (instanceId: string, backupId: string) =>
+    invoke<{ mods: InstalledMod[]; backup: ModBackupEntry }>(
+      'mods:rollback',
+      instanceId,
+      backupId
+    ),
   searchMods: (query, options) => invoke<ModSearchResponse>('mods:search', query, options || {}),
   getModProject: (idOrSlug: string, instanceId?: string, projectType?: ProjectType) =>
     invoke<{ project: ModProject; versions: ModVersion[] }>('mods:project', idOrSlug, instanceId, projectType),

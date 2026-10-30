@@ -7,6 +7,7 @@ import { registerIpcHandlers } from './ipc'
 import { RustCoreClient } from './rustCore'
 import { installFetchGuard, setOffline } from './networkPolicy'
 import { configureNetwork } from './downloadAgent'
+import { configureNetworkConcurrency } from './networkQueue'
 import { configureModrinthBase } from './modrinth'
 import { configureCurseForgeBase } from './curseforge'
 import { multiplayerManager } from './multiplayer'
@@ -139,6 +140,7 @@ app.whenReady().then(() => {
   installDownloadConcurrencyLimit(20)
 
   store = new LauncherStore()
+  configureNetworkConcurrency(store.settings.downloadConcurrency)
   installFetchGuard()
   setOffline(store.settings.offline)
   try {

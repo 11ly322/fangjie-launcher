@@ -1,5 +1,5 @@
 import { createServer } from 'node:http'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -44,6 +44,20 @@ describe('unified download source', () => {
     expect(() => readFileSync(destination)).toThrow()
     await downloadToFile({ url, destination, expectedSize: payload.length })
     expect(readFileSync(destination).toString()).toBe('fangjie-download')
+    rmSync(directory, { recursive: true, force: true })
+  })
+
+  it('atomically replaces an existing destination without leaving staging files', async () => {
+    const payload = Buffer.from('replacement')
+    const url = await serve(payload)
+    const directory = mkdtempSync(join(tmpdir(), 'fangjie-download-replace-'))
+    const destination = join(directory, 'artifact.bin')
+    writeFileSync(destination, 'old')
+
+    await downloadToFile({ url, destination, expectedSize: payload.length })
+
+    expect(readFileSync(destination).toString()).toBe('replacement')
+    expect(readdirSync(directory).filter((name) => name.includes('.part-') || name.includes('.replace-'))).toEqual([])
     rmSync(directory, { recursive: true, force: true })
   })
 

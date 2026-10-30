@@ -24,6 +24,7 @@ import { useLauncher } from '../state/LauncherContext'
 import { InstanceEmblem } from '../components/Artwork'
 import { Badge, Button, InlineNotice, Modal, Select, Skeleton, TextInput } from '../components/ui'
 import { ModCard, categoryLabel, isLoaderTag } from '../components/ModCard'
+import { ModUpdateCenter } from '../components/ModUpdateCenter'
 import {
   classNames,
   formatBytes,
@@ -145,6 +146,12 @@ export function ModsPage(): React.JSX.Element {
     () => tasks.filter((task) => task.kind === 'mod' && task.status === 'running'),
     [tasks]
   )
+
+  async function reloadInstalled(): Promise<void> {
+    if (!selectedInstance) return
+    const result = await window.fangjie.instanceMods(selectedInstance.id)
+    if (result.ok) setInstalled(result.value)
+  }
 
   async function fetchPage(nextOffset: number): Promise<void> {
     const current = ++requestId.current
@@ -417,12 +424,21 @@ export function ModsPage(): React.JSX.Element {
             来源 {source === 'curseforge' ? 'CurseForge' : 'Modrinth'}
           </span>
         </div>
-        {activeTasks.length ? (
-          <span className="mods-active-installs">
-            <span className="live-badge__dot" />
-            {activeTasks.length} 个安装任务进行中
-          </span>
-        ) : null}
+        <div className="mods-result-actions">
+          {activeTasks.length ? (
+            <span className="mods-active-installs">
+              <span className="live-badge__dot" />
+              {activeTasks.length} 个安装任务进行中
+            </span>
+          ) : null}
+          {projectType === 'mod' && selectedInstance ? (
+            <ModUpdateCenter
+              instanceId={selectedInstance.id}
+              instanceLabel={`${selectedInstance.name} · ${LOADER_LABEL[selectedInstance.loader]} ${selectedInstance.mcVersion}`}
+              onChanged={() => void reloadInstalled()}
+            />
+          ) : null}
+        </div>
       </div>
 
       {loading ? (

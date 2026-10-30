@@ -63,6 +63,69 @@ export interface InstalledMod {
   enabled: boolean
   installedAt: number
   dependencies?: string[]
+  source?: ModSource
+  /** When set, the update center never offers a newer version. */
+  pinnedVersionId?: string
+  /** A single newer version the user explicitly skipped. */
+  skippedVersionId?: string
+}
+
+export type ModUpdateStatus = 'update' | 'current' | 'unavailable'
+
+export interface ModUpdateEntry {
+  projectId: string
+  source?: ModSource
+  title: string
+  fileName: string
+  currentVersionId: string
+  currentVersionName: string
+  latestVersionId?: string
+  latestVersionName?: string
+  latestVersionNumber?: string
+  status: ModUpdateStatus
+  reason?: string
+  pinned: boolean
+  skipped: boolean
+  addedDependencies: string[]
+  removedDependencies: string[]
+}
+
+export interface ModUpdateReport {
+  checkedAt: number
+  offline: boolean
+  entries: ModUpdateEntry[]
+  counts: {
+    update: number
+    current: number
+    unavailable: number
+    total: number
+  }
+}
+
+export interface ModUpdateResult {
+  projectId: string
+  updated: boolean
+  taskId?: string
+  backupId?: string
+  fromVersionId?: string
+  toVersionId?: string
+  rolledBack?: boolean
+}
+
+export type ModUpdatePreference = 'skip' | 'pin' | 'unpin' | 'unskip'
+
+export interface ModBackupEntry {
+  id: string
+  projectId: string
+  title: string
+  fileName: string
+  versionId: string
+  versionName: string
+  source?: ModSource
+  createdAt: number
+  status: 'committed' | 'rolled_back'
+  rolledBackAt?: number
+  updatedVersionId?: string
 }
 
 export interface Instance {
@@ -521,6 +584,19 @@ export interface LauncherApi {
   instanceMods(id: string): Promise<Result<InstalledMod[]>>
   setModEnabled(id: string, fileName: string, enabled: boolean): Promise<Result<InstalledMod[]>>
   removeMod(id: string, fileName: string): Promise<Result<InstalledMod[]>>
+  checkModUpdates(instanceId: string): Promise<Result<ModUpdateReport>>
+  updateMod(instanceId: string, projectId: string): Promise<Result<ModUpdateResult>>
+  setModUpdatePreference(
+    instanceId: string,
+    projectId: string,
+    action: ModUpdatePreference,
+    versionId?: string
+  ): Promise<Result<InstalledMod[]>>
+  modUpdateBackups(instanceId: string): Promise<Result<ModBackupEntry[]>>
+  rollbackModUpdate(
+    instanceId: string,
+    backupId: string
+  ): Promise<Result<{ mods: InstalledMod[]; backup: ModBackupEntry }>>
   searchMods(query: string, options?: { instanceId?: string; category?: string; offset?: number; limit?: number; sort?: 'relevance' | 'downloads' | 'newest' | 'updated'; source?: ModSource; projectType?: ProjectType }): Promise<Result<ModSearchResponse>>
   getModProject(idOrSlug: string, instanceId?: string, projectType?: ProjectType): Promise<Result<{ project: ModProject; versions: ModVersion[] }>>
   installMod(instanceId: string, projectId: string, versionId?: string, source?: ModSource, force?: boolean): Promise<Result<InstallModResult>>

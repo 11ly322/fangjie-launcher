@@ -4,6 +4,7 @@ import { once } from 'node:events'
 import { dirname } from 'node:path'
 import { Readable } from 'node:stream'
 import { isOffline } from './networkPolicy'
+import { withNetworkSlot } from './networkQueue'
 
 export interface DownloadRequest {
   url: string
@@ -55,13 +56,15 @@ function isCertificateError(error: unknown): boolean {
 
 export async function requestResponse(url: string, init?: RequestInit): Promise<Response> {
   assertNetworkAllowed()
-  try {
-    return await fetch(url, init)
-  } catch (error) {
-    const net = electronNet()
-    if (!net || !isCertificateError(error)) throw error
-    return net.fetch(url, init)
-  }
+  return withNetworkSlot(async () => {
+    try {
+      return await fetch(url, init)
+    } catch (error) {
+      const net = electronNet()
+      if (!net || !isCertificateError(error)) throw error
+      return net.fetch(url, init)
+    }
+  })
 }
 
 function assertNetworkAllowed(): void {
@@ -77,6 +80,49 @@ export async function fetchJson<T>(request: JsonRequest): Promise<T> {
   })
   if (!response.ok) throw new Error(`HTTP ${response.status} from ${request.url}`)
   return (await response.json()) as T
+}
+
+function isReplaceConflict(error: unknown): boolean {
+  const code = (error as NodeJS.ErrnoException | null)?.code
+  return code === 'EEXIST' || code === 'EPERM' || code === 'ENOTEMPTY' || code === 'EACCES'
+}
+
+/**
+ * Commit a verified temporary file with rename semantics. Windows cannot
+ * atomically overwrite an existing file, so the old file is moved aside first
+ * and restored if the final rename fails.
+ */
+function commitDownloadedFile(temporary: string, destination: string): void {
+  try {
+    renameSync(temporary, destination)
+    return
+  } catch (error) {
+    if (!isReplaceConflict(error)) throw error
+  }
+
+  const displaced = `${destination}.replace-${process.pid}`
+  rmSync(displaced, { force: true })
+  let movedAside = false
+  try {
+    renameSync(destination, displaced)
+    movedAside = true
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException | null)?.code !== 'ENOENT') throw error
+  }
+
+  try {
+    renameSync(temporary, destination)
+  } catch (error) {
+    if (movedAside) {
+      try {
+        renameSync(displaced, destination)
+      } catch {
+        /* best effort restore; the original error is more useful */
+      }
+    }
+    throw error
+  }
+  if (movedAside) rmSync(displaced, { force: true })
 }
 
 /**
@@ -125,8 +171,7 @@ export async function downloadToFile(request: DownloadRequest): Promise<void> {
     if (request.expectedSha256 && sha256.digest('hex') !== request.expectedSha256.toLowerCase()) {
       throw new Error('文件 SHA256 校验失败')
     }
-    rmSync(request.destination, { force: true })
-    renameSync(temporary, request.destination)
+    commitDownloadedFile(temporary, request.destination)
   } catch (error) {
     stream?.destroy()
     rmSync(temporary, { force: true })

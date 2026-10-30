@@ -556,6 +556,7 @@ async function installModInBackground(options: {
       iconUrl: node.project.icon_url || undefined,
       enabled: true,
       installedAt: Date.now(),
+      source: 'modrinth',
       dependencies: node.version.dependencies
         .filter((dependency) => dependency.dependency_type === 'required' && dependency.project_id)
         .map((dependency) => dependency.project_id as string)

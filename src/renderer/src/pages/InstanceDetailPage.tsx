@@ -40,6 +40,7 @@ import {
 import { classNames, formatDate, formatPlaytime, formatRelative, rangeProgress } from '../lib/format'
 import { CrashDiagnosticsModal } from '../components/CrashDiagnosticsModal'
 import { FlightRecorderModal } from '../components/FlightRecorderModal'
+import { ModUpdateCenter } from '../components/ModUpdateCenter'
 
 type DetailTab = 'overview' | 'mods' | 'settings'
 
@@ -553,6 +554,11 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
               <h3>已安装模组 <span className="muted">{mods.length}</span></h3>
             </div>
             <div className="panel__actions">
+              <ModUpdateCenter
+                instanceId={instance.id}
+                instanceLabel={`${instance.name} · ${LOADER_LABEL[instance.loader]} ${instance.mcVersion}`}
+                onChanged={() => void reloadMods()}
+              />
               <Button variant="ghost" size="sm" icon={<RefreshCw size={14} />} onClick={() => {
                 void window.fangjie.instanceMods(instance.id).then((result) => {
                   if (result.ok) setMods(result.value)
