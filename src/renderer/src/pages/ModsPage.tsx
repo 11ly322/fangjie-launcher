@@ -112,7 +112,7 @@ export function ModsPage(): React.JSX.Element {
     return () => {
       active = false
     }
-  }, [selectedInstance?.id, selectedInstance?.mods.length, modTaskState])
+  }, [selectedInstance?.id, selectedInstance?.modCount, modTaskState])
 
   useEffect(() => {
     setDetail(null)

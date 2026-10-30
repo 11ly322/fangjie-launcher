@@ -10,6 +10,7 @@ import { configureNetwork } from './downloadAgent'
 import { configureNetworkConcurrency } from './networkQueue'
 import { configureModrinthBase } from './modrinth'
 import { configureCurseForgeBase } from './curseforge'
+import { configureMetadataCache } from './metadataCache'
 import { multiplayerManager } from './multiplayer'
 import { installDownloadConcurrencyLimit } from './xmclPatch'
 
@@ -150,6 +151,7 @@ app.whenReady().then(() => {
   }
   configureModrinthBase(store.settings.modrinthBase)
   configureCurseForgeBase(store.settings.curseforgeBase)
+  configureMetadataCache(store.dataPath)
   tasks = new TaskManager()
   rustCore = new RustCoreClient()
   registerIpcHandlers({ store, tasks, rustCore, getMainWindow })

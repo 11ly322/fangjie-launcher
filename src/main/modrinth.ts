@@ -18,6 +18,7 @@ import { ensureModsDirectory, isJarName, listInstanceMods, saveInstalledMods } f
 import { LOADER_MOD_TAGS, MODDED_LOADERS } from '../shared/constants'
 import { USER_AGENT } from './version'
 import { downloadToFile, requestResponse } from './downloadSource'
+import { fetchCachedJson } from './metadataCache'
 
 const DEFAULT_API_BASE = 'https://api.modrinth.com/v2'
 let apiBase = DEFAULT_API_BASE
@@ -261,11 +262,25 @@ export async function getModProject(
   projectType: ProjectType = 'mod'
 ): Promise<{ project: ModProject; versions: ModVersion[] }> {
   const effective = projectType === 'mod' ? instance : instance ? { ...instance, loader: 'vanilla' as const } : undefined
-  const projectPath = `/project/${encodeURIComponent(idOrSlug)}`
-  const raw = await modrinthFetch<ApiProject>(projectPath)
-  const project = normalizeProject(raw)
+  const project = await getProjectCached(idOrSlug)
   const versions = await getVersionsForProject(project.project_id || idOrSlug, effective)
   return { project, versions }
+}
+
+async function getProjectCached(idOrSlug: string): Promise<ModProject> {
+  const cached = projectCache.get(idOrSlug)
+  if (cached && Date.now() - cached.at < 5 * 60 * 1000) return cached.project
+  const result = await fetchCachedJson<ApiProject>({
+    key: `modrinth:project:${apiBase}:${idOrSlug}`,
+    url: `${apiBase}/project/${encodeURIComponent(idOrSlug)}`,
+    ttlMs: 5 * 60 * 1000,
+    label: 'Modrinth',
+    headers: { 'User-Agent': USER_AGENT }
+  })
+  const project = normalizeProject(result.data)
+  projectCache.set(idOrSlug, { at: Date.now(), project })
+  projectCache.set(project.project_id, { at: Date.now(), project })
+  return project
 }
 
 async function getVersionsForProject(projectId: string, instance?: Instance): Promise<ModVersion[]> {
@@ -278,10 +293,14 @@ async function getVersionsForProject(projectId: string, instance?: Instance): Pr
   const key = `${projectId}:${instance?.loader || 'any'}:${instance?.mcVersion || 'any'}`
   const cached = versionCache.get(key)
   if (cached && Date.now() - cached.at < 2 * 60 * 1000) return cached.versions
-  const response = await modrinthFetch<ApiVersion[]>(
-    `/project/${encodeURIComponent(projectId)}/version${query ? `?${query}` : ''}`
-  )
-  const versions = response
+  const result = await fetchCachedJson<ApiVersion[]>({
+    key: `modrinth:versions:${apiBase}:${key}`,
+    url: `${apiBase}/project/${encodeURIComponent(projectId)}/version${query ? `?${query}` : ''}`,
+    ttlMs: 2 * 60 * 1000,
+    label: 'Modrinth',
+    headers: { 'User-Agent': USER_AGENT }
+  })
+  const versions = result.data
     .map(normalizeVersion)
     .filter((version) => version.files.length > 0)
     .sort((left, right) => Date.parse(right.date_published) - Date.parse(left.date_published))
@@ -290,12 +309,7 @@ async function getVersionsForProject(projectId: string, instance?: Instance): Pr
 }
 
 async function getProjectById(projectId: string): Promise<ModProject> {
-  const cached = projectCache.get(projectId)
-  if (cached && Date.now() - cached.at < 5 * 60 * 1000) return cached.project
-  const raw = await modrinthFetch<ApiProject>(`/project/${encodeURIComponent(projectId)}`)
-  const project = normalizeProject(raw)
-  projectCache.set(projectId, { at: Date.now(), project })
-  return project
+  return getProjectCached(projectId)
 }
 
 async function getVersionById(versionId: string): Promise<ModVersion> {

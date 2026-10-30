@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Activity, Download, FolderOpen, RefreshCw } from 'lucide-react'
-import type { CoreFlightSeries, Instance } from '../../../shared/types'
+import type { CoreFlightSeries, InstanceSummary } from '../../../shared/types'
 import { Button, InlineNotice, Modal, Spinner } from './ui'
 
 function average(values: number[]): number {
@@ -83,7 +83,7 @@ export function FlightRecorderModal({
   onClose
 }: {
   open: boolean
-  instance: Instance
+  instance: InstanceSummary
   onClose: () => void
 }): React.JSX.Element {
   const [data, setData] = useState<CoreFlightSeries | null>(null)

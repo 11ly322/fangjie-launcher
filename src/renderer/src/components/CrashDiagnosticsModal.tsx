@@ -12,7 +12,7 @@ import type {
   CoreDiagnosisBundle,
   CoreRepairPlan,
   CoreRepairReceipt,
-  Instance
+  InstanceSummary
 } from '../../../shared/types'
 import { Badge, Button, InlineNotice, Modal, Spinner } from './ui'
 import { classNames } from '../lib/format'
@@ -31,7 +31,7 @@ export function CrashDiagnosticsModal({
   onChanged
 }: {
   open: boolean
-  instance: Instance
+  instance: InstanceSummary
   onClose: () => void
   onChanged: () => void
 }): React.JSX.Element {

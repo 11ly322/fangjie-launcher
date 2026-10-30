@@ -5,6 +5,7 @@ import type {
   Bootstrap,
   CreateInstanceInput,
   InstalledMod,
+  Instance,
   InstallModResult,
   CoreDiagnosisBundle,
   CoreFlightSeries,
@@ -71,6 +72,7 @@ const api: LauncherApi = {
       includeSnapshots
     ),
   refreshJava: () => invoke<JavaStatus>('java:refresh'),
+  onJavaUpdated: (callback) => subscribe<JavaStatus>('java:updated', callback),
   updateSettings: (patch: Partial<Settings>) => invoke<Settings>('settings:update', patch),
   updateAccount: (name: string) => invoke<Account>('account:update', name),
   loginMicrosoft: () => invoke<Account>('auth:microsoft-login'),
@@ -80,9 +82,10 @@ const api: LauncherApi = {
     invoke<{ instanceId: string; fileName: string }>('skin:apply', instanceId),
   chooseJava: () => invoke<string | null>('java:choose'),
   createInstance: (input: CreateInstanceInput) =>
-    invoke<{ instance: Bootstrap['instances'][number]; taskId: string }>('instances:create', input),
+    invoke<{ instance: Instance; taskId: string }>('instances:create', input),
+  instanceDetail: (id: string) => invoke<Instance>('instances:detail', id),
   updateInstance: (id: string, patch: UpdateInstanceInput) =>
-    invoke<Bootstrap['instances'][number]>('instances:update', id, patch),
+    invoke<Instance>('instances:update', id, patch),
   deleteInstance: (id: string, keepSnapshots?: boolean) =>
     invoke<void>('instances:delete', id, keepSnapshots),
   launchInstance: (id: string) => invoke<LaunchState>('instances:launch', id),
@@ -105,7 +108,7 @@ const api: LauncherApi = {
   setModsEnabledBatch: (instanceId: string, fileNames: string[], enabled: boolean) =>
     invoke<InstalledMod[]>('mods:set-enabled-batch', instanceId, fileNames, enabled),
   copyInstance: (instanceId: string, name: string) =>
-    invoke<Bootstrap['instances'][number]>('instances:copy', instanceId, name),
+    invoke<Instance>('instances:copy', instanceId, name),
   saveInstanceTemplate: (instanceId: string) =>
     invoke<CoreInstanceTemplate>('instances:save-template', instanceId),
   flightSeries: (instanceId: string) =>

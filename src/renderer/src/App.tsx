@@ -150,6 +150,10 @@ export default function App(): React.JSX.Element {
   useEffect(() => {
     if (!boot) return
     const unsubscribeTasks = window.fangjie.onTasks((next) => setTasks(next))
+    const unsubscribeJava = window.fangjie.onJavaUpdated((status) => {
+      setBoot((current) => (current ? { ...current, java: status } : current))
+      if (bootRef.current) bootRef.current = { ...bootRef.current, java: status }
+    })
     const unsubscribeData = window.fangjie.onDataChanged((reason) => {
       if (reason === 'instance-created') void refreshJava()
       if (refreshTimer.current) window.clearTimeout(refreshTimer.current)
@@ -168,6 +172,7 @@ export default function App(): React.JSX.Element {
     })
     return () => {
       unsubscribeTasks()
+      unsubscribeJava()
       unsubscribeData()
       unsubscribeLog()
       if (refreshTimer.current) window.clearTimeout(refreshTimer.current)

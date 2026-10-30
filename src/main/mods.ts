@@ -1,8 +1,102 @@
-import { existsSync, readdirSync, renameSync, rmSync, statSync } from 'node:fs'
-import { basename, join } from 'node:path'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync
+} from 'node:fs'
+import { basename, dirname, join } from 'node:path'
 import type { InstalledMod, Instance } from '../shared/types'
 import type { LauncherStore } from './store'
 import { safeFileName } from './store'
+
+interface CachedModFile {
+  fileName: string
+  mtimeMs: number
+  size: number
+}
+
+interface ModsIndexFile {
+  version: 1
+  directoryMtimeMs: number
+  files: CachedModFile[]
+}
+
+const MODS_INDEX_VERSION = 1
+
+export function modsIndexPath(store: LauncherStore, instance: Instance): string {
+  return join(store.instancesPath, instance.id, '.fangjie', 'mods-index.json')
+}
+
+function readModsIndex(path: string): ModsIndexFile | undefined {
+  try {
+    const raw = JSON.parse(readFileSync(path, 'utf8')) as Partial<ModsIndexFile>
+    if (
+      raw.version !== MODS_INDEX_VERSION ||
+      typeof raw.directoryMtimeMs !== 'number' ||
+      !Array.isArray(raw.files)
+    ) {
+      return undefined
+    }
+    const files = raw.files.filter(
+      (file): file is CachedModFile =>
+        Boolean(file) &&
+        typeof file.fileName === 'string' &&
+        typeof file.mtimeMs === 'number' &&
+        typeof file.size === 'number'
+    )
+    return { version: MODS_INDEX_VERSION, directoryMtimeMs: raw.directoryMtimeMs, files }
+  } catch {
+    return undefined
+  }
+}
+
+function writeModsIndex(path: string, index: ModsIndexFile): void {
+  try {
+    mkdirSync(dirname(path), { recursive: true })
+    const temporary = `${path}.${process.pid}.tmp`
+    writeFileSync(temporary, JSON.stringify(index), 'utf8')
+    renameSync(temporary, path)
+  } catch {
+    /* the index is an optimization; a failed write must not break mod listing */
+  }
+}
+
+function buildMods(instance: Instance, files: CachedModFile[]): InstalledMod[] {
+  const records = new Map(instance.mods.map((mod) => [safeFileName(mod.fileName), mod]))
+  const result: InstalledMod[] = []
+  for (const file of files) {
+    const enabled = file.fileName.endsWith('.jar') && !file.fileName.endsWith('.jar.disabled')
+    const record = records.get(file.fileName)
+    if (record) {
+      result.push({
+        ...record,
+        fileName: file.fileName,
+        enabled,
+        installedAt: record.installedAt || file.mtimeMs
+      })
+      continue
+    }
+    const title = file.fileName.replace(/\.jar(\.disabled)?$/, '').replace(/[-_]/g, ' ')
+    result.push({
+      projectId: `local:${file.fileName}`,
+      slug: 'local',
+      title,
+      versionId: 'local',
+      versionName: '本地文件',
+      fileName: file.fileName,
+      enabled,
+      installedAt: file.mtimeMs
+    })
+  }
+  return result.sort((left, right) => {
+    if (left.enabled !== right.enabled) return left.enabled ? -1 : 1
+    return left.title.localeCompare(right.title, 'zh-CN')
+  })
+}
 
 export function modsDirectory(store: LauncherStore, instance: Instance): string {
   return join(store.instanceGamePath(instance), 'mods')
@@ -11,47 +105,43 @@ export function modsDirectory(store: LauncherStore, instance: Instance): string 
 export function listInstanceMods(store: LauncherStore, instance: Instance): InstalledMod[] {
   const directory = modsDirectory(store, instance)
   if (!existsSync(directory)) return []
-  const files = new Set(readdirSync(directory).filter((name) => isJarName(name)))
-  const records = new Map(instance.mods.map((mod) => [safeFileName(mod.fileName), mod]))
-  const result: InstalledMod[] = []
 
-  for (const [fileName, record] of records) {
-    const enabledName = fileName.endsWith('.disabled') ? fileName.slice(0, -'.disabled'.length) : fileName
-    const disabledName = `${enabledName}.disabled`
-    const actual = files.has(enabledName) ? enabledName : files.has(disabledName) ? disabledName : undefined
-    if (!actual) continue
-    const enabled = actual.endsWith('.jar') && !actual.endsWith('.jar.disabled')
-    const stat = safeStat(join(directory, actual))
-    result.push({
-      ...record,
-      fileName: actual,
-      enabled,
-      installedAt: record.installedAt || stat?.mtimeMs || Date.now()
-    })
+  const index = readModsIndex(modsIndexPath(store, instance))
+  let directoryMtimeMs = 0
+  try {
+    directoryMtimeMs = statSync(directory).mtimeMs
+  } catch {
+    return []
   }
 
-  const knownFiles = new Set(result.map((mod) => mod.fileName))
-  for (const file of files) {
-    if (knownFiles.has(file)) continue
-    const enabled = !file.endsWith('.disabled')
-    const stat = safeStat(join(directory, file))
-    const title = file.replace(/\.jar(\.disabled)?$/, '').replace(/[-_]/g, ' ')
-    result.push({
-      projectId: `local:${file}`,
-      slug: 'local',
-      title,
-      versionId: 'local',
-      versionName: '本地文件',
-      fileName: file,
-      enabled,
-      installedAt: stat?.mtimeMs || Date.now()
-    })
+  // The directory mtime is the cheap invalidation check: add/remove/rename
+  // changes it without requiring a stat for every installed JAR.
+  if (index && index.directoryMtimeMs === directoryMtimeMs) {
+    return buildMods(instance, index.files)
   }
 
-  return result.sort((left, right) => {
-    if (left.enabled !== right.enabled) return left.enabled ? -1 : 1
-    return left.title.localeCompare(right.title, 'zh-CN')
+  const names = readdirSync(directory).filter((name) => isJarName(name))
+  const previous = new Map(index?.files.map((file) => [file.fileName, file]) || [])
+  const files: CachedModFile[] = []
+  for (const fileName of names) {
+    try {
+      const stat = statSync(join(directory, fileName))
+      const cached = previous.get(fileName)
+      files.push(
+        cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size
+          ? cached
+          : { fileName, mtimeMs: stat.mtimeMs, size: stat.size }
+      )
+    } catch {
+      /* a file removed between readdir and stat is simply absent */
+    }
+  }
+  writeModsIndex(modsIndexPath(store, instance), {
+    version: MODS_INDEX_VERSION,
+    directoryMtimeMs,
+    files
   })
+  return buildMods(instance, files)
 }
 
 export function setModEnabled(
@@ -111,14 +201,6 @@ export function saveInstalledMods(store: LauncherStore, instanceId: string, mods
 
 export function isJarName(name: string): boolean {
   return name.endsWith('.jar') || name.endsWith('.jar.disabled')
-}
-
-function safeStat(path: string): { mtimeMs: number } | undefined {
-  try {
-    return { mtimeMs: statSync(path).mtimeMs }
-  } catch {
-    return undefined
-  }
 }
 
 export function ensureModsDirectory(store: LauncherStore, instance: Instance): string {

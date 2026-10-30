@@ -43,7 +43,7 @@ export function InstancesPage(): React.JSX.Element {
       .sort((left, right) => (right.lastPlayedAt || right.createdAt) - (left.lastPlayedAt || left.createdAt))
   }, [boot.instances, filter, query])
 
-  const totalMods = boot.instances.reduce((sum, instance) => sum + instance.mods.length, 0)
+  const totalMods = boot.instances.reduce((sum, instance) => sum + instance.modCount, 0)
   const totalPlaytime = boot.instances.reduce((sum, instance) => sum + instance.totalPlayTimeMs, 0)
   const moddedCount = boot.instances.filter((instance) => instance.loader !== 'vanilla').length
 

@@ -18,7 +18,7 @@ import {
   Terminal,
   Trash2
 } from 'lucide-react'
-import type { Instance, InstalledMod } from '../../../shared/types'
+import type { InstanceSummary, InstalledMod } from '../../../shared/types'
 import {
   INSTANCE_ACCENTS,
   INSTANCE_ICON_LABELS,
@@ -46,7 +46,7 @@ import { SnapshotCenter } from '../components/SnapshotCenter'
 
 type DetailTab = 'overview' | 'mods' | 'settings'
 
-export function InstanceDetailPage({ instance }: { instance: Instance }): React.JSX.Element {
+export function InstanceDetailPage({ instance }: { instance: InstanceSummary }): React.JSX.Element {
   const {
     boot,
     running,
@@ -107,14 +107,14 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
     let active = true
     setModsLoading(true)
     setModsError('')
-    void window.fangjie.instanceMods(instance.id).then((result) => {
+    void window.fangjie.instanceDetail(instance.id).then((result) => {
       if (!active) return
       setModsLoading(false)
       if (!result.ok) {
         setModsError(result.error)
         return
       }
-      setMods(result.value)
+      setMods(result.value.mods)
     })
     return () => {
       active = false
@@ -126,7 +126,7 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
     void window.fangjie.instanceMods(instance.id).then((result) => {
       if (result.ok) setMods(result.value)
     })
-  }, [instance.id, tab, instance.mods.length])
+  }, [instance.id, tab, instance.modCount])
 
   const toggleMod = async (mod: InstalledMod): Promise<void> => {
     setBusyFile(mod.fileName)
@@ -371,7 +371,7 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
           <span className="detail-stats__icon"><Puzzle size={16} /></span>
           <div>
             <span>已安装模组</span>
-            <strong>{mods.length || instance.mods.length} 个</strong>
+            <strong>{mods.length || instance.modCount} 个</strong>
           </div>
         </div>
         <div>
@@ -386,7 +386,7 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
       <div className="detail-tabs" role="tablist" aria-label="实例详情">
         {([
           ['overview', '概览'],
-          ['mods', `模组 ${mods.length || instance.mods.length || ''}`.trim()],
+          ['mods', `模组 ${mods.length || instance.modCount || ''}`.trim()],
           ['settings', '设置']
         ] as Array<[DetailTab, string]>).map(([value, label]) => (
           <button

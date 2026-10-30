@@ -138,8 +138,8 @@ export function HomePage(): React.JSX.Element {
                   <Badge tone="outline">
                     {LOADER_LABEL[activeInstance.loader] || activeInstance.loader}
                   </Badge>
-                  {activeInstance.mods.length ? (
-                    <Badge tone="neutral">{activeInstance.mods.length} 个模组</Badge>
+                  {activeInstance.modCount ? (
+                    <Badge tone="neutral">{activeInstance.modCount} 个模组</Badge>
                   ) : null}
                 </div>
                 <p className="hero-play__meta">

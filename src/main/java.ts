@@ -1,5 +1,13 @@
-import { existsSync, readdirSync } from 'node:fs'
-import { basename, join } from 'node:path'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  statSync,
+  writeFileSync
+} from 'node:fs'
+import { basename, dirname, join } from 'node:path'
 import type { ResolvedVersion } from '@xmcl/core'
 import {
   fetchJavaRuntimeManifest,
@@ -54,7 +62,152 @@ function javaCandidatesInRuntimeFolder(store: LauncherStore): Array<{ path: stri
   return result
 }
 
-export async function scanJavaRuntimes(store: LauncherStore): Promise<JavaStatus> {
+interface JavaCacheEntry {
+  mtimeMs: number
+  runtime: JavaRuntime
+}
+
+interface JavaCacheFile {
+  version: 1
+  updatedAt: number
+  systemAt: number
+  system: JavaRuntime[]
+  entries: Record<string, JavaCacheEntry>
+}
+
+const SYSTEM_CACHE_TTL = 24 * 60 * 60 * 1000
+let backgroundRefresh: Promise<JavaStatus> | null = null
+
+function javaCachePath(store: LauncherStore): string {
+  return join(store.dataPath, 'cache', 'java-runtimes.json')
+}
+
+function emptyJavaCache(): JavaCacheFile {
+  return { version: 1, updatedAt: 0, systemAt: 0, system: [], entries: {} }
+}
+
+function readJavaCache(store: LauncherStore): JavaCacheFile {
+  try {
+    const raw = JSON.parse(readFileSync(javaCachePath(store), 'utf8')) as Partial<JavaCacheFile>
+    if (!raw || raw.version !== 1 || typeof raw.entries !== 'object' || !raw.entries) {
+      return emptyJavaCache()
+    }
+    const entries: Record<string, JavaCacheEntry> = {}
+    for (const [key, value] of Object.entries(raw.entries)) {
+      if (
+        value &&
+        typeof value.mtimeMs === 'number' &&
+        value.runtime &&
+        typeof value.runtime.path === 'string' &&
+        typeof value.runtime.version === 'string' &&
+        typeof value.runtime.majorVersion === 'number'
+      ) {
+        entries[key] = {
+          mtimeMs: value.mtimeMs,
+          runtime: {
+            ...value.runtime,
+            source: value.runtime.source === 'manual' ? 'manual' : 'auto'
+          }
+        }
+      }
+    }
+    return {
+      version: 1,
+      updatedAt: typeof raw.updatedAt === 'number' ? raw.updatedAt : 0,
+      systemAt: typeof raw.systemAt === 'number' ? raw.systemAt : 0,
+      system: Array.isArray(raw.system)
+        ? raw.system.filter(
+            (item): item is JavaRuntime =>
+              Boolean(item) &&
+              typeof item.path === 'string' &&
+              typeof item.version === 'string' &&
+              typeof item.majorVersion === 'number'
+          )
+        : [],
+      entries
+    }
+  } catch {
+    return emptyJavaCache()
+  }
+}
+
+function writeJavaCache(store: LauncherStore, cache: JavaCacheFile): void {
+  try {
+    const file = javaCachePath(store)
+    mkdirSync(dirname(file), { recursive: true })
+    const temporary = `${file}.${process.pid}.tmp`
+    writeFileSync(temporary, JSON.stringify({ ...cache, updatedAt: Date.now() }), 'utf8')
+    renameSync(temporary, file)
+  } catch {
+    /* Java detection remains usable even when the cache cannot be written */
+  }
+}
+
+function cachedRuntime(entry: JavaCacheEntry | undefined, path: string): JavaRuntime | undefined {
+  if (!entry || !existsSync(path)) return undefined
+  try {
+    if (Math.abs(statSync(path).mtimeMs - entry.mtimeMs) > 1) return undefined
+  } catch {
+    return undefined
+  }
+  return { ...entry.runtime, path }
+}
+
+function sortJavaRuntimes(runtimes: JavaRuntime[]): JavaRuntime[] {
+  return [...runtimes].sort((left, right) => {
+    if (left.source !== right.source) return left.source === 'manual' ? -1 : 1
+    return right.majorVersion - left.majorVersion
+  })
+}
+
+/** Fast, subprocess-free Java status for the first bootstrap paint. */
+export function cachedJavaStatus(store: LauncherStore): JavaStatus {
+  const cache = readJavaCache(store)
+  const runtimes: JavaRuntime[] = []
+  const seen = new Set<string>()
+  for (const entry of Object.values(cache.entries)) {
+    const runtime = cachedRuntime(entry, entry.runtime.path)
+    if (!runtime) continue
+    const key = runtime.path.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    runtimes.push(runtime)
+  }
+  for (const runtime of cache.system) {
+    if (!existsSync(runtime.path)) continue
+    const key = runtime.path.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    runtimes.push(runtime)
+  }
+  return {
+    runtimes: sortJavaRuntimes(runtimes),
+    configuredPath: normalizeJavaPath(store.settings.javaPath),
+    fromCache: true
+  }
+}
+
+export function refreshJavaInBackground(
+  store: LauncherStore,
+  onUpdate: (status: JavaStatus) => void
+): void {
+  if (backgroundRefresh) return
+  backgroundRefresh = scanJavaRuntimes(store)
+    .then((status) => {
+      onUpdate(status)
+      return status
+    })
+    .catch(() => cachedJavaStatus(store))
+    .finally(() => {
+      backgroundRefresh = null
+    })
+}
+
+export async function scanJavaRuntimes(
+  store: LauncherStore,
+  options: { force?: boolean } = {}
+): Promise<JavaStatus> {
+  const cache = readJavaCache(store)
   const runtimes: JavaRuntime[] = []
   const seen = new Set<string>()
   const add = (runtime: JavaRuntime | undefined, component?: string): void => {
@@ -65,38 +218,83 @@ export async function scanJavaRuntimes(store: LauncherStore): Promise<JavaStatus
     runtimes.push({ ...runtime, component })
   }
 
-  const automatic = javaCandidatesInRuntimeFolder(store)
-  const inspectedAuto = await Promise.all(
-    automatic.map(async (candidate) => ({
-      component: candidate.component,
-      runtime: await inspectJava(candidate.path, 'auto')
-    }))
-  )
-  for (const item of inspectedAuto) add(item.runtime, item.component)
+  const candidates = [
+    ...javaCandidatesInRuntimeFolder(store).map((candidate) => ({
+      ...candidate,
+      source: 'auto' as const
+    })),
+    ...(normalizeJavaPath(store.settings.javaPath)
+      ? [{ path: normalizeJavaPath(store.settings.javaPath), source: 'manual' as const }]
+      : [])
+  ]
 
-  const configuredPath = normalizeJavaPath(store.settings.javaPath)
-  if (configuredPath) {
-    add(await inspectJava(configuredPath, 'manual'))
+  for (const candidate of candidates) {
+    const key = candidate.path.toLowerCase()
+    let entry = cache.entries[key]
+    let runtime = cachedRuntime(entry, candidate.path)
+    if (!runtime) {
+      runtime = await inspectJava(candidate.path, candidate.source)
+      if (runtime) {
+        try {
+          entry = { mtimeMs: statSync(candidate.path).mtimeMs, runtime }
+          cache.entries[key] = entry
+        } catch {
+          /* ignore a file that vanished during inspection */
+        }
+      }
+    }
+    add(runtime, 'component' in candidate ? candidate.component : undefined)
   }
 
-  try {
-    const systemCandidates = await getPotentialJavaLocations()
-    const inspectedSystem = await Promise.all(
-      [...new Set(systemCandidates)].slice(0, 6).map((candidate) => inspectJava(candidate, 'system'))
-    )
-    for (const runtime of inspectedSystem) add(runtime)
-  } catch {
-    /* no system java is a normal state */
+  const systemCacheFresh =
+    cache.systemAt > 0 && Date.now() - cache.systemAt < SYSTEM_CACHE_TTL && !options.force
+  if (systemCacheFresh) {
+    for (const runtime of cache.system) add(runtime)
+  } else {
+    try {
+      const systemCandidates = await getPotentialJavaLocations()
+      const inspected = await Promise.all(
+        [...new Set(systemCandidates)].slice(0, 6).map((candidate) => inspectJava(candidate, 'system'))
+      )
+      cache.system = inspected.filter((runtime): runtime is JavaRuntime => Boolean(runtime))
+      cache.systemAt = Date.now()
+      for (const runtime of cache.system) add(runtime)
+    } catch {
+      for (const runtime of cache.system) add(runtime)
+    }
   }
 
-  runtimes.sort((left, right) => {
-    if (left.source !== right.source) return left.source === 'manual' ? -1 : 1
-    return right.majorVersion - left.majorVersion
-  })
-
+  writeJavaCache(store, cache)
   return {
-    runtimes,
-    configuredPath
+    runtimes: sortJavaRuntimes(runtimes),
+    configuredPath: normalizeJavaPath(store.settings.javaPath),
+    fromCache: false
+  }
+}
+
+/** Register a runtime we just installed; its version is known, so no probe is needed. */
+export function registerJavaRuntime(
+  store: LauncherStore,
+  path: string,
+  majorVersion: number,
+  component?: string
+): void {
+  if (!existsSync(path)) return
+  try {
+    const cache = readJavaCache(store)
+    cache.entries[path.toLowerCase()] = {
+      mtimeMs: statSync(path).mtimeMs,
+      runtime: {
+        path,
+        version: `Java ${majorVersion}`,
+        majorVersion,
+        source: 'auto',
+        component
+      }
+    }
+    writeJavaCache(store, cache)
+  } catch {
+    /* registration is an optimization, not a correctness requirement */
   }
 }
 
@@ -177,9 +375,8 @@ export async function ensureJavaRuntime(options: {
   if (!existsSync(executable)) {
     throw new Error('Java 运行时解压不完整，未找到 java 可执行文件')
   }
-  const info = await inspectJava(executable, 'auto')
-  if (!info) throw new Error('Java 运行时无法启动，请检查网络后重试')
-  onProgress(100, `Java ${info.version} 准备就绪`)
+  registerJavaRuntime(store, executable, requiredMajor, component)
+  onProgress(100, `Java ${requiredMajor} 准备就绪`)
   return executable
 }
 

@@ -1,5 +1,5 @@
 import { Clock3, FolderOpen, Play, Square } from 'lucide-react'
-import type { Instance } from '../../../shared/types'
+import type { InstanceSummary } from '../../../shared/types'
 import { LOADER_LABEL } from '../../../shared/constants'
 import { InstanceEmblem } from './Artwork'
 import { Badge, IconButton } from './ui'
@@ -14,7 +14,7 @@ export function InstanceCard({
   onOpenFolder,
   compact = false
 }: {
-  instance: Instance
+  instance: InstanceSummary
   running: boolean
   launching: boolean
   onLaunch: () => void
@@ -74,10 +74,10 @@ export function InstanceCard({
           </span>
           <span className="instance-card__dot" />
           <span>{formatPlaytime(instance.totalPlayTimeMs)}</span>
-          {instance.mods.length > 0 ? (
+          {instance.modCount > 0 ? (
             <>
               <span className="instance-card__dot" />
-              <span>{instance.mods.length} 个模组</span>
+              <span>{instance.modCount} 个模组</span>
             </>
           ) : null}
         </div>

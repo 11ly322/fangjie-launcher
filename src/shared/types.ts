@@ -203,6 +203,10 @@ export interface Instance {
   mods: InstalledMod[]
 }
 
+export interface InstanceSummary extends Omit<Instance, 'mods'> {
+  modCount: number
+}
+
 export interface VersionSummary {
   id: string
   type: 'release' | 'snapshot' | 'old_beta' | 'old_alpha' | string
@@ -221,6 +225,7 @@ export interface JavaStatus {
   runtimes: JavaRuntime[]
   configuredPath: string
   error?: string
+  fromCache?: boolean
 }
 
 export interface AppSnapshot {
@@ -229,7 +234,7 @@ export interface AppSnapshot {
   dataPath: string
   settings: Settings
   account: Account
-  instances: Instance[]
+  instances: InstanceSummary[]
   tasks: TaskView[]
   runningInstanceIds: string[]
   latest: { release?: string; snapshot?: string }
@@ -601,6 +606,7 @@ export interface LauncherApi {
   snapshot(): Promise<Result<AppSnapshot>>
   versions(includeSnapshots: boolean): Promise<Result<{ versions: VersionSummary[]; latest: { release?: string; snapshot?: string } }>>
   refreshJava(): Promise<Result<JavaStatus>>
+  onJavaUpdated(callback: (status: JavaStatus) => void): () => void
   updateSettings(patch: Partial<Settings>): Promise<Result<Settings>>
   updateAccount(name: string): Promise<Result<Account>>
   loginMicrosoft(): Promise<Result<Account>>
@@ -630,6 +636,7 @@ export interface LauncherApi {
   updateDownload(asset: CoreUpdateAsset): Promise<Result<string>>
   updateApply(installerPath: string): Promise<Result<void>>
   createInstance(input: CreateInstanceInput): Promise<Result<{ instance: Instance; taskId: string }>>
+  instanceDetail(id: string): Promise<Result<Instance>>
   updateInstance(id: string, patch: UpdateInstanceInput): Promise<Result<Instance>>
   deleteInstance(id: string, keepSnapshots?: boolean): Promise<Result<void>>
   launchInstance(id: string): Promise<Result<LaunchState>>

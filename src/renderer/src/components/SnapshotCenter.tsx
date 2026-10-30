@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Archive, ArrowLeft, Camera, RefreshCw, RotateCcw, Trash2 } from 'lucide-react'
-import type { Instance, SnapshotKind, SnapshotMeta, SnapshotPreview } from '../../../shared/types'
+import type { InstanceSummary, SnapshotKind, SnapshotMeta, SnapshotPreview } from '../../../shared/types'
 import { useLauncher } from '../state/LauncherContext'
 import { Badge, Button, InlineNotice, Modal, Spinner, TextInput } from '../components/ui'
 import { formatBytes, formatDate } from '../lib/format'
@@ -23,7 +23,7 @@ const ACTION_LABEL: Record<'create' | 'overwrite' | 'unchanged', string> = {
   unchanged: '相同大小'
 }
 
-export function SnapshotCenter({ instance }: { instance: Instance }): React.JSX.Element {
+export function SnapshotCenter({ instance }: { instance: InstanceSummary }): React.JSX.Element {
   const { confirm, toast, running } = useLauncher()
   const [open, setOpen] = useState(false)
   const [snapshots, setSnapshots] = useState<SnapshotMeta[]>([])

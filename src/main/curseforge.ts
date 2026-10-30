@@ -19,6 +19,7 @@ import { ensureModsDirectory, isJarName, listInstanceMods, saveInstalledMods } f
 import { LOADER_MOD_TAGS } from '../shared/constants'
 import { USER_AGENT } from './version'
 import { downloadToFile, requestResponse } from './downloadSource'
+import { fetchCachedJson } from './metadataCache'
 
 const DEFAULT_API_BASE = 'https://mod.mcimirror.top/curseforge/v1'
 let apiBase = DEFAULT_API_BASE
@@ -314,9 +315,15 @@ export async function searchCurseForge(options: {
 async function getCfMod(modId: number): Promise<CfMod> {
   const cached = projectCache.get(modId)
   if (cached && Date.now() - cached.at < 5 * 60 * 1000) return cached.project
-  const response = await cfFetch<{ data: CfMod }>(`/mods/${modId}`)
-  projectCache.set(modId, { at: Date.now(), project: response.data })
-  return response.data
+  const result = await fetchCachedJson<{ data: CfMod }>({
+    key: `curseforge:project:${apiBase}:${modId}`,
+    url: `${apiBase}/mods/${modId}`,
+    ttlMs: 5 * 60 * 1000,
+    label: 'CurseForge',
+    headers: { 'User-Agent': USER_AGENT }
+  })
+  projectCache.set(modId, { at: Date.now(), project: result.data.data })
+  return result.data.data
 }
 
 export async function getCurseForgeFile(
@@ -360,14 +367,26 @@ async function getCfFiles(modId: number, instance?: Instance): Promise<CfFile[]>
     const loaderId = LOADER_IDS[instance.loader]
     if (loaderId) params.set('modLoaderType', String(loaderId))
   }
-  let response = await cfFetch<{ data: CfFile[] }>(
-    `/mods/${modId}/files?${params.toString()}`
-  )
-  let files = response.data || []
+  const query = params.toString()
+  const result = await fetchCachedJson<{ data: CfFile[] }>({
+    key: `curseforge:files:${apiBase}:${modId}:${query}`,
+    url: `${apiBase}/mods/${modId}/files?${query}`,
+    ttlMs: 2 * 60 * 1000,
+    label: 'CurseForge',
+    headers: { 'User-Agent': USER_AGENT }
+  })
+  let files = result.data.data || []
 
   if (!files.length && instance) {
-    response = await cfFetch<{ data: CfFile[] }>(`/mods/${modId}/files?pageSize=50`)
-    files = (response.data || []).filter((file) => fileMatchesInstance(file, instance))
+    const fallbackParams = new URLSearchParams({ pageSize: '50' })
+    const fallback = await fetchCachedJson<{ data: CfFile[] }>({
+      key: `curseforge:files:${apiBase}:${modId}:all`,
+      url: `${apiBase}/mods/${modId}/files?${fallbackParams.toString()}`,
+      ttlMs: 2 * 60 * 1000,
+      label: 'CurseForge',
+      headers: { 'User-Agent': USER_AGENT }
+    })
+    files = (fallback.data.data || []).filter((file) => fileMatchesInstance(file, instance))
   }
 
   files = files

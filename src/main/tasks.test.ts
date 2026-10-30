@@ -23,3 +23,38 @@ describe('TaskManager.waitFor', () => {
     await expect(manager.waitFor('missing')).rejects.toThrow('任务不存在或已被清理')
   })
 })
+
+describe('TaskManager coalescing', () => {
+  it('coalesces progress events across several tasks into one update', async () => {
+    const manager = new TaskManager()
+    const ids = Array.from({ length: 3 }, (_, index) =>
+      manager.create({ kind: 'mod', title: `下载测试 ${index}` })
+    )
+    let emissions = 0
+    manager.on('update', () => {
+      emissions += 1
+    })
+    for (const id of ids) {
+      for (let progress = 1; progress <= 8; progress += 1) {
+        manager.update(id, { progress: progress * 10, detail: `进度 ${progress}` })
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250))
+    expect(emissions).toBeLessThanOrEqual(2)
+    const tasks = manager.list()
+    expect(tasks).toHaveLength(3)
+    expect(tasks.every((task) => task.progress === 80)).toBe(true)
+  })
+
+  it('emits terminal changes immediately for waitFor', async () => {
+    const manager = new TaskManager()
+    const id = manager.create({ kind: 'mod', title: '立即完成' })
+    let emissions = 0
+    manager.on('update', () => {
+      emissions += 1
+    })
+    manager.finish(id)
+    expect(emissions).toBe(1)
+    expect(manager.get(id)?.status).toBe('success')
+  })
+})

@@ -12,7 +12,13 @@ import type {
   CoreModListExport,
   UpdateInstanceInput
 } from '../shared/types'
-import { errorMessage, normalizeJavaPath, scanJavaRuntimes } from './java'
+import {
+  cachedJavaStatus,
+  errorMessage,
+  normalizeJavaPath,
+  refreshJavaInBackground,
+  scanJavaRuntimes
+} from './java'
 import {
   cachedLatestVersions,
   isGameRunning,
@@ -172,14 +178,20 @@ export function registerIpcHandlers(context: IpcContext): void {
     dataPath: store.dataPath,
     settings: store.settings,
     account: store.getPublicAccount(),
-    instances: store.instances,
+    instances: store.instances.map((instance) => {
+      const { mods: _mods, ...summary } = instance
+      return { ...summary, modCount: listInstanceMods(store, instance).length }
+    }),
     tasks: tasks.list(),
     runningInstanceIds: runningInstanceIds(),
     latest: cachedLatestVersions()
   })
 
   handle('app:bootstrap', async () => {
-    const java = await scanJavaRuntimes(store)
+    const java = cachedJavaStatus(store)
+    refreshJavaInBackground(store, (status) => {
+      getMainWindow()?.webContents.send('java:updated', status)
+    })
     return { ...snapshot(), java }
   })
 
@@ -230,7 +242,7 @@ export function registerIpcHandlers(context: IpcContext): void {
   })
 
   handle('java:refresh', async () => {
-    return scanJavaRuntimes(store)
+    return scanJavaRuntimes(store, { force: true })
   })
 
   handle('java:choose', async () => {
@@ -320,6 +332,12 @@ export function registerIpcHandlers(context: IpcContext): void {
     })
     notifyChange('instance-updated')
     return instance
+  })
+
+  handle('instances:detail', async (id: string) => {
+    const instance = store.getInstance(id)
+    if (!instance) throw new Error('找不到这个实例')
+    return { ...instance, mods: listInstanceMods(store, instance) }
   })
 
   handle('instances:delete', async (id: string, keepSnapshots = false) => {

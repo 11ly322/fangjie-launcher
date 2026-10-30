@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react'
 import type {
   Bootstrap,
-  Instance,
+  InstanceSummary,
   LaunchState,
   LogLine,
   Settings,
@@ -38,7 +38,7 @@ export interface LauncherContextValue {
   launching: Set<string>
   page: PageName
   activeInstanceId: string | null
-  activeInstance: Instance | null
+  activeInstance: InstanceSummary | null
   modsInstanceId: string | null
   logs: Record<string, LogLine[]>
   createOpen: boolean

@@ -4,12 +4,12 @@ import type { TaskKind, TaskStatus, TaskView } from '../shared/types'
 
 interface TaskRecord extends TaskView {
   cancel?: () => void
-  lastEmit?: number
-  pending?: NodeJS.Timeout
 }
 
 export class TaskManager extends EventEmitter {
   private readonly records = new Map<string, TaskRecord>()
+  private emitTimer?: NodeJS.Timeout
+  private lastEmit = 0
 
   constructor() {
     super()
@@ -19,7 +19,7 @@ export class TaskManager extends EventEmitter {
   list(): TaskView[] {
     return [...this.records.values()]
       .sort((left, right) => right.createdAt - left.createdAt)
-      .map(({ cancel: _cancel, lastEmit: _lastEmit, pending: _pending, ...task }) => ({ ...task }))
+      .map(({ cancel: _cancel, ...task }) => ({ ...task }))
   }
 
   get(id: string): TaskView | undefined {
@@ -97,7 +97,7 @@ export class TaskManager extends EventEmitter {
       projectId: input.projectId
     }
     this.records.set(id, task)
-    this.emitAll()
+    this.scheduleEmit(true)
     return id
   }
 
@@ -106,7 +106,7 @@ export class TaskManager extends EventEmitter {
     if (!task) return
     task.status = 'running'
     if (detail) task.detail = detail
-    this.emitAll()
+    this.scheduleEmit(true)
   }
 
   update(
@@ -124,7 +124,7 @@ export class TaskManager extends EventEmitter {
     if (update.title !== undefined) task.title = update.title
     if (update.status !== undefined) task.status = update.status
     if (update.bytesPerSecond !== undefined) task.bytesPerSecond = update.bytesPerSecond
-    this.scheduleEmit(task, options.immediate)
+    this.scheduleEmit(options.immediate)
   }
 
   setCancel(id: string, cancel: () => void): void {
@@ -140,7 +140,7 @@ export class TaskManager extends EventEmitter {
     task.progress = progress
     task.endedAt = Date.now()
     task.bytesPerSecond = undefined
-    this.emitAll()
+    this.scheduleEmit(true)
   }
 
   fail(id: string, error: string): void {
@@ -152,7 +152,7 @@ export class TaskManager extends EventEmitter {
     task.error = error
     task.endedAt = Date.now()
     task.bytesPerSecond = undefined
-    this.emitAll()
+    this.scheduleEmit(true)
   }
 
   cancel(id: string): boolean {
@@ -168,7 +168,7 @@ export class TaskManager extends EventEmitter {
     } catch {
       /* cancellation is best effort */
     }
-    this.emitAll()
+    this.scheduleEmit(true)
     return wasRunning
   }
 
@@ -182,32 +182,32 @@ export class TaskManager extends EventEmitter {
     for (const [id, task] of this.records) {
       if (['success', 'error', 'cancelled'].includes(task.status)) this.records.delete(id)
     }
-    this.emitAll()
+    this.scheduleEmit(true)
   }
 
-  private scheduleEmit(task: TaskRecord, immediate?: boolean): void {
+  private scheduleEmit(immediate?: boolean): void {
     if (immediate) {
-      this.flush(task)
+      this.flush()
       return
     }
     const now = Date.now()
-    if (now - (task.lastEmit || 0) > 120) {
-      this.flush(task)
+    if (now - this.lastEmit >= 120) {
+      this.flush()
       return
     }
-    if (task.pending) return
-    task.pending = setTimeout(() => {
-      task.pending = undefined
-      this.flush(task)
-    }, 150)
+    if (this.emitTimer) return
+    this.emitTimer = setTimeout(() => {
+      this.emitTimer = undefined
+      this.flush()
+    }, 120)
   }
 
-  private flush(task: TaskRecord): void {
-    if (task.pending) {
-      clearTimeout(task.pending)
-      task.pending = undefined
+  private flush(): void {
+    if (this.emitTimer) {
+      clearTimeout(this.emitTimer)
+      this.emitTimer = undefined
     }
-    task.lastEmit = Date.now()
+    this.lastEmit = Date.now()
     this.emitAll()
   }
 
