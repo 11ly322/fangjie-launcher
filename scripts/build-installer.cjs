@@ -54,7 +54,7 @@ const result = spawnSync(
     '/V2',
     `/DPROJECT_ROOT=${root}`,
     `/DAPP_VERSION=${packageJson.version}`,
-    '/DAPP_VERSION_NUMERIC=0.0.1.0',
+    '/DAPP_VERSION_NUMERIC=' + packageJson.version.replace(/-.*$/, '') + '.0',
     path.join(root, 'scripts', 'installer.nsi')
   ],
   { cwd: root, stdio: 'inherit', windowsHide: false }

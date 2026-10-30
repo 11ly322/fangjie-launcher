@@ -8,10 +8,10 @@
 
 !define APP_NAME "方界启动器"
 !ifndef APP_VERSION
-  !define APP_VERSION "0.0.1-alpha"
+  !define APP_VERSION "0.0.2-alpha"
 !endif
 !ifndef APP_VERSION_NUMERIC
-  !define APP_VERSION_NUMERIC "0.0.1.0"
+  !define APP_VERSION_NUMERIC "0.0.2.0"
 !endif
 !define APP_PUBLISHER "11ly322"
 !define APP_EXE "Fangjie.exe"

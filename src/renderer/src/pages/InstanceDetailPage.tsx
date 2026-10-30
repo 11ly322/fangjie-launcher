@@ -202,7 +202,7 @@ export function InstanceDetailPage({ instance }: { instance: Instance }): React.
   const installOptiFine = async (): Promise<void> => {
     const approved = await confirm({
       title: '安装 OptiFine',
-      description: '将打开官方 OptiFine 安装器。请在安装器窗口中点击 Install；完成后启动器会自动把检测到的 OptiFine 版本绑定到当前实例。需要本机已有 Java 和官方安装器 jar。',
+      description: '将调用官方 OptiFine installer 的本地安装接口，无需在窗口中点击；安装完成后会自动把生成的 OptiFine profile 绑定到当前实例。需要本机已有 Java 和官方安装器 jar。',
       confirmLabel: '选择安装器',
       cancelLabel: '取消'
     })

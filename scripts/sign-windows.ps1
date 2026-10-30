@@ -2,7 +2,8 @@ param(
   [Parameter(Mandatory = $true)][string]$Path,
   [string]$CertificatePath = $env:FJ_SIGN_CERT_PATH,
   [string]$CertificatePassword = $env:FJ_SIGN_CERT_PASSWORD,
-  [string]$TimestampUrl = 'http://timestamp.digicert.com'
+  [string]$TimestampUrl = 'http://timestamp.digicert.com',
+  [switch]$AllowUntrusted
 )
 
 $ErrorActionPreference = 'Stop'
@@ -26,7 +27,16 @@ if (-not $signtool) {
   }
 }
 if (-not $signtool) {
-  throw 'signtool.exe was not found. Install the Windows SDK signing tools.'
+  Write-Warning 'signtool.exe not found; falling back to PowerShell Set-AuthenticodeSignature.'
+  $secure = ConvertTo-SecureString $CertificatePassword -AsPlainText -Force
+  $certificate = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($CertificatePath, $secure)
+  $signature = Set-AuthenticodeSignature -FilePath $Path -Certificate $certificate -TimestampServer $TimestampUrl -HashAlgorithm SHA256
+  $verification = Get-AuthenticodeSignature -FilePath $Path
+  if ($verification.Status -ne 'Valid' -and -not $AllowUntrusted) {
+    throw "Signature status is $($verification.Status); provide a trusted certificate or use -AllowUntrusted for a test signature."
+  }
+  Write-Host "Signed (PowerShell): $Path [$($verification.Status)]"
+  exit 0
 }
 
 $arguments = @(

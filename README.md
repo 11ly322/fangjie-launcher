@@ -8,16 +8,16 @@
 
 一个面向 Windows 的 Minecraft 桌面启动器，使用 Electron + React + TypeScript 构建。目标是接近 PCL2 的核心使用体验：游戏实例、加载器安装、模组搜索下载、正版登录与离线皮肤。
 
-> **0.0.1-beta**：新增房间码联机。主流程与联机控制面已实测，P2P 数据面仍需真实跨机器网络验证；请先备份重要存档。
+> **0.0.2-alpha**：整合包、资源包/光影、OptiFine 无窗口安装、插件清单与离线模式已接入；签名更新与跨机器 NAT 仍需按文档实测。请先备份重要存档。
 
 ![方界启动器](resources/icon.png)
 
 ## 下载
 
-从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.1-beta) 选择：
+从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.2-alpha) 选择：
 
-- `Fangjie-Launcher-0.0.1-beta-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建桌面与开始菜单快捷方式，并注册卸载项。
-- `Fangjie-Portable-0.0.1-beta.zip`：免安装便携版，解压后双击 `Fangjie.exe`。
+- `Fangjie-Launcher-0.0.2-alpha-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建桌面与开始菜单快捷方式，并注册卸载项。
+- `Fangjie-Portable-0.0.2-alpha.zip`：免安装便携版，解压后双击 `Fangjie.exe`。
 - `SHA256SUMS.txt`：两个发布包的 SHA256 校验和。
 
 系统要求：Windows 10/11 x64。首次创建实例会自动下载对应 Java 运行时；安装版默认安装到 `%LOCALAPPDATA%\Programs\Fangjie Launcher`，卸载不会删除游戏存档和用户数据。
@@ -44,7 +44,11 @@
 
 - **游戏实例**：为每个世界创建独立目录，存档、模组、配置与日志互不干扰。
 - **多加载器**：原版、Fabric、Quilt、Forge、NeoForge。安装时自动准备 Java 运行时。
-- **模组工坊**：支持 Modrinth 与 CurseForge 两个下载源；按实例加载器与游戏版本过滤；自动安装必需前置。
+- **模组工坊**：支持 Modrinth 与 CurseForge 两个下载源；按实例加载器与游戏版本过滤；自动安装必需前置；可切换资源包/光影。
+- **整合包**：导入 `.mrpack` 或 CurseForge `.zip` 到现有实例；导出模组列表。
+- **OptiFine**：选择官方 installer，无窗口调用本地安装接口并绑定生成的 profile。
+- **网络设置**：HTTP(S) 代理、Modrinth/CurseForge API 基址；所有主进程 native fetch 走统一 seam。
+- **插件与离线**：本地 manifest 校验、版本/权限展示；全局离线开关。
 - **正版登录**：通过 Microsoft 官方登录窗口完成 Xbox Live 与 Minecraft 服务验证，登录令牌使用 Electron `safeStorage` 加密保存；刷新令牌可维持登录状态。
 - **离线皮肤**：上传 64×64 PNG 皮肤，按实例安装 CustomSkinLoader 并写入本地皮肤配置。仅在自己的客户端显示。
 - **房间联机（实验）**：房主生成 `U/XXXX-XXXX-XXXX-XXXX` 房间码，房客凭码加入并获得可直接粘贴进 Minecraft 的地址。EasyTier 以 Rust 库内嵌；不需要管理员权限、TUN 网卡或第三方 VPN。
@@ -55,6 +59,7 @@
 - **三套主题**：苔原、深海、余烬，立即切换并写入本地配置；下次启动保持。
 - **可选数据目录**：设置中可把游戏数据迁移到任意空文件夹；完整复制后重启生效，旧目录保留，删除前可自行确认。
 - **实用功能**：实例详情、模组启停/移除、下载中心、资源占用、启动日志、本地 Java 选择、自动 Java 下载。
+- **房间联机**：首页房间快捷卡、房间码自动分段、联机状态/延迟与网络摘要。
 
 ## 从源码运行
 
@@ -81,7 +86,7 @@ npm run package
 npm run package:installer
 ```
 
-安装包输出到 `release/Fangjie-Launcher-0.0.1-beta-Setup.exe`。
+安装包输出到 `release/Fangjie-Launcher-0.0.2-alpha-Setup.exe`。
 
 联机连接器不提交二进制，需先通过 `.github/workflows/connector-build.yml` 构建到 `resources/bin/qomicex-connector-cli.exe`；发布包中已包含该组件。构建脚本会查找 electron-builder 缓存或系统安装的 NSIS 3.x；也可用 `MAKENSIS` 环境变量指定 `makensis.exe`。安装包未做代码签名，Windows SmartScreen 可能提示未知发布者。
 
@@ -127,6 +132,7 @@ npm run package:installer
 - Microsoft 登录窗口打开、OAuth 取消后正确返回“已取消 Microsoft 登录”。
 - 房间联机控制面：Host 生成房间码，Guest 通过公共中继加入，SCF 玩家列表显示双方，Guest 获得 `127.0.0.1:<port>` 地址。
 - 房间联机数据面：同机经公共中继完成 Guest 转发端口到 Host 本地 TCP 服务的双向回显；真实跨机器 NAT 仍未验证。
+- OptiFine 1.20.1 真实安装：官方 installer 无窗口桥接生成 `1.20.1-OptiFine_HD_U_I6` 并回写实例。
 
 ## 已知限制
 
@@ -137,7 +143,7 @@ npm run package:installer
 - 正版登录的“完成授权并在线启动”未使用真实 Microsoft 账号做端到端测试；请使用自己的账号验证。未成年人 Xbox 家庭组账号需要成年人授权。
 - 本地皮肤只在自己客户端显示，其他玩家看不到离线皮肤；仅支持经典（wide）模型。实际皮肤显示效果取决于 CustomSkinLoader 与游戏版本。
 - 整合包支持 `.mrpack` 与 CurseForge `.zip` 基础导入，但复杂整合包/真实文件下载仍需更多回归；CurseForge 私有项目 API Key 未实现。
-- 资源包/光影已支持 Modrinth 与 CurseForge 搜索；OptiFine 需要用户提供官方 installer，采用引导安装，不是静默无人值守。
+- 资源包/光影已支持 Modrinth 与 CurseForge 搜索；OptiFine 需要用户提供官方 installer 和本机 Java，启动器调用其本地安装接口，无需在窗口中点击。
 - 皮肤 3D 预览未实现。
 - 网络设置已支持代理和 Modrinth/CurseForge 基址，但 Mojang/Java/Microsoft 等全部路径尚未迁移到统一下载源。
 - CurseForge 依赖 MCIM 公开镜像，若镜像不可用可切换回 Modrinth。

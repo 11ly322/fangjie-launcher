@@ -130,7 +130,7 @@ src/renderer/src/pages/InstanceDetailPage.tsx
   - Flight Recorder 两张图、CSV 导出文件 255 bytes。
   - 无 renderer 控制台错误。
 - P1 更新器 apply E2E：本地 fake feed + 假 installer `.exe`，下载/SHA256/`/S` spawn/app quit 全链路通过；不是真实 NSIS 替换。
-- OptiFine 引导 E2E：假 Java 在 junction 目标写入 1.20.1-OptiFine_Test profile，启动器回写实例 versionId；不是真实 OptiFine installer。
+- OptiFine 真实 E2E：官方 OptiFine 1.20.1 HD U I6 installer + JRE 21，无窗口安装生成 `1.20.1-OptiFine_HD_U_I6` 并回写实例；无 renderer 错误。
 - CurseForge `.zip` 真实下载 E2E：public Mouse Tweaks projectID=60089/fileID=5230279，下载 `MouseTweaks-fabric-mc1.20-2.26.jar` 并写入 overrides；无 renderer 错误。
 - 资源包/光影真实安装：Modrinth 光影 `ComplementaryReimagined_r5.9.3.zip` 写入 shaderpacks；CurseForge 资源包 `Faithful 32x - 1.20.1.zip` 写入 resourcepacks；均无 renderer 错误。
 - P1 基础：fake feed 检测 0.0.2、下载 22-byte 资产、Rust SHA256 校验通过；模组列表导出实测；资源包安装实测。
@@ -242,11 +242,11 @@ pub trait DownloadSource {
 - 目标目录：`resourcepacks/`、`shaderpacks/`；安装后不自动启用，由用户在游戏内选择。
 - 所有下载经 `SourceRegistry`。
 
-### 3.4 OptiFine 本地安装（P1 基础实现）
+### 3.4 OptiFine 本地安装（P1 已实现）
 
-已接入本地引导安装：选择官方 OptiFine installer jar → 用本机 Java 启动官方安装器 → 通过临时 `%APPDATA%\.minecraft` junction 指向启动器共享版本目录 → 用户在安装器点击 Install → 检测生成的 OptiFine profile 并绑定当前实例。
+已接入无窗口本地安装：选择官方 OptiFine installer jar → 用本机 Java 调用 installer 的 `Installer.doInstall(File)`（启动器附带极小的 Java 桥接类）→ 直接写入共享 `.minecraft` → 检测生成的 OptiFine profile 并绑定当前实例。
 
-边界：官方 installer 没有稳定无人值守 CLI，因此这不是“静默一键安装”；不随启动器分发 OptiFine，也不自动下载 installer。junction 清理已做防递归保护。
+边界：官方 installer 没有官方 CLI；桥接类调用其公开的安装方法，不随启动器分发 OptiFine，也不自动下载 installer。真实 1.20.1 安装已用官方 installer 验证。
 
 #### 原始自动安装设计边界
 
@@ -411,7 +411,7 @@ NAT 验证矩阵：[nat-test-matrix.md](nat-test-matrix.md)
 | 批量启停按实例隔离 | **P0 已满足** | E2E：副本禁用 sodium，源实例仍启用 |
 | 复制实例源零污染 | **P0 已满足** | Rust 深拷贝 + 源只读；实例文件状态验证 |
 | Flight Recorder CSV/折线图 | **P0 已满足（读取/导出）** | 两张 SVG 图、CSV 导出 255 bytes；无内置采样器 |
-| OptiFine 本地安装 | **P1 基础实现** | 文件名/profile 单测；假 Java E2E 验证 junction+profile 回写；真实 installer 未回归 |
+| OptiFine 本地安装 | **P1 已实现（真实 installer）** | 无窗口桥接 + 官方 1.20.1 installer 实测；profile 回写通过 |
 | 自动更新器检测/下载/校验/替换 | **P1 基础实现** | fake feed+假 installer E2E 验证 `/S` spawn/app quit；真实 NSIS 替换与签名未实测 |
 | .mrpack/.zip 导入、仅模组导出 | **P1 基础实现** | 模组列表导出、`.mrpack` 与 CurseForge `.zip` 导入已接入；CurseForge zip 已用真实公共 mod 文件下载+overrides 复测 |
 | 资源包/光影不跳浏览器 | **P1 基础实现** | Modrinth 光影安装、CurseForge 资源包安装均实测；统一源已接 native fetch seam |

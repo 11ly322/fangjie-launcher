@@ -8,6 +8,10 @@
 - **EV Authenticode**：通常更快建立声誉，但成本和硬件/云签名依赖更高。
 - 私钥不得以明文 PFX 提交到仓库；使用 Azure Trusted Signing、云 HSM 或受控 CI secret。
 
+## 工具
+
+`signtool` 可用时优先使用；没有 Windows SDK 时，脚本会回退到 PowerShell `Set-AuthenticodeSignature`，仍要求可导出私钥的 PFX。自签名证书只适合测试，Windows 仍会显示未知发布者。
+
 ## 签名顺序
 
 1. 构建 `Fangjie.exe`。
@@ -23,7 +27,7 @@
 $env:FJ_SIGN_CERT_PATH = 'C:\secure\fangjie.pfx'
 $env:FJ_SIGN_CERT_PASSWORD = '<from secret store>'
 ./scripts/sign-windows.ps1 -Path 'release\Fangjie-win32-x64\Fangjie.exe'
-./scripts/sign-windows.ps1 -Path 'release\Fangjie-Launcher-0.0.1-beta-Setup.exe'
+./scripts/sign-windows.ps1 -Path 'release\Fangjie-Launcher-0.0.2-alpha-Setup.exe'
 ```
 
 CI 中不要把 PFX 写入磁盘明文；优先使用 Azure Trusted Signing 的 GitHub Action 或短期证书挂载。时间戳必须使用 RFC3161 服务。

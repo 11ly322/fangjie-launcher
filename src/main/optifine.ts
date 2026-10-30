@@ -1,7 +1,7 @@
-import { execFileSync, spawn } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs'
-import { join } from 'node:path'
-import { tmpdir } from 'node:os'
+import { spawn } from 'node:child_process'
+import { existsSync, writeFileSync } from 'node:fs'
+import { delimiter, join } from 'node:path'
+import { app } from 'electron'
 import type { Instance } from '../shared/types'
 import type { LauncherStore } from './store'
 import { scanJavaRuntimes } from './java'
@@ -14,40 +14,12 @@ export interface OptiFineInstallResult {
   installerPath: string
 }
 
-function createMinecraftJunction(store: LauncherStore): { root: string; link: string } {
-  const root = mkdtempSync(join(tmpdir(), 'fangjie-optifine-'))
-  const link = join(root, '.minecraft')
-  execFileSync('cmd.exe', ['/d', '/c', 'mklink', '/J', link, store.minecraftPath], {
-    windowsHide: true,
-    stdio: 'ignore'
-  })
-  return { root, link }
-}
-
-function cleanupJunction(root: string, link: string): void {
-  let removed = false
-  if (existsSync(link)) {
-    try {
-      execFileSync('cmd.exe', ['/d', '/c', 'rmdir', link], {
-        windowsHide: true,
-        stdio: 'ignore'
-      })
-      removed = true
-    } catch {
-      /* never recursively delete a directory that may still be a junction */
-    }
-  }
-  if (removed && existsSync(root)) rmSync(root, { recursive: true, force: true })
-}
-
 /**
- * Run the official OptiFine installer as a guided local installation.
+ * Run the official OptiFine installer headlessly.
  *
- * OptiFine has no stable unattended CLI. We launch the official installer,
- * redirect its `%APPDATA%\\.minecraft` lookup to a temporary junction of the
- * launcher's shared version directory, wait for the user to finish the GUI,
- * then bind the detected OptiFine profile to the instance. This is intentionally
- * not described as a fully unattended install.
+ * OptiFine has no CLI, but its installer exposes `Installer.doInstall(File)`.
+ * We ship a tiny Java bridge class that invokes that public method against the
+ * launcher's shared .minecraft directory. We do not redistribute OptiFine.
  */
 export async function installOptiFine(options: {
   store: LauncherStore
@@ -67,30 +39,46 @@ export async function installOptiFine(options: {
     throw new Error(`安装器面向 Minecraft ${minecraftVersion}，当前实例是 ${instance.mcVersion}`)
   }
   const java = await resolveJavaAsync(store)
-  const { root, link } = createMinecraftJunction(store)
-  try {
-    const child = spawn(java, ['-jar', installerPath], {
-      cwd: store.instanceGamePath(instance),
-      env: { ...process.env, APPDATA: root },
-      windowsHide: false,
-      stdio: 'ignore'
-    })
-    const exitCode = await new Promise<number | null>((resolve, reject) => {
-      child.once('error', reject)
-      child.once('exit', (code) => resolve(code))
-    })
-    if (exitCode !== 0) {
-      throw new Error(`OptiFine 安装器退出，代码 ${exitCode ?? 'unknown'}`)
-    }
-    const versionId = latestOptiFineProfile(join(store.minecraftPath, 'versions'), minecraftVersion)
-    if (!versionId) {
-      throw new Error('安装器结束后没有找到 OptiFine 版本配置，请确认在安装器中点击了 Install')
-    }
-    store.updateInstance(instance.id, (current) => ({ ...current, versionId }))
-    return { versionId, profileName: versionId, installerPath }
-  } finally {
-    cleanupJunction(root, link)
+  const helperDirectory = app.isPackaged
+    ? join(process.resourcesPath, 'bin', 'optifine-helper')
+    : join(app.getAppPath(), 'resources', 'bin', 'optifine-helper')
+  const helperClass = join(helperDirectory, 'InstallOptifine.class')
+  if (!existsSync(helperClass)) {
+    throw new Error('OptiFine 安装桥接文件缺失，请重新安装启动器')
   }
+  const profilesPath = join(store.minecraftPath, 'launcher_profiles.json')
+  if (!existsSync(profilesPath)) {
+    writeFileSync(profilesPath, JSON.stringify({ profiles: {}, settings: {}, version: 3 }, null, 2))
+  }
+  const classPath = installerPath + delimiter + helperDirectory
+  const child = spawn(java, ['-Djava.awt.headless=true', '-cp', classPath, 'InstallOptifine', store.minecraftPath], {
+    cwd: store.minecraftPath,
+    windowsHide: true,
+    stdio: ['ignore', 'ignore', 'ignore']
+  })
+  const exitCode = await new Promise<number | null>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      child.kill()
+      reject(new Error('OptiFine 安装超时'))
+    }, 180_000)
+    child.once('error', (error) => {
+      clearTimeout(timer)
+      reject(error)
+    })
+    child.once('exit', (code) => {
+      clearTimeout(timer)
+      resolve(code)
+    })
+  })
+  if (exitCode !== 0) {
+    throw new Error('OptiFine 安装器退出，代码 ' + (exitCode ?? 'unknown'))
+  }
+  const versionId = latestOptiFineProfile(join(store.minecraftPath, 'versions'), minecraftVersion)
+  if (!versionId) {
+    throw new Error('OptiFine 安装完成，但没有找到对应版本配置')
+  }
+  store.updateInstance(instance.id, (current) => ({ ...current, versionId }))
+  return { versionId, profileName: versionId, installerPath }
 }
 
 async function resolveJavaAsync(store: LauncherStore): Promise<string> {

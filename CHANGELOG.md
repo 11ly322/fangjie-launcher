@@ -2,10 +2,16 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)，当前处于 `0.0.x` 预览阶段。
 
-## 未发布
+## 0.0.2-alpha — 2026-10-30
 
 ### 新增
 
+- **整合包**：`.mrpack` 与 CurseForge `.zip` 导入现有实例；模组列表导出。
+- **资源包/光影**：Modrinth + CurseForge 搜索与安装。
+- **OptiFine**：官方 installer 引导安装，临时 APPDATA junction，profile 自动绑定。
+- **网络**：HTTP(S) 代理、Modrinth/CurseForge API 基址、统一 native fetch seam。
+- **房间快捷入口**：首页创建/粘贴/加入房间码；联机状态与网络摘要。
+- **插件/离线**：本地 manifest 版本/权限校验；全局离线开关与 fetch guard。
 - 三套可持久化主题：苔原、深海、余烬；切换立即应用，并在下次启动保持。
 - 设置页支持更改游戏数据目录：选择空文件夹后完整复制当前数据，保留旧目录，重启后生效。
 - P0 故障诊断 UI：Rust sidecar 接入崩溃模式、JAR 扫描、diff 预览、备份/回滚。
