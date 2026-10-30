@@ -665,13 +665,15 @@ export function registerIpcHandlers(context: IpcContext): void {
     return getModProject(idOrSlug, effective, projectType)
   })
 
-  handle('mods:install', async (instanceId: string, projectId: string) => {
-    const result = projectId.startsWith('cf-')
+  handle('mods:install', async (instanceId: string, projectId: string, versionId?: string, source?: 'modrinth' | 'curseforge') => {
+    const useCurseForge = source === 'curseforge' || projectId.startsWith('cf-')
+    const result = useCurseForge
       ? await startCurseForgeInstall({
           store,
           tasks,
           instanceId,
           projectId,
+          versionId,
           onChange: notifyChange
         })
       : await startModInstall({
@@ -679,6 +681,7 @@ export function registerIpcHandlers(context: IpcContext): void {
           tasks,
           instanceId,
           projectId,
+          versionId,
           onChange: notifyChange
         })
     notifyChange('task')
@@ -691,14 +694,16 @@ export function registerIpcHandlers(context: IpcContext): void {
       instanceId: string,
       projectId: string,
       projectType: 'mod' | 'resourcepack' | 'shader',
-      source: 'modrinth' | 'curseforge'
+      source: 'modrinth' | 'curseforge',
+      versionId?: string
     ) => {
       const result = await installAsset({
         store,
         instanceId,
         projectId,
         projectType,
-        source
+        source,
+        versionId
       })
       notifyChange('assets')
       return result

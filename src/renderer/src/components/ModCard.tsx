@@ -112,6 +112,7 @@ export function ModCard({
       <div className="mod-card__body">
         <div className="mod-card__heading">
           <h3>{project.title}</h3>
+          {project.source === 'curseforge' ? <Badge tone="violet">CurseForge</Badge> : null}
           {category ? <Badge tone="outline">{categoryLabel(category)}</Badge> : null}
         </div>
         <p className="mod-card__description">{project.description || '这个项目还没有简介。'}</p>

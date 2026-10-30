@@ -523,8 +523,8 @@ export interface LauncherApi {
   removeMod(id: string, fileName: string): Promise<Result<InstalledMod[]>>
   searchMods(query: string, options?: { instanceId?: string; category?: string; offset?: number; limit?: number; sort?: 'relevance' | 'downloads' | 'newest' | 'updated'; source?: ModSource; projectType?: ProjectType }): Promise<Result<ModSearchResponse>>
   getModProject(idOrSlug: string, instanceId?: string, projectType?: ProjectType): Promise<Result<{ project: ModProject; versions: ModVersion[] }>>
-  installMod(instanceId: string, projectId: string): Promise<Result<InstallModResult>>
-  installAsset(instanceId: string, projectId: string, projectType: ProjectType, source: ModSource): Promise<Result<{ fileName: string; path: string }>>
+  installMod(instanceId: string, projectId: string, versionId?: string, source?: ModSource): Promise<Result<InstallModResult>>
+  installAsset(instanceId: string, projectId: string, projectType: ProjectType, source: ModSource, versionId?: string): Promise<Result<{ fileName: string; path: string }>>
   cancelTask(taskId: string): Promise<Result<void>>
   clearTasks(): Promise<Result<void>>
   multiplayerState(): Promise<Result<MultiplayerState>>

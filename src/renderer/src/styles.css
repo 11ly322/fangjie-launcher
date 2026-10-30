@@ -3461,6 +3461,92 @@ img {
   font-size: 9.5px;
 }
 
+.version-list__row {
+  width: 100%;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.version-list__row:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.version-list__row.is-selected {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.version-list__row strong {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.version-list__row.is-selected strong svg {
+  color: var(--accent);
+}
+
+.mod-dependency-panel {
+  margin-top: 12px;
+  padding: 14px 16px 12px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.mod-dependency-panel .mod-version-panel__header {
+  padding: 0 0 9px;
+}
+
+.dependency-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dependency-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.dependency-row__body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dependency-row__body strong {
+  overflow: hidden;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dependency-row__body span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mod-dependency-panel > .mod-version-panel__hint {
+  margin-top: 8px;
+  padding: 8px 0 0;
+}
+
 /* ------------------------------------------------------------------ */
 /* Downloads                                                          */
 /* ------------------------------------------------------------------ */

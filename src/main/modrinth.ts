@@ -322,8 +322,9 @@ async function resolveInstallTree(options: {
   installedProjectIds: Set<string>
   visited: Set<string>
   depth: number
+  selectedVersionId?: string
 }): Promise<InstallNode[]> {
-  const { projectId, instance, installedProjectIds, visited, depth } = options
+  const { projectId, instance, installedProjectIds, visited, depth, selectedVersionId } = options
   if (depth > 4) throw new Error('模组依赖层级过深，请手动检查依赖关系')
   if (visited.has(projectId)) return []
   visited.add(projectId)
@@ -337,7 +338,10 @@ async function resolveInstallTree(options: {
       `「${project.title}」没有兼容 Minecraft ${instance.mcVersion}（${instance.loader}）的版本`
     )
   }
-  const chosen = versions.find((version) => version.version_type === 'release') || versions[0]
+  const chosen = selectedVersionId
+    ? versions.find((version) => version.id === selectedVersionId)
+    : versions.find((version) => version.version_type === 'release') || versions[0]
+  if (!chosen) throw new Error('所选版本不兼容当前实例，请重新选择版本')
   if (!pickPrimaryFile(chosen)) throw new Error(`「${project.title}」没有可下载的文件`)
 
   const nodes: InstallNode[] = []
@@ -386,9 +390,10 @@ export async function startModInstall(options: {
   tasks: TaskManager
   instanceId: string
   projectId: string
+  versionId?: string
   onChange: (reason: string) => void
 }): Promise<InstallModResult> {
-  const { store, tasks, instanceId, projectId, onChange } = options
+  const { store, tasks, instanceId, projectId, versionId, onChange } = options
   const instance = store.getInstance(instanceId)
   if (!instance) throw new Error('找不到目标实例')
   if (!MODDED_LOADERS.includes(instance.loader as (typeof MODDED_LOADERS)[number])) {
@@ -422,6 +427,7 @@ export async function startModInstall(options: {
     taskId,
     instance,
     projectId,
+    versionId,
     onChange
   }).catch((error) => {
     const task = tasks.get(taskId)
@@ -439,9 +445,10 @@ async function installModInBackground(options: {
   taskId: string
   instance: Instance
   projectId: string
+  versionId?: string
   onChange: (reason: string) => void
 }): Promise<void> {
-  const { store, tasks, taskId, instance, projectId, onChange } = options
+  const { store, tasks, taskId, instance, projectId, versionId, onChange } = options
   const controller = new AbortController()
   tasks.setCancel(taskId, () => controller.abort())
 
@@ -464,7 +471,8 @@ async function installModInBackground(options: {
     instance,
     installedProjectIds,
     visited: new Set(),
-    depth: 0
+    depth: 0,
+    selectedVersionId: versionId
   })
   if (!nodes.length) throw new Error('这个模组已经安装，无需重复下载')
 

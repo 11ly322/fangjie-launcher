@@ -32,8 +32,9 @@ export async function installAsset(options: {
   projectId: string
   projectType: ProjectType
   source: ModSource
+  versionId?: string
 }): Promise<{ fileName: string; path: string }> {
-  const { store, instanceId, projectId, projectType, source } = options
+  const { store, instanceId, projectId, projectType, source, versionId } = options
   if (projectType === 'mod') throw new Error('模组必须使用模组安装流程')
   const instance = store.getInstance(instanceId)
   if (!instance) throw new Error('找不到这个实例')
@@ -42,7 +43,10 @@ export async function installAsset(options: {
     source === 'curseforge'
       ? await getCurseForgeProject(projectId, effective)
       : await getModProject(projectId, effective, projectType)
-  const version = project.versions.find((item) => item.files.length) || project.versions[0]
+  const version = versionId
+    ? project.versions.find((item) => item.id === versionId)
+    : project.versions.find((item) => item.files.length) || project.versions[0]
+  if (!version) throw new Error('所选版本不兼容当前实例，请重新选择版本')
   if (!version) throw new Error('这个项目没有可下载的文件')
   const file = version.files.find((item) => item.primary) || version.files[0]
   if (!file?.url) throw new Error('这个项目没有公开下载地址')

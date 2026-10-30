@@ -394,8 +394,9 @@ async function resolveCfTree(options: {
   installed: Set<string>
   visited: Set<number>
   depth: number
+  selectedFileId?: number
 }): Promise<CfNode[]> {
-  const { modId, instance, installed, visited, depth } = options
+  const { modId, instance, installed, visited, depth, selectedFileId } = options
   if (depth > 4) throw new Error('模组依赖层级过深，请手动检查依赖关系')
   if (visited.has(modId)) return []
   visited.add(modId)
@@ -403,7 +404,10 @@ async function resolveCfTree(options: {
   const mod = await getCfMod(modId)
   if (installed.has(projectId(mod))) return []
   const files = await getCfFiles(modId, instance)
-  const file = files.find((item) => fileMatchesInstance(item, instance))
+  const file = selectedFileId
+    ? files.find((item) => item.id === selectedFileId)
+    : files.find((item) => fileMatchesInstance(item, instance))
+  if (!file && selectedFileId) throw new Error('所选版本不兼容当前实例，请重新选择版本')
   if (!file) {
     throw new Error(`「${mod.name}」没有兼容 ${instance.loader} / ${instance.mcVersion} 的文件`)
   }
@@ -434,9 +438,10 @@ export async function startCurseForgeInstall(options: {
   tasks: TaskManager
   instanceId: string
   projectId: string
+  versionId?: string
   onChange: (reason: string) => void
 }): Promise<InstallModResult> {
-  const { store, tasks, instanceId, projectId, onChange } = options
+  const { store, tasks, instanceId, projectId, versionId, onChange } = options
   const instance = store.getInstance(instanceId)
   if (!instance) throw new Error('找不到目标实例')
   if (instance.loader === 'vanilla') throw new Error('原版实例不能安装模组')
@@ -464,7 +469,7 @@ export async function startCurseForgeInstall(options: {
   })
   tasks.start(taskId, '正在读取项目信息…')
 
-  void installCfInBackground({ store, tasks, taskId, instance, cfId, onChange }).catch(
+  void installCfInBackground({ store, tasks, taskId, instance, cfId, versionId, onChange }).catch(
     (error) => {
       const task = tasks.get(taskId)
       if (task?.status === 'cancelled') return
@@ -482,9 +487,10 @@ async function installCfInBackground(options: {
   taskId: string
   instance: Instance
   cfId: number
+  versionId?: string
   onChange: (reason: string) => void
 }): Promise<void> {
-  const { store, tasks, taskId, instance, cfId, onChange } = options
+  const { store, tasks, taskId, instance, cfId, versionId, onChange } = options
   const controller = new AbortController()
   tasks.setCancel(taskId, () => controller.abort())
 
@@ -509,7 +515,8 @@ async function installCfInBackground(options: {
     instance,
     installed,
     visited: new Set(),
-    depth: 0
+    depth: 0,
+    selectedFileId: versionId ? Number(versionId) : undefined
   })
   if (!nodes.length) throw new Error('这个模组已经安装，无需重复下载')
 

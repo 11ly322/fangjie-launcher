@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import type {
   InstalledMod,
+  ModDependency,
   ModProject,
   ModSearchHit,
   ModSource,
@@ -33,6 +34,13 @@ import {
 } from '../lib/format'
 
 type SortMode = 'downloads' | 'updated' | 'newest' | 'relevance'
+
+interface DependencyEntry {
+  dependency: ModDependency
+  project?: ModProject
+  loading: boolean
+  error?: string
+}
 
 interface ModDetailState {
   hit: ModSearchHit
@@ -159,14 +167,14 @@ export function ModsPage(): React.JSX.Element {
     setOffset(nextOffset)
   }
 
-  function install(project: ModSearchHit | ModProject): void {
+  function install(project: ModSearchHit | ModProject, versionId?: string): void {
     if (!selectedInstance) {
       toast('先选择一个带模组加载器的实例，才能安装模组', 'info')
       return
     }
     if (projectType === 'mod') {
       if (installedIds.has(project.project_id) || installingIds.has(project.project_id)) return
-      void window.fangjie.installMod(selectedInstance.id, project.project_id).then((result) => {
+      void window.fangjie.installMod(selectedInstance.id, project.project_id, versionId, project.source || source).then((result) => {
         if (!result.ok) {
           toast(result.error, 'error')
           return
@@ -176,7 +184,7 @@ export function ModsPage(): React.JSX.Element {
       return
     }
     void window.fangjie
-      .installAsset(selectedInstance.id, project.project_id, projectType, source)
+      .installAsset(selectedInstance.id, project.project_id, projectType, project.source || source, versionId)
       .then((result) => {
         if (!result.ok) {
           toast(result.error, 'error')
@@ -184,6 +192,36 @@ export function ModsPage(): React.JSX.Element {
         }
         toast(`已安装「${project.title}」到 ${selectedInstance.name}`, 'success')
       })
+  }
+
+  async function openDependency(projectId: string): Promise<void> {
+    const hit: ModSearchHit = {
+      project_id: projectId,
+      slug: projectId,
+      title: '正在加载前置模组',
+      description: '',
+      categories: [],
+      client_side: '',
+      server_side: '',
+      project_type: 'mod',
+      downloads: 0,
+      follows: 0,
+      date_modified: new Date().toISOString(),
+      source: projectId.startsWith('cf-') ? 'curseforge' : source
+    }
+    setDetail({ hit, loading: true, error: '' })
+    const result = await window.fangjie.getModProject(projectId, selectedInstance?.id, 'mod')
+    if (!result.ok) {
+      setDetail({ hit, loading: false, error: result.error })
+      return
+    }
+    setDetail({
+      hit: result.value.project,
+      project: result.value.project,
+      versions: result.value.versions,
+      loading: false,
+      error: ''
+    })
   }
 
   async function openDetail(hit: ModSearchHit): Promise<void> {
@@ -454,6 +492,7 @@ export function ModsPage(): React.JSX.Element {
       <ModDetailModal
         detail={detail}
         onClose={() => setDetail(null)}
+        selectedInstanceId={selectedInstance?.id}
         selectedInstanceName={selectedInstance?.name}
         selectedInstanceVersion={selectedInstance?.mcVersion}
         selectedLoader={projectType === 'mod' ? (selectedInstance ? LOADER_LABEL[selectedInstance.loader] : '模组') : projectType === 'resourcepack' ? '资源包' : '光影'}
@@ -463,10 +502,11 @@ export function ModsPage(): React.JSX.Element {
           detail?.hit.project_id && installingIds.has(detail.hit.project_id)
         )}
         canInstall={Boolean(selectedInstance)}
-        onInstall={() => {
+        onInstall={(versionId) => {
           if (!detail) return
-          install(detail.project || detail.hit)
+          install(detail.project || detail.hit, versionId)
         }}
+        onOpenDependency={(projectId) => void openDependency(projectId)}
         onOpenFolder={
           selectedInstance
             ? () => void window.fangjie.openInstanceFolder(selectedInstance.id)
@@ -480,6 +520,7 @@ export function ModsPage(): React.JSX.Element {
 function ModDetailModal({
   detail,
   onClose,
+  selectedInstanceId,
   selectedInstanceName,
   selectedInstanceVersion,
   selectedLoader,
@@ -488,10 +529,12 @@ function ModDetailModal({
   installing,
   canInstall,
   onInstall,
-  onOpenFolder
+  onOpenFolder,
+  onOpenDependency
 }: {
   detail: ModDetailState | null
   onClose: () => void
+  selectedInstanceId?: string
   selectedInstanceName?: string
   selectedInstanceVersion?: string
   selectedLoader: string
@@ -499,13 +542,56 @@ function ModDetailModal({
   installed?: InstalledMod
   installing: boolean
   canInstall: boolean
-  onInstall: () => void
+  onInstall: (versionId?: string) => void
   onOpenFolder?: () => void
+  onOpenDependency: (projectId: string) => void
 }): React.JSX.Element {
   const project = detail?.project
   const versions = detail?.versions || []
-  const latest = versions[0]
-  const primaryFile = latest?.files.find((file) => file.primary) || latest?.files[0]
+  const [selectedVersionId, setSelectedVersionId] = useState('')
+  const [dependencies, setDependencies] = useState<DependencyEntry[]>([])
+
+  useEffect(() => {
+    setSelectedVersionId('')
+  }, [detail?.hit.project_id])
+
+  const selectedVersion = versions.find((version) => version.id === selectedVersionId) || versions[0]
+  const primaryFile = selectedVersion?.files.find((file) => file.primary) || selectedVersion?.files[0]
+
+  useEffect(() => {
+    let active = true
+    const list = selectedVersion?.dependencies || []
+    setDependencies(list.map((dependency) => ({ dependency, loading: Boolean(dependency.project_id) })))
+    if (!list.length || !selectedInstanceId) return () => { active = false }
+    void Promise.all(
+      list.map(async (dependency) => {
+        if (!dependency.project_id) return
+        try {
+          const result = await window.fangjie.getModProject(dependency.project_id, selectedInstanceId, 'mod')
+          if (!active) return
+          setDependencies((current) =>
+            current.map((entry) =>
+              entry.dependency === dependency
+                ? result.ok
+                  ? { ...entry, loading: false, project: result.value.project }
+                  : { ...entry, loading: false, error: result.error }
+                : entry
+            )
+          )
+        } catch (error) {
+          if (!active) return
+          setDependencies((current) =>
+            current.map((entry) =>
+              entry.dependency === dependency
+                ? { ...entry, loading: false, error: error instanceof Error ? error.message : String(error) }
+                : entry
+            )
+          )
+        }
+      })
+    )
+    return () => { active = false }
+  }, [selectedVersion?.id, selectedInstanceId, projectType])
   const body = project?.body ? stripMarkdown(project.body) : ''
   const paragraphs = body.split(/\n{2,}/).filter(Boolean).slice(0, 8)
   const isCurseForge = project?.source === 'curseforge' || detail?.hit.source === 'curseforge'
@@ -530,7 +616,7 @@ function ModDetailModal({
             icon={<ExternalLink size={15} />}
             onClick={() => window.open(externalUrl, '_blank')}
           >
-            在 {isCurseForge ? 'CurseForge' : 'Modrinth'} 查看
+            打开介绍页面
           </Button>
           {installed && onOpenFolder ? (
             <Button variant="secondary" icon={<FolderOpen size={15} />} onClick={onOpenFolder}>
@@ -542,7 +628,7 @@ function ModDetailModal({
             icon={installed ? <Check size={16} /> : <Download size={16} />}
             disabled={!canInstall || Boolean(installed) || installing}
             loading={installing}
-            onClick={onInstall}
+            onClick={() => onInstall(selectedVersion?.id)}
           >
             {installed
               ? '已安装'
@@ -587,7 +673,7 @@ function ModDetailModal({
                   .map((item) => (
                     <Badge tone="outline" key={item}>{categoryLabel(item)}</Badge>
                   ))}
-                {latest ? <Badge tone="neutral">{latest.version_type}</Badge> : null}
+                {selectedVersion ? <Badge tone="neutral">{selectedVersion.version_type}</Badge> : null}
               </div>
               <div className="mod-detail-stats">
                 <span><Download size={13} /> {formatCompactNumber(project?.downloads || detail?.hit.downloads || 0)} 次下载</span>
@@ -613,6 +699,63 @@ function ModDetailModal({
             <p className="muted-copy">这个项目还没有提供详细介绍。</p>
           )}
 
+          <div className="mod-dependency-panel">
+            <div className="mod-version-panel__header">
+              <div>
+                <div className="panel__eyebrow">DEPENDENCIES</div>
+                <h3>前置索引</h3>
+              </div>
+              <Badge tone="outline">{dependencies.length} 项</Badge>
+            </div>
+            {dependencies.length ? (
+              <div className="dependency-list">
+                {dependencies.map((entry) => {
+                  const dependency = entry.dependency
+                  const label =
+                    dependency.dependency_type === 'required'
+                      ? '必需前置'
+                      : dependency.dependency_type === 'optional'
+                        ? '可选前置'
+                        : dependency.dependency_type === 'incompatible'
+                          ? '不兼容'
+                          : '内置依赖'
+                  const name =
+                    entry.project?.title ||
+                    dependency.file_name ||
+                    dependency.project_id ||
+                    '未命名前置'
+                  return (
+                    <div className="dependency-row" key={dependency.project_id || dependency.file_name || dependency.version_id}>
+                      <Badge tone={dependency.dependency_type === 'required' ? 'warn' : 'outline'}>{label}</Badge>
+                      <div className="dependency-row__body">
+                        <strong>{name}</strong>
+                        <span>
+                          {entry.loading
+                            ? '正在读取前置项目信息…'
+                            : entry.error
+                              ? entry.error
+                              : entry.project?.description || dependency.file_name || dependency.project_id || '没有可用的项目 ID'}
+                        </span>
+                      </div>
+                      {dependency.project_id ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon={<ExternalLink size={13} />}
+                          onClick={() => onOpenDependency(dependency.project_id as string)}
+                        >
+                          打开
+                        </Button>
+                      ) : null}
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="muted-copy">此版本未声明前置依赖。</p>
+            )}
+            <p className="mod-version-panel__hint">必需前置会随安装自动解析并补装；可选与不兼容项需手动判断。</p>
+          </div>
           <div className="mod-version-panel">
             <div className="mod-version-panel__header">
               <div>
@@ -625,10 +768,19 @@ function ModDetailModal({
             </div>
             {versions.length ? (
               <div className="version-list">
-                {versions.slice(0, 5).map((version) => (
-                  <div className="version-list__row" key={version.id}>
+                {versions.slice(0, 8).map((version) => (
+                  <button
+                    type="button"
+                    className={classNames('version-list__row', selectedVersion?.id === version.id && 'is-selected')}
+                    key={version.id}
+                    onClick={() => setSelectedVersionId(version.id)}
+                    aria-pressed={selectedVersion?.id === version.id}
+                  >
                     <div>
-                      <strong>{version.version_number}</strong>
+                      <strong>
+                        {version.version_number}
+                        {selectedVersion?.id === version.id ? <Check size={12} /> : null}
+                      </strong>
                       <span>{version.name}</span>
                     </div>
                     <span className="version-list__type">{version.version_type}</span>
@@ -636,7 +788,7 @@ function ModDetailModal({
                     <span className="version-list__size">
                       {formatBytes(version.files.find((file) => file.primary)?.size || 0)}
                     </span>
-                  </div>
+                  </button>
                 ))}
               </div>
             ) : (
@@ -644,10 +796,11 @@ function ModDetailModal({
             )}
             {primaryFile ? (
               <p className="mod-version-panel__hint">
-                安装时会下载最新兼容版本，并自动解析必需的前置模组。
+                安装所选版本，并自动解析必需的模组前置。安装后仍可在实例详情中停用或移除。
               </p>
             ) : null}
           </div>
+
         </>
       )}
     </Modal>

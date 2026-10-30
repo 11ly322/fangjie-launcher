@@ -22,6 +22,7 @@ import type {
   LogLine,
   ModProject,
   ModSearchResponse,
+  ModSource,
   ModVersion,
   MultiplayerDiagnostics,
   ProjectType,
@@ -122,8 +123,8 @@ const api: LauncherApi = {
   searchMods: (query, options) => invoke<ModSearchResponse>('mods:search', query, options || {}),
   getModProject: (idOrSlug: string, instanceId?: string, projectType?: ProjectType) =>
     invoke<{ project: ModProject; versions: ModVersion[] }>('mods:project', idOrSlug, instanceId, projectType),
-  installMod: (instanceId: string, projectId: string) =>
-    invoke<InstallModResult>('mods:install', instanceId, projectId),
+  installMod: (instanceId: string, projectId: string, versionId?: string, source?: ModSource) =>
+    invoke<InstallModResult>('mods:install', instanceId, projectId, versionId, source),
   installAsset: (instanceId: string, projectId: string, projectType, source) =>
     invoke<{ fileName: string; path: string }>('assets:install', instanceId, projectId, projectType, source),
   cancelTask: (taskId: string) => invoke<void>('tasks:cancel', taskId),
