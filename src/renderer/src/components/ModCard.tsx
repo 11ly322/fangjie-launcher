@@ -1,6 +1,7 @@
 import { Check, Download, Loader2, Package } from 'lucide-react'
 import { useState } from 'react'
 import type { ModSearchHit } from '../../../shared/types'
+import { translateModText, translateModTitle } from '../../../shared/modI18n'
 import { Badge } from './ui'
 import { classNames, formatCompactNumber, formatRelative } from '../lib/format'
 
@@ -67,7 +68,8 @@ export function ModCard({
   disabledReason,
   onInstall,
   onOpen,
-  featured = false
+  featured = false,
+  translate = false
 }: {
   project: ModSearchHit
   installed: boolean
@@ -77,12 +79,17 @@ export function ModCard({
   onInstall: () => void
   onOpen: () => void
   featured?: boolean
+  translate?: boolean
 }): React.JSX.Element {
   const [imageFailed, setImageFailed] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
   const category = (project.display_categories || project.categories || []).find(
     (item) => !isLoaderTag(item)
   )
+  const displayTitle = translate ? translateModTitle(project) : project.title
+  const displayDescription = translate
+    ? translateModText(project.description || '')
+    : project.description
 
   return (
     <article className={classNames('mod-card', featured && 'mod-card--featured')}>
@@ -90,7 +97,7 @@ export function ModCard({
         type="button"
         className="mod-card__hit"
         onClick={onOpen}
-        aria-label={`查看模组 ${project.title}`}
+        aria-label={`查看模组 ${displayTitle}`}
       />
       <div className="mod-card__icon-wrap">
         <div className="mod-card__icon-fallback">
@@ -111,11 +118,11 @@ export function ModCard({
 
       <div className="mod-card__body">
         <div className="mod-card__heading">
-          <h3>{project.title}</h3>
+          <h3 title={project.title}>{displayTitle}</h3>
           {project.source === 'curseforge' ? <Badge tone="violet">CurseForge</Badge> : null}
           {category ? <Badge tone="outline">{categoryLabel(category)}</Badge> : null}
         </div>
-        <p className="mod-card__description">{project.description || '这个项目还没有简介。'}</p>
+        <p className="mod-card__description">{displayDescription || '这个项目还没有简介。'}</p>
         <div className="mod-card__meta">
           <span>
             <Download size={13} />

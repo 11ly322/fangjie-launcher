@@ -3029,6 +3029,115 @@ img {
   background: rgba(255, 255, 255, 0.035);
 }
 
+.advanced-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 37px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.advanced-filter-toggle:hover,
+.advanced-filter-toggle.is-active {
+  border-color: rgba(var(--accent-rgb), 0.3);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.advanced-filter-toggle > span {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: var(--accent);
+  color: #0d120a;
+  font-size: 9px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.mods-advanced-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.mods-advanced-field {
+  display: grid;
+  gap: 5px;
+  min-width: 140px;
+}
+
+.mods-advanced-field > span {
+  color: var(--muted-dark);
+  font-size: 9.5px;
+  font-weight: 600;
+}
+
+.mods-advanced-field > .mods-advanced-note {
+  color: var(--muted-dark);
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.mods-advanced-field .select-wrap {
+  width: 100%;
+}
+
+.mods-advanced-field .select {
+  height: 34px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.mods-translate-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 10.5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.mods-translate-toggle input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+}
+
+.mods-query-hint {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted-dark);
+  font-size: 10px;
+}
+
+.mods-query-hint code {
+  margin-left: 4px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-soft);
+  font-size: 10px;
+}
+
 .category-chips {
   display: flex;
   flex-wrap: wrap;

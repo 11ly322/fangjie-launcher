@@ -23,6 +23,7 @@ import type {
   LogLine,
   ModBackupEntry,
   ModProject,
+  ModSearchOptions,
   ModSearchResponse,
   ModSource,
   ModUpdatePreference,
@@ -159,7 +160,8 @@ const api: LauncherApi = {
     invoke<SnapshotRestoreResult>('snapshots:restore', instanceId, snapshotId),
   snapshotsDelete: (instanceId: string, snapshotId: string) =>
     invoke<void>('snapshots:delete', instanceId, snapshotId),
-  searchMods: (query, options) => invoke<ModSearchResponse>('mods:search', query, options || {}),
+  searchMods: (query: string, options?: ModSearchOptions) =>
+    invoke<ModSearchResponse>('mods:search', query, options || {}),
   getModProject: (idOrSlug: string, instanceId?: string, projectType?: ProjectType) =>
     invoke<{ project: ModProject; versions: ModVersion[] }>('mods:project', idOrSlug, instanceId, projectType),
   installMod: (instanceId: string, projectId: string, versionId?: string, source?: ModSource, force?: boolean) =>

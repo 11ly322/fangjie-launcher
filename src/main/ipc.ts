@@ -12,6 +12,8 @@ import type {
   CoreModListExport,
   UpdateInstanceInput
 } from '../shared/types'
+import type { ModSearchOptions } from '../shared/modSearch'
+import { translateSearchQuery } from '../shared/modI18n'
 import {
   cachedJavaStatus,
   errorMessage,
@@ -739,38 +741,30 @@ export function registerIpcHandlers(context: IpcContext): void {
 
   handle(
     'mods:search',
-    async (
-      query: string,
-      options: {
-        instanceId?: string
-        category?: string
-        offset?: number
-        limit?: number
-        sort?: 'relevance' | 'downloads' | 'newest' | 'updated'
-        source?: 'modrinth' | 'curseforge'
-        projectType?: 'mod' | 'resourcepack' | 'shader'
-      } = {}
-    ) => {
+    async (query: string, options: ModSearchOptions = {}) => {
       const instance = options.instanceId ? store.getInstance(options.instanceId) : undefined
+      const normalizedQuery = translateSearchQuery(typeof query === 'string' ? query : '')
       if (options.source === 'curseforge') {
         return searchCurseForge({
-          query: typeof query === 'string' ? query : '',
+          query: normalizedQuery,
           instance,
           category: options.category,
           offset: options.offset,
           limit: options.limit,
           sort: options.sort,
-          projectType: options.projectType
+          projectType: options.projectType,
+          filters: options.filters
         })
       }
       return searchMods({
-        query: typeof query === 'string' ? query : '',
+        query: normalizedQuery,
         instance,
         category: options.category,
         offset: options.offset,
         limit: options.limit,
         sort: options.sort,
-        projectType: options.projectType
+        projectType: options.projectType,
+        filters: options.filters
       })
     }
   )

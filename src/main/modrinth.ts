@@ -223,15 +223,30 @@ export async function searchMods(options: {
   limit?: number
   sort?: 'relevance' | 'downloads' | 'newest' | 'updated'
   projectType?: ProjectType
+  filters?: import('../shared/modSearch').ModSearchFilters
 }): Promise<ModSearchResponse> {
   const limit = Math.min(48, Math.max(1, options.limit || 20))
   const offset = Math.max(0, options.offset || 0)
   const kind = options.projectType || 'mod'
   const facets: string[][] = [[`project_type:${kind === 'resourcepack' ? 'resourcepack' : kind === 'shader' ? 'shader' : 'mod'}`]]
-  if (kind === 'mod' && options.instance && options.instance.loader !== 'vanilla') {
-    facets.push(loadersFor(options.instance).map((loader) => `categories:${loader}`))
+  const gameVersion =
+    options.filters?.gameVersion === '*'
+      ? ''
+      : options.filters?.gameVersion || options.instance?.mcVersion
+  const loader =
+    options.filters?.loader === '*'
+      ? ''
+      : options.filters?.loader || options.instance?.loader
+  if (kind === 'mod' && loader && loader !== 'vanilla') {
+    facets.push((LOADER_MOD_TAGS[loader] || []).map((tag) => `categories:${tag}`))
   }
-  if (options.instance?.mcVersion) facets.push([`versions:${options.instance.mcVersion}`])
+  if (gameVersion) facets.push([`versions:${gameVersion}`])
+  if (kind === 'mod' && options.filters?.environment === 'client') {
+    facets.push(['client_side:required', 'client_side:optional'])
+  }
+  if (kind === 'mod' && options.filters?.environment === 'server') {
+    facets.push(['server_side:required', 'server_side:optional'])
+  }
   if (options.category) facets.push([`categories:${options.category}`])
 
   const params = new URLSearchParams({

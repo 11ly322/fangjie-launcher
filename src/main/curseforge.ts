@@ -253,6 +253,7 @@ export async function searchCurseForge(options: {
   limit?: number
   sort?: 'relevance' | 'downloads' | 'newest' | 'updated'
   projectType?: ProjectType
+  filters?: import('../shared/modSearch').ModSearchFilters
 }): Promise<ModSearchResponse> {
   const params = new URLSearchParams({
     gameId: '432',
@@ -261,12 +262,18 @@ export async function searchCurseForge(options: {
     pageSize: String(Math.min(48, Math.max(1, options.limit || 20)))
   })
   if (options.query) params.set('searchFilter', options.query)
-  if (options.instance?.mcVersion) params.set('gameVersion', options.instance.mcVersion)
-  if (!options.projectType || options.projectType === 'mod') {
-    if (options.instance && options.instance.loader !== 'vanilla') {
-      const loaderId = LOADER_IDS[options.instance.loader]
-      if (loaderId) params.set('modLoaderType', String(loaderId))
-    }
+  const gameVersion =
+    options.filters?.gameVersion === '*'
+      ? ''
+      : options.filters?.gameVersion || options.instance?.mcVersion
+  if (gameVersion) params.set('gameVersion', gameVersion)
+  const loader =
+    options.filters?.loader === '*'
+      ? ''
+      : options.filters?.loader || options.instance?.loader
+  if ((!options.projectType || options.projectType === 'mod') && loader && loader !== 'vanilla') {
+    const loaderId = LOADER_IDS[loader]
+    if (loaderId) params.set('modLoaderType', String(loaderId))
   }
   if (options.category && CATEGORY_IDS[options.category]) {
     params.set('categoryId', String(CATEGORY_IDS[options.category]))
@@ -278,8 +285,8 @@ export async function searchCurseForge(options: {
 
   const response = await cfFetch<CfSearchResponse>(`/mods/search?${params.toString()}`)
   const filteredLoaders =
-    (!options.projectType || options.projectType === 'mod') && options.instance && options.instance.loader !== 'vanilla'
-      ? [options.instance.loader]
+    (!options.projectType || options.projectType === 'mod') && loader && loader !== 'vanilla'
+      ? [loader]
       : undefined
   const hits: ModSearchHit[] = (response.data || []).map((mod) => {
     const project = normalizeProject(mod)

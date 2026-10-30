@@ -1,3 +1,7 @@
+import type { ModSearchOptions } from './modSearch'
+
+export type { ModSearchOptions } from './modSearch'
+
 export type LoaderType = 'vanilla' | 'fabric' | 'quilt' | 'forge' | 'neoforge'
 
 export type ProjectType = 'mod' | 'resourcepack' | 'shader'
@@ -665,7 +669,7 @@ export interface LauncherApi {
   snapshotsPreview(instanceId: string, snapshotId: string): Promise<Result<SnapshotPreview>>
   snapshotsRestore(instanceId: string, snapshotId: string): Promise<Result<SnapshotRestoreResult>>
   snapshotsDelete(instanceId: string, snapshotId: string): Promise<Result<void>>
-  searchMods(query: string, options?: { instanceId?: string; category?: string; offset?: number; limit?: number; sort?: 'relevance' | 'downloads' | 'newest' | 'updated'; source?: ModSource; projectType?: ProjectType }): Promise<Result<ModSearchResponse>>
+  searchMods(query: string, options?: ModSearchOptions): Promise<Result<ModSearchResponse>>
   getModProject(idOrSlug: string, instanceId?: string, projectType?: ProjectType): Promise<Result<{ project: ModProject; versions: ModVersion[] }>>
   installMod(instanceId: string, projectId: string, versionId?: string, source?: ModSource, force?: boolean): Promise<Result<InstallModResult>>
   installAsset(instanceId: string, projectId: string, projectType: ProjectType, source: ModSource, versionId?: string): Promise<Result<{ fileName: string; path: string }>>

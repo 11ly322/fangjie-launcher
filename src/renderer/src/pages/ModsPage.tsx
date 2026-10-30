@@ -5,10 +5,13 @@ import {
   Download,
   ExternalLink,
   FolderOpen,
+  Languages,
   Package,
   Plus,
   RefreshCw,
+  RotateCcw,
   Search,
+  SlidersHorizontal,
   Sparkles
 } from 'lucide-react'
 import type {
@@ -19,6 +22,8 @@ import type {
   ModSource,
   ModVersion
 } from '../../../shared/types'
+import type { ModFilterEnvironment, ModSearchFilters } from '../../../shared/modSearch'
+import { hasChinese, translateModText, translateModTitle, translateSearchQuery } from '../../../shared/modI18n'
 import { LOADER_LABEL, MOD_CATEGORIES, MODDED_LOADERS } from '../../../shared/constants'
 import { useLauncher } from '../state/LauncherContext'
 import { InstanceEmblem } from '../components/Artwork'
@@ -83,6 +88,13 @@ export function ModsPage(): React.JSX.Element {
   const [error, setError] = useState('')
   const [installed, setInstalled] = useState<InstalledMod[]>([])
   const [detail, setDetail] = useState<ModDetailState | null>(null)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [gameVersion, setGameVersion] = useState('')
+  const [loader, setLoader] = useState('')
+  const [environment, setEnvironment] = useState<'' | ModFilterEnvironment>('')
+  const [autoTranslate, setAutoTranslate] = useState(
+    () => localStorage.getItem('fangjie.modTranslate') !== '0'
+  )
   const requestId = useRef(0)
 
   useEffect(() => {
@@ -118,13 +130,33 @@ export function ModsPage(): React.JSX.Element {
     setDetail(null)
   }, [selectedInstance?.id])
 
+  const translatedQuery = useMemo(() => translateSearchQuery(query), [query])
+  const showQueryHint = hasChinese(query) && translatedQuery !== query
+  const activeFilterCount =
+    (gameVersion ? 1 : 0) + (loader ? 1 : 0) + (environment ? 1 : 0)
+  const versionOptions = useMemo(() => {
+    const common = ['1.21.1', '1.21', '1.20.6', '1.20.4', '1.20.1', '1.19.2', '1.18.2', '1.16.5', '1.12.2']
+    return [...new Set([selectedInstance?.mcVersion, ...common].filter((value): value is string => Boolean(value)))]
+  }, [selectedInstance?.mcVersion])
+
+  function toggleAutoTranslate(next: boolean): void {
+    setAutoTranslate(next)
+    localStorage.setItem('fangjie.modTranslate', next ? '1' : '0')
+  }
+
+  function resetAdvancedFilters(): void {
+    setGameVersion('')
+    setLoader('')
+    setEnvironment('')
+  }
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void fetchPage(0)
     }, 280)
     return () => window.clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, category, sort, source, projectType, selectedInstance?.id])
+  }, [query, category, sort, source, projectType, selectedInstance?.id, gameVersion, loader, environment])
 
   const installedIds = useMemo(() => new Set(installed.map((mod) => mod.projectId)), [installed])
 
@@ -168,7 +200,12 @@ export function ModsPage(): React.JSX.Element {
       limit: PAGE_SIZE,
       sort,
       source,
-      projectType
+      projectType,
+      filters: {
+        gameVersion: gameVersion || undefined,
+        loader: loader || undefined,
+        environment: environment || undefined
+      } satisfies ModSearchFilters
     })
     if (current !== requestId.current) return
     setLoading(false)
@@ -368,6 +405,7 @@ export function ModsPage(): React.JSX.Element {
               if (next === source) return
               localStorage.setItem('fangjie.modSource', next)
               setSource(next)
+              setEnvironment('')
               setHits([])
               setOffset(0)
             }}
@@ -388,7 +426,92 @@ export function ModsPage(): React.JSX.Element {
             <option value="newest">最新发布</option>
             <option value="relevance">相关度</option>
           </Select>
+
+          <button
+            type="button"
+            className={classNames('advanced-filter-toggle', advancedOpen && 'is-active')}
+            onClick={() => setAdvancedOpen((current) => !current)}
+            aria-expanded={advancedOpen}
+          >
+            <SlidersHorizontal size={16} />
+            详细筛选
+            {activeFilterCount ? <span>{activeFilterCount}</span> : null}
+          </button>
         </div>
+
+        {advancedOpen ? (
+          <div className="mods-advanced-panel">
+            <label className="mods-advanced-field">
+              <span>游戏版本</span>
+              <Select
+                value={gameVersion}
+                onChange={(event) => setGameVersion(event.target.value)}
+                aria-label="筛选游戏版本"
+              >
+                <option value="">跟随目标实例</option>
+                <option value="*">全部版本</option>
+                {versionOptions.map((version) => (
+                  <option key={version} value={version}>{version}</option>
+                ))}
+              </Select>
+            </label>
+            <label className="mods-advanced-field">
+              <span>加载器</span>
+              <Select
+                value={loader}
+                onChange={(event) => setLoader(event.target.value)}
+                aria-label="筛选加载器"
+                disabled={projectType !== 'mod'}
+              >
+                <option value="">跟随目标实例</option>
+                <option value="*">全部加载器</option>
+                <option value="fabric">Fabric</option>
+                <option value="quilt">Quilt</option>
+                <option value="forge">Forge</option>
+                <option value="neoforge">NeoForge</option>
+              </Select>
+            </label>
+            <label className="mods-advanced-field">
+              <span>运行环境</span>
+              <Select
+                value={environment}
+                onChange={(event) => setEnvironment(event.target.value as '' | ModFilterEnvironment)}
+                aria-label="筛选运行环境"
+                disabled={projectType !== 'mod' || source === 'curseforge'}
+              >
+                <option value="">全部环境</option>
+                <option value="client">客户端</option>
+                <option value="server">服务端</option>
+              </Select>
+              {source === 'curseforge' ? (
+                <span className="mods-advanced-note">CurseForge 暂不支持运行环境筛选</span>
+              ) : null}
+            </label>
+            <Button
+              variant="quiet"
+              size="sm"
+              icon={<RotateCcw size={14} />}
+              onClick={resetAdvancedFilters}
+              disabled={!activeFilterCount}
+            >
+              重置
+            </Button>
+            <label className="mods-translate-toggle">
+              <input
+                type="checkbox"
+                checked={autoTranslate}
+                onChange={(event) => toggleAutoTranslate(event.target.checked)}
+              />
+              <Languages size={15} />
+              自动显示中文
+            </label>
+            {showQueryHint ? (
+              <p className="mods-query-hint">
+                中文关键词将转换为：<code>{translatedQuery}</code>
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         {projectType === 'mod' ? (
           <div className="category-chips" role="group" aria-label="模组分类">
@@ -484,6 +607,7 @@ export function ModsPage(): React.JSX.Element {
                 disabledReason="请先创建一个带加载器的实例"
                 onInstall={() => install(project)}
                 onOpen={() => void openDetail(project)}
+                translate={autoTranslate}
               />
             ))}
           </div>
@@ -512,6 +636,7 @@ export function ModsPage(): React.JSX.Element {
             onClick={() => {
               setQuery('')
               setCategory('')
+              resetAdvancedFilters()
             }}
           >
             清除筛选
@@ -527,6 +652,7 @@ export function ModsPage(): React.JSX.Element {
         selectedInstanceVersion={selectedInstance?.mcVersion}
         selectedLoader={projectType === 'mod' ? (selectedInstance ? LOADER_LABEL[selectedInstance.loader] : '模组') : projectType === 'resourcepack' ? '资源包' : '光影'}
         projectType={projectType}
+        autoTranslate={autoTranslate}
         installed={projectType === 'mod' && detail ? installed.find((mod) => mod.projectId === detail.hit.project_id) : undefined}
         installing={Boolean(
           detail?.hit.project_id && installingIds.has(detail.hit.project_id)
@@ -555,6 +681,7 @@ function ModDetailModal({
   selectedInstanceVersion,
   selectedLoader,
   projectType,
+  autoTranslate,
   installed,
   installing,
   canInstall,
@@ -569,6 +696,7 @@ function ModDetailModal({
   selectedInstanceVersion?: string
   selectedLoader: string
   projectType: 'mod' | 'resourcepack' | 'shader'
+  autoTranslate: boolean
   installed?: InstalledMod
   installing: boolean
   canInstall: boolean
@@ -623,7 +751,14 @@ function ModDetailModal({
     )
     return () => { active = false }
   }, [selectedVersion?.id, selectedInstanceId, projectType])
-  const body = project?.body ? stripMarkdown(project.body) : ''
+  const rawBody = project?.body ? stripMarkdown(project.body) : ''
+  const body = autoTranslate ? translateModText(rawBody) : rawBody
+  const displayTitle = autoTranslate
+    ? translateModTitle(project || detail?.hit || { title: '模组详情' })
+    : project?.title || detail?.hit.title || '模组详情'
+  const displayDescription = autoTranslate
+    ? translateModText(project?.description || detail?.hit.description || '')
+    : project?.description || detail?.hit.description
   const paragraphs = body.split(/\n{2,}/).filter(Boolean).slice(0, 8)
   const isCurseForge = project?.source === 'curseforge' || detail?.hit.source === 'curseforge'
   const kindPath = projectType === 'resourcepack' ? 'resourcepack' : projectType === 'shader' ? 'shader' : 'mod'
@@ -637,8 +772,8 @@ function ModDetailModal({
     <Modal
       open={Boolean(detail)}
       onClose={onClose}
-      title={project?.title || detail?.hit.title || '模组详情'}
-      description={project?.description || detail?.hit.description}
+      title={displayTitle}
+      description={displayDescription}
       size="lg"
       footer={
         <>
