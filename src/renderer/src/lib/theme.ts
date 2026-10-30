@@ -1,6 +1,7 @@
-import type { ThemeId } from '../../../shared/types'
+import type { ColorMode, ThemeId } from '../../../shared/types'
 
 export const THEME_STORAGE_KEY = 'fangjie-theme'
+export const COLOR_MODE_STORAGE_KEY = 'fangjie-color-mode'
 
 export interface ThemeOption {
   id: ThemeId
@@ -14,7 +15,7 @@ export const THEMES: ThemeOption[] = [
   {
     id: 'moss',
     name: '苔原',
-    description: '青柠与苔藓，方界的默认气质',
+    description: '青柠与苔藓，书架间的默认暖光',
     background: '#0c110b',
     accent: '#c4f06a'
   },
@@ -44,10 +45,27 @@ export function cachedTheme(): ThemeId {
   return 'moss'
 }
 
+export function cachedColorMode(): ColorMode {
+  try {
+    return window.localStorage.getItem(COLOR_MODE_STORAGE_KEY) === 'light' ? 'light' : 'dark'
+  } catch {
+    return 'dark'
+  }
+}
+
 export function applyTheme(theme: ThemeId): void {
   document.documentElement.dataset.theme = theme
   try {
     window.localStorage.setItem(THEME_STORAGE_KEY, theme)
+  } catch {
+    /* the persisted setting remains the source of truth */
+  }
+}
+
+export function applyColorMode(mode: ColorMode): void {
+  document.documentElement.dataset.mode = mode
+  try {
+    window.localStorage.setItem(COLOR_MODE_STORAGE_KEY, mode)
   } catch {
     /* the persisted setting remains the source of truth */
   }

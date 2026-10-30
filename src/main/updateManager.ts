@@ -7,7 +7,7 @@ import type { RustCoreClient } from './rustCore'
 import { downloadToFile, requestResponse } from './downloadSource'
 
 const DEFAULT_FEED = 'https://api.github.com/repos/11ly322/fangjie-launcher/releases'
-const USER_AGENT = 'Fangjie-Updater/0.1'
+const USER_AGENT = 'UBL-Updater/0.1'
 
 interface FeedAsset {
   name?: string
@@ -132,7 +132,7 @@ export async function downloadUpdate(
   if (!asset.sha256) throw new Error('发布资产缺少 SHA256，拒绝下载安装包')
   const directory = join(app.getPath('userData'), 'updates')
   mkdirSync(directory, { recursive: true })
-  let filename = 'Fangjie-update.exe'
+  let filename = 'UBL-update.exe'
   try {
     filename = decodeURIComponent(new URL(asset.url).pathname.split('/').pop() || filename)
   } catch {

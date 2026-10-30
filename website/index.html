@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>方界启动器 — 房间码联机、模组与多加载器</title>
+    <title>unflod bindery launcher — 房间码联机、模组与多加载器</title>
     <meta
       name="description"
-      content="方界是一款面向 Windows 的 Minecraft 启动器：房间码联机、Fabric/Quilt/Forge/NeoForge、Modrinth/CurseForge、正版登录与本地皮肤。"
+      content="UBL 是一款以书架为灵感的 Windows Minecraft 启动器：房间码联机、Fabric/Quilt/Forge/NeoForge、Modrinth/CurseForge、正版登录与本地皮肤。"
     />
     <meta name="theme-color" content="#090c08" />
-    <meta property="og:title" content="方界启动器 — 把一个房间码，变成一次冒险" />
+    <meta property="og:title" content="unflod bindery launcher — 把一个房间码，变成一次冒险" />
     <meta
       property="og:description"
       content="房间码联机、五加载器、模组工坊与独立实例。Windows 10/11，免安装或一键安装。"
@@ -23,10 +23,10 @@
       {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        "name": "方界启动器",
+        "name": "unflod bindery launcher",
         "applicationCategory": "GameApplication",
         "operatingSystem": "Windows 10, Windows 11",
-        "softwareVersion": "0.0.4",
+        "softwareVersion": "0.0.5",
         "description": "支持房间码联机、五种加载器、双模组源、正版登录与本地皮肤的 Minecraft 启动器。",
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
         "url": "https://11ly322.github.io/fangjie-launcher/"
@@ -40,11 +40,11 @@
 
     <header class="site-header" id="top" data-header>
       <div class="container header-inner">
-        <a class="brand" href="#top" aria-label="方界启动器首页">
+        <a class="brand" href="#top" aria-label="unflod bindery launcher首页">
           <img src="assets/icon.png" width="36" height="36" alt="" />
           <span class="brand-copy">
-            <strong>方界</strong>
-            <small>FANGJIE LAUNCHER</small>
+            <strong>UBL</strong>
+            <small>UNFLOD BINDERY LAUNCHER</small>
           </span>
         </a>
 
@@ -61,7 +61,7 @@
 
         <div class="header-actions">
           <a class="button button--ghost button--sm" href="https://github.com/11ly322/fangjie-launcher" target="_blank" rel="noreferrer">源码</a>
-          <a class="button button--primary button--sm" href="#download">下载 0.0.4</a>
+          <a class="button button--primary button--sm" href="#download">下载 0.0.5</a>
           <button class="menu-toggle" type="button" aria-controls="site-nav" aria-expanded="false" aria-label="打开菜单" data-menu-toggle>
             <span></span><span></span>
           </button>
@@ -75,17 +75,17 @@
         <div class="hero-glow hero-glow--two" aria-hidden="true"></div>
         <div class="container hero-grid">
           <div class="hero-copy reveal">
-            <p class="eyebrow"><span class="status-dot"></span> MINECRAFT LAUNCHER · 0.0.4</p>
-            <h1 id="hero-title">一个房间码，<br /><em>把朋友带进你的世界。</em></h1>
+            <p class="eyebrow"><span class="status-dot"></span> MINECRAFT LAUNCHER · 0.0.5</p>
+            <h1 id="hero-title">把世界，<br /><em>收进你的书架。</em></h1>
             <p class="hero-lede">
-              方界是一款轻量的 Windows Minecraft 启动器。五加载器、双模组源、正版登录、本地皮肤，
-              以及不需要公网 IP 和 VPN 软件的房间联机。
+              UBL 是一款以书架为灵感的 Windows Minecraft 启动器。五加载器、双模组源、
+              没有版本的加载器不出现、模组可单独下载，还有不需要公网 IP 和 VPN 软件的房间联机。
             </p>
             <div class="hero-actions">
-              <a class="button button--primary button--lg" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.4/Fangjie-Launcher-0.0.4-Setup.exe">
+              <a class="button button--primary button--lg" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.5/UBL-Launcher-0.0.5-Setup.exe">
                 下载 Windows 安装包 <span aria-hidden="true">↓</span>
               </a>
-              <a class="button button--ghost button--lg" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.4/Fangjie-Portable-0.0.4.zip">
+              <a class="button button--ghost button--lg" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.5/UBL-Portable-0.0.5.zip">
                 免安装便携版
               </a>
             </div>
@@ -100,9 +100,9 @@
             <div class="app-window">
               <div class="app-window__bar">
                 <span class="window-dot"></span><span class="window-dot"></span><span class="window-dot"></span>
-                <span class="app-window__title">方界 · 首页</span>
+                <span class="app-window__title">UBL · 首页</span>
               </div>
-              <img src="assets/home.webp" width="1600" height="1000" alt="方界启动器首页：最近实例、运行状态和快捷入口" />
+              <img src="assets/home.webp" width="1600" height="1000" alt="unflod bindery launcher首页：最近实例、运行状态和快捷入口" />
             </div>
             <div class="floating-card floating-card--room">
               <span class="floating-card__icon" aria-hidden="true">⌁</span>
@@ -150,15 +150,22 @@
             <article class="feature-card reveal">
               <div class="feature-icon" aria-hidden="true">◈</div>
               <p class="card-label">LOADERS</p>
-              <h3>五种加载器</h3>
-              <p>原版、Fabric、Quilt、Forge、NeoForge。创建实例时选择，运行库与 Java 自动准备。</p>
+              <h3>只显示能装的加载器</h3>
+              <p>原版、Fabric、Quilt、Forge、NeoForge。创建实例时按游戏版本核验元数据，没有可下载版本的加载器直接隐藏；也可以只安装加载器，不创建实例。</p>
             </article>
 
             <article class="feature-card reveal" data-delay="60">
               <div class="feature-icon" aria-hidden="true">✦</div>
               <p class="card-label">MODS</p>
-              <h3>双模组源</h3>
-              <p>Modrinth 与 CurseForge 搜索、版本选择、必需前置索引与跳转、介绍页；已安装模组可切换版本。</p>
+              <h3>双模组源，中文也能搜</h3>
+              <p>Modrinth 与 CurseForge 搜索、版本选择、前置索引与中文标题；游戏版本可手动输入，模组详情支持“仅下载文件”，资源包/光影同样支持。</p>
+            </article>
+
+            <article class="feature-card reveal" data-delay="90">
+              <div class="feature-icon" aria-hidden="true">▤</div>
+              <p class="card-label">LIBRARY</p>
+              <h3>书架界面与日夜模式</h3>
+              <p>低 bit 像素书架、仿 iOS 卡片与胶囊按钮；苔原/深海/余烬三套配色分别提供黑夜与白天模式，切换立即生效。</p>
             </article>
 
             <article class="feature-card reveal" data-delay="120">
@@ -178,8 +185,8 @@
             <article class="feature-card reveal" data-delay="240">
               <div class="feature-icon" aria-hidden="true">◫</div>
               <p class="card-label">INSTANCES</p>
-              <h3>每个世界独立</h3>
-              <p>存档、模组、配置、日志互不干扰；实例详情、模组启停、下载中心与启动日志集中管理。</p>
+              <h3>每个世界独立，还能快照</h3>
+              <p>存档、模组、配置、日志互不干扰；启动前可选自动快照，恢复前预览覆盖项，删除实例时可保留快照归档。</p>
             </article>
           </div>
         </div>
@@ -188,16 +195,16 @@
       <section class="section section--split" id="multiplayer" aria-labelledby="multiplayer-title">
         <div class="container split-grid">
           <div class="split-media reveal">
-            <img src="assets/multiplayer.webp" width="1600" height="1000" alt="方界启动器房间联机页面：创建房间与公共中继节点" loading="lazy" />
+            <img src="assets/multiplayer.webp" width="1600" height="1000" alt="unflod bindery launcher房间联机页面：创建房间与公共中继节点" loading="lazy" />
             <div class="media-caption">
               <span class="pulse-dot"></span> 房间控制面已通过公共中继与 TCP 回显验证
             </div>
           </div>
           <div class="split-copy reveal" data-delay="100">
-            <p class="eyebrow">ROOM LINK · 0.0.4</p>
+            <p class="eyebrow">ROOM LINK · 0.0.5</p>
             <h2 id="multiplayer-title">朋友只需要一个房间码。</h2>
             <p>
-              房主在 Minecraft 中开放局域网，把聊天栏端口填进方界；房客输入房间码，
+              房主在 Minecraft 中开放局域网，把聊天栏端口填进 UBL；房客输入房间码，
               得到的地址可以直接粘贴到「多人游戏 → 直接连接」。
             </p>
             <ol class="step-list">
@@ -222,16 +229,16 @@
           </div>
           <div class="gallery-grid">
             <figure class="gallery-item gallery-item--large reveal">
-              <img src="assets/instances.webp" width="1600" height="1000" alt="游戏实例库" loading="lazy" />
-              <figcaption><span>01</span> 实例库：五加载器与独立存档</figcaption>
+              <img src="assets/home.webp" width="1600" height="1000" alt="UBL 首页：书架主体、低 bit 像素书架与运行状态" loading="lazy" />
+              <figcaption><span>01</span> 书架首页：像素书架、最近实例与运行状态</figcaption>
             </figure>
             <figure class="gallery-item reveal" data-delay="80">
-              <img src="assets/mods.webp" width="1600" height="1000" alt="模组工坊" loading="lazy" />
-              <figcaption><span>02</span> 模组工坊：双源、版本选择与前置索引</figcaption>
+              <img src="assets/create-instance.webp" width="1600" height="1000" alt="UBL 创建实例：只显示有版本的加载器" loading="lazy" />
+              <figcaption><span>02</span> 智能加载器：无版本的一律隐藏</figcaption>
             </figure>
             <figure class="gallery-item reveal" data-delay="160">
-              <img src="assets/account.webp" width="1600" height="1000" alt="玩家档案与本地皮肤" loading="lazy" />
-              <figcaption><span>03</span> 玩家档案：正版登录与本地皮肤</figcaption>
+              <img src="assets/mods.webp" width="1600" height="1000" alt="UBL 模组工坊：中文搜索、筛选与独立下载" loading="lazy" />
+              <figcaption><span>03</span> 模组工坊：中文搜索、详细筛选与独立下载</figcaption>
             </figure>
           </div>
         </div>
@@ -242,14 +249,15 @@
           <div class="roadmap-panel reveal">
             <div>
               <p class="eyebrow">NEXT ON THE BENCH</p>
-              <h2 id="roadmap-title">下一站：让更新、备份和启动都更快。</h2>
+              <h2 id="roadmap-title">这一版，先把书架立起来。</h2>
               <p>
-                0.0.4 加入已安装模组更新中心、实例/世界快照与性能基础优化：
-                模组索引、首屏快照瘦身、元数据磁盘缓存与 Java 检测缓存。P0 崩溃诊断与实例工具也已接入 Electron UI。
+                0.0.5 完成 UBL 更名、扁平书架界面、日夜模式、智能加载器与独立下载；
+                0.0.4 的模组更新中心、世界快照和性能缓存继续保留。更新器签名与跨机器 NAT 仍是下一段路。
               </p>
             </div>
             <div class="roadmap-list" aria-label="开发路线">
-              <div class="roadmap-item"><span class="roadmap-dot roadmap-dot--active"></span><div><strong>0.0.4</strong><p>模组更新中心、世界快照与性能基础优化</p></div><span class="tag tag--accent">已发布</span></div>
+              <div class="roadmap-item"><span class="roadmap-dot roadmap-dot--active"></span><div><strong>0.0.5</strong><p>UBL 更名、书架界面、日夜模式、智能加载器与独立下载</p></div><span class="tag tag--accent">已发布</span></div>
+              <div class="roadmap-item"><span class="roadmap-dot"></span><div><strong>0.0.4</strong><p>模组更新中心、世界快照与性能基础优化</p></div><span class="tag">已发布</span></div>
               <div class="roadmap-item"><span class="roadmap-dot"></span><div><strong>0.0.3</strong><p>更新检查 TLS 回退、下载复用与错误提示修复</p></div><span class="tag">已发布</span></div>
               <div class="roadmap-item"><span class="roadmap-dot"></span><div><strong>0.0.2-beta</strong><p>模组前置索引、版本选择、CurseForge 与安装版本切换</p></div><span class="tag">已发布</span></div>
               <div class="roadmap-item"><span class="roadmap-dot"></span><div><strong>P0 诊断与实例工具</strong><p>崩溃模式、JAR 扫描、diff 回滚、批量启停与实例模板已接入</p></div><span class="tag">已接入 UI</span></div>
@@ -263,34 +271,34 @@
       <section class="section download-section" id="download" aria-labelledby="download-title">
         <div class="container">
           <div class="section-heading reveal">
-            <p class="eyebrow">DOWNLOAD · 0.0.4</p>
-            <h2 id="download-title">把方界放到桌面上。</h2>
+            <p class="eyebrow">DOWNLOAD · 0.0.5</p>
+            <h2 id="download-title">把 UBL 放到桌面上。</h2>
             <p>Windows 10/11 x64。安装版按当前用户安装，不请求管理员权限；卸载不会删除游戏存档。</p>
           </div>
           <div class="download-grid">
-            <a class="download-card download-card--primary reveal" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.4/Fangjie-Launcher-0.0.4-Setup.exe">
+            <a class="download-card download-card--primary reveal" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.5/UBL-Launcher-0.0.5-Setup.exe">
               <span class="download-card__label">RECOMMENDED · SETUP</span>
               <strong>Windows 安装包</strong>
-              <span>Fangjie-Launcher-0.0.4-Setup.exe · 170.8 MiB</span>
+              <span>UBL-Launcher-0.0.5-Setup.exe · 170.7 MiB</span>
               <span class="download-card__action">下载安装包 <span aria-hidden="true">↓</span></span>
             </a>
-            <a class="download-card reveal" data-delay="80" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.4/Fangjie-Portable-0.0.4.zip">
+            <a class="download-card reveal" data-delay="80" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.5/UBL-Portable-0.0.5.zip">
               <span class="download-card__label">PORTABLE · ZIP</span>
               <strong>免安装便携版</strong>
-              <span>解压后双击 Fangjie.exe · 171.1 MiB</span>
+              <span>解压后双击 UBL.exe · 171.1 MiB</span>
               <span class="download-card__action">下载便携版 <span aria-hidden="true">↓</span></span>
             </a>
-            <a class="download-card download-card--muted reveal" data-delay="160" href="https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.4">
+            <a class="download-card download-card--muted reveal" data-delay="160" href="https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.5">
               <span class="download-card__label">VERIFY</span>
               <strong>SHA256 与更新记录</strong>
-              <span>校验发布包，查看 0.0.4 变更</span>
+              <span>校验发布包，查看 0.0.5 变更</span>
               <span class="download-card__action">打开 Release <span aria-hidden="true">↗</span></span>
             </a>
           </div>
           <div class="checksum reveal">
             <span>安装包 SHA256</span>
-            <code>c3a0602361e44a997f796eb5192b15671a034718d04733f31c9524441f4b820d</code>
-            <button type="button" class="copy-button" data-copy="c3a0602361e44a997f796eb5192b15671a034718d04733f31c9524441f4b820d">复制</button>
+            <code>623ecf1ac0eb06940ae2d54590a9f6f693884301df865d9ffdac89e9836a6289</code>
+            <button type="button" class="copy-button" data-copy="623ecf1ac0eb06940ae2d54590a9f6f693884301df865d9ffdac89e9836a6289">复制</button>
           </div>
         </div>
       </section>
@@ -321,11 +329,15 @@
             </details>
             <details>
               <summary>为什么安装包提示未知发布者？</summary>
-              <p>0.0.4 尚未做代码签名，Windows SmartScreen 可能提示未知发布者。校验 SHA256 后再运行。</p>
+              <p>0.0.5 尚未做代码签名，Windows SmartScreen 可能提示未知发布者。校验 SHA256 后再运行。</p>
+            </details>
+            <details>
+              <summary>从方界升级会丢实例吗？</summary>
+              <p>不会。0.0.5 只更改显示名称、安装目录与可执行文件；内部包名和 <code>%APPDATA%\fangjie-launcher</code> 数据目录保持兼容。安装版新目录默认是 <code>%LOCALAPPDATA%\Programs\UBL</code>，卸载仍不会删除存档。</p>
             </details>
             <details>
               <summary>哪些还没做？</summary>
-              <p>0.0.4 加入已安装模组更新中心、世界快照与性能基础优化，并保留双模组源、版本选择、前置索引、CurseForge、整合包、资源包/光影、OptiFine、自动更新器与崩溃诊断；真实签名更新、跨机器 NAT 与 P2P RTT 仍是边界。</p>
+              <p>发布包未签名；独立加载器安装尚未做完整真实下载 E2E；中文翻译是本地词典而非通用机器翻译；CurseForge 不支持运行环境筛选；真实签名自动更新、跨机器 NAT 与 P2P RTT 仍建议按文档实测。</p>
             </details>
           </div>
         </div>
@@ -337,7 +349,7 @@
         <div class="footer-brand">
           <a class="brand" href="#top">
             <img src="assets/icon.png" width="32" height="32" alt="" />
-            <span class="brand-copy"><strong>方界</strong><small>FANGJIE LAUNCHER</small></span>
+            <span class="brand-copy"><strong>UBL</strong><small>UNFLOD BINDERY LAUNCHER</small></span>
           </a>
           <p>把 Minecraft 留在桌面上，把折腾留给启动器。</p>
         </div>
@@ -350,7 +362,7 @@
         </div>
       </div>
       <div class="container footer-bottom">
-        <span>© <span data-year>2026</span> 方界 · 非官方 Minecraft 启动器</span>
+        <span>© <span data-year>2026</span> UBL · 非官方 Minecraft 启动器</span>
         <span>与 Mojang Studios、Microsoft、Modrinth、CurseForge 无隶属关系</span>
       </div>
     </footer>

@@ -13,7 +13,9 @@ import {
   SlidersHorizontal,
   Network,
   UserRound,
-  WifiOff
+  WifiOff,
+  Moon,
+  Sun
 } from 'lucide-react'
 import { useLauncher } from '../state/LauncherContext'
 import { PixelAvatar, SkinHead } from '../components/Artwork'
@@ -27,8 +29,8 @@ import {
   ToggleRow
 } from '../components/ui'
 import { classNames, rangeProgress } from '../lib/format'
-import { applyTheme, THEMES } from '../lib/theme'
-import type { CoreUpdateCheck, PluginRecord, ThemeId } from '../../../shared/types'
+import { applyColorMode, applyTheme, THEMES } from '../lib/theme'
+import type { ColorMode, CoreUpdateCheck, PluginRecord, ThemeId } from '../../../shared/types'
 
 export function SettingsPage(): React.JSX.Element {
   const { boot, confirm, openAccount, refreshJava, saveSettings, toast } = useLauncher()
@@ -44,6 +46,7 @@ export function SettingsPage(): React.JSX.Element {
   const [curseforgeBase, setCurseforgeBase] = useState(boot.settings.curseforgeBase)
   const [offlineMode, setOfflineMode] = useState(boot.settings.offline)
   const [theme, setTheme] = useState<ThemeId>(boot.settings.theme)
+  const [colorMode, setColorMode] = useState<ColorMode>(boot.settings.colorMode)
   const [saving, setSaving] = useState(false)
   const [changingData, setChangingData] = useState(false)
   const [update, setUpdate] = useState<CoreUpdateCheck | null>(null)
@@ -67,6 +70,10 @@ export function SettingsPage(): React.JSX.Element {
   useEffect(() => {
     setTheme(boot.settings.theme)
   }, [boot.settings.theme])
+
+  useEffect(() => {
+    setColorMode(boot.settings.colorMode)
+  }, [boot.settings.colorMode])
 
   useEffect(() => {
     let active = true
@@ -137,6 +144,18 @@ export function SettingsPage(): React.JSX.Element {
     if (!ok) {
       setTheme(previous)
       applyTheme(previous)
+    }
+  }
+
+  const selectColorMode = async (next: ColorMode): Promise<void> => {
+    if (next === colorMode) return
+    const previous = colorMode
+    setColorMode(next)
+    applyColorMode(next)
+    const ok = await saveSettings({ colorMode: next })
+    if (!ok) {
+      setColorMode(previous)
+      applyColorMode(previous)
     }
   }
 
@@ -434,10 +453,38 @@ export function SettingsPage(): React.JSX.Element {
             </div>
             <div>
               <h2>外观主题</h2>
-              <p>三套配色，立即生效并记住选择</p>
+              <p>明暗模式与三套书架配色，立即生效并记住选择</p>
             </div>
           </div>
           <div className="settings-card">
+            <div className="color-mode-options" role="group" aria-label="选择明暗模式">
+              <button
+                type="button"
+                className={classNames('color-mode-option', colorMode === 'dark' && 'is-selected')}
+                aria-pressed={colorMode === 'dark'}
+                onClick={() => void selectColorMode('dark')}
+              >
+                <span className="color-mode-option__icon"><Moon size={17} /></span>
+                <span>
+                  <strong>黑夜模式</strong>
+                  <small>墨色书架与暖光文字，适合夜间游玩</small>
+                </span>
+                {colorMode === 'dark' ? <Check size={14} /> : null}
+              </button>
+              <button
+                type="button"
+                className={classNames('color-mode-option', colorMode === 'light' && 'is-selected')}
+                aria-pressed={colorMode === 'light'}
+                onClick={() => void selectColorMode('light')}
+              >
+                <span className="color-mode-option__icon"><Sun size={17} /></span>
+                <span>
+                  <strong>白天模式</strong>
+                  <small>纸页与浅木色，白天阅读更清爽</small>
+                </span>
+                {colorMode === 'light' ? <Check size={14} /> : null}
+              </button>
+            </div>
             <div className="theme-options" role="group" aria-label="选择外观主题">
               {THEMES.map((option) => {
                 const selected = option.id === theme
@@ -472,7 +519,7 @@ export function SettingsPage(): React.JSX.Element {
               })}
             </div>
             <p className="settings-hint">
-              主题只改变方界的配色，不会影响游戏画面。选择后会立即写入本地配置；下次启动也会保持。
+              明暗模式与配色只影响启动器界面，不会影响游戏画面。选择后会立即写入本地配置；下次启动也会保持。
             </p>
           </div>
         </section>
@@ -712,21 +759,21 @@ export function SettingsPage(): React.JSX.Element {
               <ShieldCheck size={18} />
             </div>
             <div>
-              <h2>关于方界</h2>
+              <h2>关于 UBL</h2>
               <p>版本信息与数据来源</p>
             </div>
           </div>
           <div className="settings-card about-card">
             <div className="about-row">
               <div>
-                <strong>方界启动器</strong>
-                <span>v{boot.appVersion} · 非官方 Minecraft 启动器</span>
+                <strong>unflod bindery launcher</strong>
+                <span>v{boot.appVersion} · UBL · 非官方 Minecraft 启动器</span>
               </div>
               <Badge tone="accent">本地优先</Badge>
             </div>
             <p>
               游戏版本与资源来自 Mojang 官方元数据；模组搜索与下载来自 Modrinth 公共 API。
-              方界不托管游戏文件，也不收集账号密码。
+              UBL 不托管游戏文件，也不收集账号密码。
             </p>
             <div className="about-links">
               <a href="https://modrinth.com" target="_blank" rel="noreferrer">

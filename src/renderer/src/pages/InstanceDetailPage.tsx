@@ -26,7 +26,7 @@ import {
   LOADER_LABEL
 } from '../../../shared/constants'
 import { useLauncher } from '../state/LauncherContext'
-import { InstanceEmblem, WorldArt } from '../components/Artwork'
+import { InstanceEmblem, PixelShelfArt } from '../components/Artwork'
 import {
   Badge,
   Button,
@@ -298,7 +298,7 @@ export function InstanceDetailPage({ instance }: { instance: InstanceSummary }):
         className="detail-hero"
         style={{ '--detail-accent': instance.accent } as CSSProperties}
       >
-        <WorldArt accent={instance.accent} />
+        <PixelShelfArt accent={instance.accent} />
         <div className="detail-hero__shade" />
         <div className="detail-hero__content">
           <InstanceEmblem accent={instance.accent} icon={instance.icon} size={86} />
@@ -538,7 +538,7 @@ export function InstanceDetailPage({ instance }: { instance: InstanceSummary }):
               <div className="info-list">
                 <InfoRow label="Java" value={javaLabel} />
                 <InfoRow label="内存分配" value={`${((instance.memoryMb || 4096) / 1024).toFixed(1)} GB`} />
-                <InfoRow label="启动器" value={`方界 v${boot.appVersion}`} />
+                <InfoRow label="启动器" value={`UBL v${boot.appVersion}`} />
               </div>
               <button type="button" className="text-action" onClick={() => setTab('settings')}>
                 调整实例设置

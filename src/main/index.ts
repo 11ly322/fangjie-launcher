@@ -50,6 +50,12 @@ function log(message: string, error?: unknown): void {
   }
 }
 
+const explicitUserData = process.argv.some((argument) => argument.startsWith('--user-data-dir'))
+app.setName('unflod bindery launcher')
+if (!explicitUserData && !process.env.FJ_HOME) {
+  app.setPath('userData', join(app.getPath('appData'), 'fangjie-launcher'))
+}
+
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
   log('single instance lock not acquired; quitting')
@@ -66,7 +72,7 @@ function createWindow(): void {
     show: false,
     frame: false,
     backgroundColor: '#0b0e0b',
-    title: '方界启动器',
+    title: 'unflod bindery launcher',
     icon: join(__dirname, '../../resources/icon.png'),
     titleBarStyle: 'hidden',
     autoHideMenuBar: true,
@@ -136,7 +142,6 @@ function getMainWindow(): BrowserWindow | null {
 app.whenReady().then(() => {
   log('app ready')
   app.setAppUserModelId('com.fangjie.launcher')
-  app.setName('方界启动器')
   Menu.setApplicationMenu(null)
   installDownloadConcurrencyLimit(20)
 

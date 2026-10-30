@@ -17,7 +17,7 @@ import {
 import type { ModSearchHit, TaskView } from '../../../shared/types'
 import { useLauncher } from '../state/LauncherContext'
 import { LOADER_LABEL } from '../../../shared/constants'
-import { WorldArt, InstanceEmblem, PixelAvatar, SkinHead } from '../components/Artwork'
+import { PixelShelfArt, InstanceEmblem, PixelAvatar, SkinHead } from '../components/Artwork'
 import { InstanceCard } from '../components/InstanceCard'
 import { Badge, Button, InlineNotice, ProgressBar, SectionHeading, Skeleton, StatusDot, TextInput } from '../components/ui'
 import {
@@ -118,12 +118,35 @@ export function HomePage(): React.JSX.Element {
 
       {activeTask ? <ActiveTaskStrip task={activeTask} onClick={() => navigate('downloads')} /> : null}
 
+      <div className="book-shelf" aria-hidden="true">
+        <div className="book-shelf__caption">
+          <span>UBL · YOUR LIBRARY</span>
+          <span>{recent.length ? '把喜欢的世界摆在手边' : '书架还空着，创建第一个世界吧'}</span>
+        </div>
+        <div className="book-shelf__row">
+          {recent.map((instance, index) => (
+            <span
+              key={instance.id}
+              className="book-spine"
+              style={{ '--book-accent': instance.accent, '--book-height': `${86 + (index % 3) * 14}px` } as React.CSSProperties}
+            >
+              <i>{instance.name}</i>
+            </span>
+          ))}
+          <span className="book-spine book-spine--blank" />
+          <span className="book-spine book-spine--blank book-spine--short" />
+          <span className="book-spine book-spine--blank" />
+          <span className="book-shelf__lamp" />
+        </div>
+        <div className="book-shelf__plank" />
+      </div>
+
       <section className="home-grid">
         <div
           className="hero-play"
           style={{ '--hero-accent': activeInstance?.accent || 'var(--accent)' } as React.CSSProperties}
         >
-          <WorldArt accent={activeInstance?.accent || 'var(--accent)'} />
+          <PixelShelfArt accent={activeInstance?.accent || 'var(--accent)'} />
           <div className="hero-play__shade" />
           {activeInstance ? (
             <>

@@ -1,6 +1,6 @@
-# 方界官网
+# UBL 官网
 
-这是方界启动器的静态官网，部署在 GitHub Pages：
+这是 unflod bindery launcher（UBL）的静态官网，部署在 GitHub Pages：
 
 https://11ly322.github.io/fangjie-launcher/
 

@@ -52,11 +52,15 @@ export function Sidebar({
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
-        <BrandMark size={40} />
+        <BrandMark size={42} />
         <div>
-          <div className="brand-name">方界</div>
-          <div className="brand-sub">FANGJIE LAUNCHER</div>
+          <div className="brand-name">UBL</div>
+          <div className="brand-sub">unflod bindery launcher</div>
         </div>
+      </div>
+
+      <div className="sidebar__shelf" aria-hidden="true">
+        <span /><span /><span /><span /><span />
       </div>
 
       <div className="sidebar__section-label">探索</div>

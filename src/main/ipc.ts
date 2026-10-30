@@ -50,6 +50,7 @@ import {
   startCurseForgeInstall
 } from './curseforge'
 import { normalizeTheme, type LauncherStore } from './store'
+import { getLoaderAvailability } from './loaders'
 import { RustCoreClient, toRustInstance } from './rustCore'
 import { assertOnline, isOffline, setOffline } from './networkPolicy'
 import { configureNetwork } from './downloadAgent'
@@ -58,6 +59,7 @@ import { configureModrinthBase } from './modrinth'
 import { configureCurseForgeBase } from './curseforge'
 import { applyUpdate, checkForUpdates, downloadUpdate } from './updateManager'
 import { installAsset } from './assets'
+import { downloadStandaloneMod, installStandaloneLoader } from './standalone'
 import { importCurseForgeZip } from './modpackImport'
 import { installOptiFine } from './optifine'
 import { listPlugins, openPluginsFolder } from './plugins'
@@ -92,6 +94,8 @@ const NETWORK_CHANNELS = new Set([
   'mods:project',
   'mods:install',
   'mods:update',
+  'mods:download-file',
+  'loaders:install-standalone',
   'assets:install',
   'auth:microsoft-login',
   'update:check',
@@ -280,6 +284,7 @@ export function registerIpcHandlers(context: IpcContext): void {
     if (typeof patch.modrinthBase === 'string') safePatch.modrinthBase = patch.modrinthBase.trim()
     if (typeof patch.curseforgeBase === 'string') safePatch.curseforgeBase = patch.curseforgeBase.trim()
     if (patch.theme !== undefined) safePatch.theme = normalizeTheme(patch.theme)
+    if (patch.colorMode === 'light' || patch.colorMode === 'dark') safePatch.colorMode = patch.colorMode
     configureNetwork(safePatch.proxyUrl ?? store.settings.proxyUrl)
     configureModrinthBase(safePatch.modrinthBase ?? store.settings.modrinthBase)
     configureCurseForgeBase(safePatch.curseforgeBase ?? store.settings.curseforgeBase)
@@ -340,6 +345,25 @@ export function registerIpcHandlers(context: IpcContext): void {
     const instance = store.getInstance(id)
     if (!instance) throw new Error('找不到这个实例')
     return { ...instance, mods: listInstanceMods(store, instance) }
+  })
+
+  handle('loaders:availability', async (mcVersion: string) => {
+    if (typeof mcVersion !== 'string' || !mcVersion.trim()) throw new Error('请先选择游戏版本')
+    return getLoaderAvailability(mcVersion)
+  })
+
+  handle('mods:download-file', async (request: import('../shared/types').StandaloneModDownloadRequest) => {
+    if (!request || typeof request.projectId !== 'string' || !request.projectId.trim()) {
+      throw new Error('缺少项目 ID')
+    }
+    return downloadStandaloneMod(store, tasks, request)
+  })
+
+  handle('loaders:install-standalone', async (request: import('../shared/types').StandaloneLoaderInstallRequest) => {
+    if (!request || typeof request.mcVersion !== 'string' || !request.mcVersion.trim()) {
+      throw new Error('请选择 Minecraft 版本')
+    }
+    return installStandaloneLoader(store, tasks, request)
   })
 
   handle('instances:delete', async (id: string, keepSnapshots = false) => {

@@ -5,7 +5,7 @@ const root = path.resolve(__dirname, '..')
 
 packager({
   dir: root,
-  name: 'Fangjie',
+  name: 'UBL',
   platform: 'win32',
   arch: 'x64',
   out: path.join(root, 'release'),
@@ -39,7 +39,7 @@ packager({
 })
   .then(([output]) => {
     console.log(`Portable build: ${output}`)
-    console.log(`Run: ${path.join(output, 'Fangjie.exe')}`)
+    console.log(`Run: ${path.join(output, 'UBL.exe')}`)
   })
   .catch((error) => {
     console.error(error)

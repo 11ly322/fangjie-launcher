@@ -18,10 +18,11 @@ import {
   installLibraries,
   installNeoForgedTask
 } from '@xmcl/installer'
-import type { LoaderType } from '../shared/types'
+import type { LoaderAvailability, LoaderType } from '../shared/types'
 import { XMCL_HEADERS, xmclDownloadAgent } from './downloadAgent'
 import { USER_AGENT } from './version'
 import { requestResponse } from './downloadSource'
+import { isOffline } from './networkPolicy'
 
 export const BMCL_API = 'https://bmclapi2.bangbang93.com'
 export const BMCL_MAVEN = `${BMCL_API}/maven/`
@@ -45,6 +46,98 @@ export async function installModLoader(options: LoaderInstallOptions): Promise<L
   if (options.loader === 'quilt') return installQuilt(options)
   if (options.loader === 'forge') return installForge(options)
   return installNeoForge(options)
+}
+
+type ModdedLoader = Exclude<LoaderType, 'vanilla'>
+
+interface AvailabilityCacheEntry {
+  at: number
+  value: LoaderAvailability[]
+}
+
+const AVAILABILITY_TTL = 10 * 60 * 1000
+const availabilityCache = new Map<string, AvailabilityCacheEntry>()
+const MODDED_LOADERS: ModdedLoader[] = ['fabric', 'quilt', 'forge', 'neoforge']
+
+async function latestFabric(mcVersion: string): Promise<string | undefined> {
+  const list = await fetchJson<Array<{ loader?: { version?: string; stable?: boolean } }>>(
+    `${BMCL_API}/fabric-meta/v2/versions/loader/${encodeURIComponent(mcVersion)}`
+  )
+  if (!Array.isArray(list)) return undefined
+  const rows = list.filter((item) => typeof item.loader?.version === 'string')
+  const chosen = rows.find((item) => item.loader?.stable) || rows[0]
+  return chosen?.loader?.version
+}
+
+async function latestQuilt(mcVersion: string): Promise<string | undefined> {
+  const list = await fetchJson<Array<{ loader?: { version?: string } }>>(
+    `https://meta.quiltmc.org/v3/versions/loader/${encodeURIComponent(mcVersion)}`
+  )
+  if (!Array.isArray(list)) return undefined
+  const versions = list
+    .map((item) => item.loader?.version)
+    .filter((value): value is string => typeof value === 'string' && value.length > 0)
+  const stable = versions.filter((value) => !value.includes('-')).sort((left, right) => compareVersion(right, left))
+  return (stable.length ? stable : versions.sort((left, right) => compareVersion(right, left)))[0]
+}
+
+async function latestForge(mcVersion: string): Promise<string | undefined> {
+  const list = await fetchJson<Array<{ version?: string }>>(
+    `${BMCL_API}/forge/minecraft/${encodeURIComponent(mcVersion)}`
+  )
+  if (!Array.isArray(list)) return undefined
+  return list
+    .map((item) => item.version)
+    .filter((value): value is string => typeof value === 'string' && value.length > 0)
+    .sort((left, right) => compareVersion(right, left))[0]
+}
+
+async function latestNeoForge(mcVersion: string): Promise<string | undefined> {
+  const list = await fetchJson<Array<{ version?: string }>>(
+    `${BMCL_API}/neoforge/list/${encodeURIComponent(mcVersion)}`
+  )
+  if (!Array.isArray(list)) return undefined
+  const versions = list
+    .map((item) => item.version)
+    .filter((value): value is string => typeof value === 'string' && value.length > 0)
+  const stable = versions.filter((value) => !/alpha|beta/i.test(value))
+  return (stable.length ? stable : versions).sort((left, right) => compareVersion(right, left))[0]
+}
+
+const LATEST_LOOKUP: Record<ModdedLoader, (mcVersion: string) => Promise<string | undefined>> = {
+  fabric: latestFabric,
+  quilt: latestQuilt,
+  forge: latestForge,
+  neoforge: latestNeoForge
+}
+
+export async function getLoaderAvailability(mcVersion: string): Promise<LoaderAvailability[]> {
+  const version = typeof mcVersion === 'string' ? mcVersion.trim() : ''
+  if (!version) return MODDED_LOADERS.map((loader) => ({ loader, available: false, error: '请先选择游戏版本' }))
+  if (isOffline()) {
+    return MODDED_LOADERS.map((loader) => ({ loader, available: false, error: '离线模式已开启' }))
+  }
+  const cached = availabilityCache.get(version)
+  if (cached && Date.now() - cached.at < AVAILABILITY_TTL) return cached.value
+
+  const value = await Promise.all(
+    MODDED_LOADERS.map(async (loader): Promise<LoaderAvailability> => {
+      try {
+        const latest = await LATEST_LOOKUP[loader](version)
+        return latest
+          ? { loader, available: true, latest }
+          : { loader, available: false, error: `Minecraft ${version} 暂无 ${loaderDisplayName(loader)} 版本` }
+      } catch (error) {
+        return {
+          loader,
+          available: false,
+          error: `无法获取 ${loaderDisplayName(loader)} 版本：${error instanceof Error ? error.message : String(error)}`
+        }
+      }
+    })
+  )
+  availabilityCache.set(version, { at: Date.now(), value })
+  return value
 }
 
 async function installFabric(options: LoaderInstallOptions): Promise<LoaderInstallResult> {

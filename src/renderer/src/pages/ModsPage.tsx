@@ -443,17 +443,35 @@ export function ModsPage(): React.JSX.Element {
           <div className="mods-advanced-panel">
             <label className="mods-advanced-field">
               <span>游戏版本</span>
-              <Select
-                value={gameVersion}
-                onChange={(event) => setGameVersion(event.target.value)}
-                aria-label="筛选游戏版本"
-              >
-                <option value="">跟随目标实例</option>
-                <option value="*">全部版本</option>
-                {versionOptions.map((version) => (
-                  <option key={version} value={version}>{version}</option>
-                ))}
-              </Select>
+              <div className="mods-version-input">
+                <TextInput
+                  value={gameVersion}
+                  onChange={(event) => setGameVersion(event.target.value.trim())}
+                  placeholder="输入或选择，例如 1.20.1"
+                  aria-label="筛选游戏版本"
+                  list="mods-version-options"
+                />
+                <datalist id="mods-version-options">
+                  <option value="*">全部版本</option>
+                  {versionOptions.map((version) => (
+                    <option key={version} value={version} />
+                  ))}
+                </datalist>
+                <Select
+                  value=""
+                  onChange={(event) => {
+                    if (event.target.value) setGameVersion(event.target.value)
+                  }}
+                  aria-label="快速选择游戏版本"
+                >
+                  <option value="">快速选择</option>
+                  <option value="*">全部版本</option>
+                  {versionOptions.map((version) => (
+                    <option key={version} value={version}>{version}</option>
+                  ))}
+                </Select>
+              </div>
+              <span className="mods-advanced-note">留空跟随目标实例，也可以输入任意版本号</span>
             </label>
             <label className="mods-advanced-field">
               <span>加载器</span>
@@ -708,6 +726,8 @@ function ModDetailModal({
   const versions = detail?.versions || []
   const [selectedVersionId, setSelectedVersionId] = useState('')
   const [dependencies, setDependencies] = useState<DependencyEntry[]>([])
+  const [downloadingOnly, setDownloadingOnly] = useState(false)
+  const { toast } = useLauncher()
 
   useEffect(() => {
     setSelectedVersionId('')
@@ -761,6 +781,24 @@ function ModDetailModal({
     : project?.description || detail?.hit.description
   const paragraphs = body.split(/\n{2,}/).filter(Boolean).slice(0, 8)
   const isCurseForge = project?.source === 'curseforge' || detail?.hit.source === 'curseforge'
+  const downloadOnly = async (): Promise<void> => {
+    if (!project || !selectedVersion) return
+    setDownloadingOnly(true)
+    try {
+      const result = await window.fangjie.downloadModFile({
+        source: isCurseForge ? 'curseforge' : 'modrinth',
+        projectId: project.project_id,
+        versionId: selectedVersion.id
+      })
+      if (!result.ok) {
+        toast(result.error, 'error')
+        return
+      }
+      toast(`已下载到 ${result.value.path}`, 'success')
+    } finally {
+      setDownloadingOnly(false)
+    }
+  }
   const kindPath = projectType === 'resourcepack' ? 'resourcepack' : projectType === 'shader' ? 'shader' : 'mod'
   const externalUrl =
     project?.website_url ||
@@ -787,6 +825,17 @@ function ModDetailModal({
           {installed && onOpenFolder ? (
             <Button variant="secondary" icon={<FolderOpen size={15} />} onClick={onOpenFolder}>
               打开实例文件夹
+            </Button>
+          ) : null}
+          {projectType === 'mod' && project ? (
+            <Button
+              variant="secondary"
+              icon={<Download size={16} />}
+              onClick={() => void downloadOnly()}
+              disabled={!selectedVersion || downloadingOnly}
+              loading={downloadingOnly}
+            >
+              仅下载文件
             </Button>
           ) : null}
           <Button

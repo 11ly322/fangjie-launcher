@@ -20,6 +20,7 @@ import type {
   JavaStatus,
   LaunchState,
   LauncherApi,
+  LoaderAvailability,
   LogLine,
   ModBackupEntry,
   ModProject,
@@ -85,6 +86,12 @@ const api: LauncherApi = {
   createInstance: (input: CreateInstanceInput) =>
     invoke<{ instance: Instance; taskId: string }>('instances:create', input),
   instanceDetail: (id: string) => invoke<Instance>('instances:detail', id),
+  loaderAvailability: (mcVersion: string) =>
+    invoke<LoaderAvailability[]>('loaders:availability', mcVersion),
+  downloadModFile: (request: import('../shared/types').StandaloneModDownloadRequest) =>
+    invoke<import('../shared/types').StandaloneModDownloadResult>('mods:download-file', request),
+  installLoaderStandalone: (request: import('../shared/types').StandaloneLoaderInstallRequest) =>
+    invoke<import('../shared/types').StandaloneLoaderInstallResult>('loaders:install-standalone', request),
   updateInstance: (id: string, patch: UpdateInstanceInput) =>
     invoke<Instance>('instances:update', id, patch),
   deleteInstance: (id: string, keepSnapshots?: boolean) =>

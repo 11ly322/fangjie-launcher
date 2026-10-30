@@ -42,10 +42,12 @@ export interface Account {
 }
 
 export type ThemeId = 'moss' | 'ocean' | 'ember'
+export type ColorMode = 'dark' | 'light'
 
 export interface Settings {
   memoryMb: number
   theme: ThemeId
+  colorMode: ColorMode
   javaPath: string
   showSnapshots: boolean
   minimizeOnLaunch: boolean
@@ -232,6 +234,13 @@ export interface JavaStatus {
   fromCache?: boolean
 }
 
+export interface LoaderAvailability {
+  loader: Exclude<LoaderType, 'vanilla'>
+  available: boolean
+  latest?: string
+  error?: string
+}
+
 export interface AppSnapshot {
   appVersion: string
   configPath: string
@@ -368,6 +377,30 @@ export interface CompatibleModVersion {
   version: ModVersion
   project: Pick<ModSearchHit, 'project_id' | 'slug' | 'title' | 'icon_url'>
   installed?: boolean
+}
+
+export interface StandaloneLoaderInstallRequest {
+  mcVersion: string
+  loader: Exclude<LoaderType, 'vanilla'>
+}
+
+export interface StandaloneLoaderInstallResult {
+  versionId: string
+  loaderVersion: string
+}
+
+export interface StandaloneModDownloadRequest {
+  source: ModSource
+  projectId: string
+  versionId?: string
+}
+
+export interface StandaloneModDownloadResult {
+  path: string
+  fileName: string
+  versionId: string
+  versionName: string
+  title: string
 }
 
 export interface InstallModResult {
@@ -641,6 +674,9 @@ export interface LauncherApi {
   updateApply(installerPath: string): Promise<Result<void>>
   createInstance(input: CreateInstanceInput): Promise<Result<{ instance: Instance; taskId: string }>>
   instanceDetail(id: string): Promise<Result<Instance>>
+  loaderAvailability(mcVersion: string): Promise<Result<LoaderAvailability[]>>
+  downloadModFile(request: StandaloneModDownloadRequest): Promise<Result<StandaloneModDownloadResult>>
+  installLoaderStandalone(request: StandaloneLoaderInstallRequest): Promise<Result<StandaloneLoaderInstallResult>>
   updateInstance(id: string, patch: UpdateInstanceInput): Promise<Result<Instance>>
   deleteInstance(id: string, keepSnapshots?: boolean): Promise<Result<void>>
   launchInstance(id: string): Promise<Result<LaunchState>>

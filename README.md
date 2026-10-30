@@ -1,4 +1,4 @@
-# 方界启动器 · Fangjie Launcher
+# unflod bindery launcher · UBL
 
 官网：https://11ly322.github.io/fangjie-launcher/
 
@@ -6,21 +6,21 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-c4f06a.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-4a7c1f)
 
-一个面向 Windows 的 Minecraft 桌面启动器，使用 Electron + React + TypeScript 构建。目标是接近 PCL2 的核心使用体验：游戏实例、加载器安装、模组搜索下载、正版登录与离线皮肤。
+一个面向 Windows 的 Minecraft 桌面启动器，使用 Electron + React + TypeScript 构建。目标是接近 PCL2 的核心使用体验：游戏实例、加载器安装、模组搜索下载、正版登录与离线皮肤。0.0.5 起更名为 **unflod bindery launcher（UBL）**，以书架和低 bit 像素为视觉主体。
 
-> **0.0.4**：新增已安装模组更新中心、实例/世界快照与性能基础优化；保留双模组源、版本选择、前置索引、CurseForge、整合包、资源包/光影、OptiFine、插件与离线模式。真实签名更新与跨机器 NAT 仍需按文档实测，请先备份重要存档。
+> **0.0.5**：更名 UBL 并重做扁平化书架 UI；新增日夜模式、智能加载器筛选、手动版本筛选、独立模组/加载器下载与更多分类词。此前的模组更新中心、世界快照、中文搜索、性能缓存继续保留。真实签名更新与跨机器 NAT 仍需按文档实测，请先备份重要存档。
 
-![方界启动器](resources/icon.png)
+![UBL](resources/icon.png)
 
 ## 下载
 
-从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.4) 选择：
+从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.5) 选择：
 
-- `Fangjie-Launcher-0.0.4-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建桌面与开始菜单快捷方式，并注册卸载项。
-- `Fangjie-Portable-0.0.4.zip`：免安装便携版，解压后双击 `Fangjie.exe`。
+- `UBL-Launcher-0.0.5-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建桌面与开始菜单快捷方式，并注册卸载项。
+- `UBL-Portable-0.0.5.zip`：免安装便携版，解压后双击 `UBL.exe`。
 - `SHA256SUMS.txt`：两个发布包的 SHA256 校验和。
 
-系统要求：Windows 10/11 x64。首次创建实例会自动下载对应 Java 运行时；安装版默认安装到 `%LOCALAPPDATA%\Programs\Fangjie Launcher`，卸载不会删除游戏存档和用户数据。
+系统要求：Windows 10/11 x64。首次创建实例会自动下载对应 Java 运行时；安装版默认安装到 `%LOCALAPPDATA%\Programs\UBL`，卸载不会删除游戏存档和用户数据。启动器继续复用 `%APPDATA%\fangjie-launcher` 数据目录，升级不会丢失旧实例。
 
 ## 界面
 
@@ -32,9 +32,9 @@
 | --- | --- |
 | ![创建实例](docs/create-instance.png) | ![模组工坊](docs/mods.png) |
 
-| 本地皮肤 | 正版登录 |
-| --- | --- |
-| ![玩家档案](docs/account.png) | ![Microsoft 登录](docs/account-microsoft.png) |
+| 玩家档案 |
+| --- |
+| ![玩家档案](docs/account.png) |
 
 | 房间联机 |
 | --- |
@@ -43,8 +43,9 @@
 ## 当前能力
 
 - **游戏实例**：为每个世界创建独立目录，存档、模组、配置与日志互不干扰。
-- **多加载器**：原版、Fabric、Quilt、Forge、NeoForge。安装时自动准备 Java 运行时。
-- **模组工坊**：支持 Modrinth 与 CurseForge 两个下载源；按实例加载器与游戏版本过滤，并可进一步筛选游戏版本、加载器与运行环境；内置离线中英词典，中文搜索词自动转换为英文关键词，结果标题/简介可自动显示中文；提供版本选择、必需前置索引与跳转、介绍页；已安装模组可直接切换版本并替换旧文件；资源包/光影同样支持双源。
+- **多加载器**：原版、Fabric、Quilt、Forge、NeoForge。创建实例时先按所选 Minecraft 版本核验元数据，只展示真正有版本可下载的加载器；也可不建实例、单独把加载器装进共享版本目录。
+- **模组工坊**：支持 Modrinth 与 CurseForge 两个下载源；按实例加载器与游戏版本过滤，并可进一步筛选游戏版本、加载器与运行环境；游戏版本既可下拉，也可手动输入任意版本；内置离线中英词典，中文搜索词自动转换为英文关键词，结果标题/简介可自动显示中文；提供版本选择、必需前置索引与跳转、介绍页；已安装模组可直接切换版本并替换旧文件；资源包/光影同样支持双源。
+- **独立下载**：模组详情可直接“仅下载文件”，不安装到实例；保存到数据目录的 `downloads/mods/`，并进入下载任务列表。
 - **模组更新中心**：批量检查已安装模组的兼容更新，分组展示可更新/已是最新/不可自动更新；支持单个或全部更新、跳过版本、固定版本，更新前自动备份旧 JAR 并支持手动回滚。
 - **世界快照**：手动或启动前自动快照存档、`options.txt`、`config/` 与模组清单；恢复前预览创建/覆盖项并自动生成安全快照；删除实例时可保留并归档快照。
 - **性能基础**：每实例模组索引、首屏快照瘦身与按需详情加载、Modrinth/CurseForge 磁盘缓存、Java 检测缓存、下载任务事件合并。
@@ -59,7 +60,7 @@
 - **实例工具（P0）**：模组勾选批量启停、实例深复制、实例模板（JVM 参数/模组列表/内存/分辨率）。
 - **软件更新（P1 基础）**：从 GitHub Releases 检查安装版更新；Node 证书库失败时自动使用 Electron Chromium 网络栈；下载后由 Rust 校验 SHA256，支持 NSIS 静默替换；真实签名安装包替换仍待实测。
 - **Flight Recorder（P0）**：读取 `logs/flight-recorder.csv`，展示 FPS、1% lows、帧时间折线图并导出 CSV。
-- **三套主题**：苔原、深海、余烬，立即切换并写入本地配置；下次启动保持。
+- **界面与主题**：0.0.5 重做为扁平、仿 iOS 的卡片界面，并以书架和低 bit 像素插画作为 UBL 的视觉主体；苔原、深海、余烬三套配色各自支持黑夜与白天模式，切换立即生效并写入本地配置。
 - **可选数据目录**：设置中可把游戏数据迁移到任意空文件夹；完整复制后重启生效，旧目录保留，删除前可自行确认。
 - **实用功能**：实例详情、模组启停/移除、下载中心、资源占用、启动日志、本地 Java 选择、自动 Java 下载。
 - **房间联机**：首页房间快捷卡、房间码自动分段、联机状态/延迟与网络摘要。
@@ -81,7 +82,7 @@ npm run build
 npm run package
 ```
 
-默认生成免安装便携版到 `release/Fangjie-win32-x64/`，双击 `Fangjie.exe` 运行。
+默认生成免安装便携版到 `release/UBL-win32-x64/`，双击 `UBL.exe` 运行。
 
 如需 NSIS 安装包：
 
@@ -89,7 +90,7 @@ npm run package
 npm run package:installer
 ```
 
-安装包输出到 `release/Fangjie-Launcher-0.0.4-Setup.exe`。
+安装包输出到 `release/UBL-Launcher-0.0.5-Setup.exe`。
 
 联机连接器不提交二进制，需先通过 `.github/workflows/connector-build.yml` 构建到 `resources/bin/qomicex-connector-cli.exe`；发布包中已包含该组件。构建脚本会查找 electron-builder 缓存或系统安装的 NSIS 3.x；也可用 `MAKENSIS` 环境变量指定 `makensis.exe`。安装包未做代码签名，Windows SmartScreen 可能提示未知发布者。
 

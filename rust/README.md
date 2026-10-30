@@ -1,4 +1,4 @@
-# Fangjie Rust Core
+# UBL Rust Core
 
 面向 Tauri v2 的启动器核心 crate，包含崩溃诊断、JAR 扫描、可回滚修复、下载源抽象、实例管理、Flight Recorder 与最小插件接口。
 

@@ -4,9 +4,9 @@ const { spawnSync } = require('node:child_process')
 
 const root = path.resolve(__dirname, '..')
 const packageJson = require(path.join(root, 'package.json'))
-const portableDir = path.join(root, 'release', 'Fangjie-win32-x64')
-const exe = path.join(portableDir, 'Fangjie.exe')
-const output = path.join(root, 'release', `Fangjie-Launcher-${packageJson.version}-Setup.exe`)
+const portableDir = path.join(root, 'release', 'UBL-win32-x64')
+const exe = path.join(portableDir, 'UBL.exe')
+const output = path.join(root, 'release', `UBL-Launcher-${packageJson.version}-Setup.exe`)
 
 if (!fs.existsSync(exe)) {
   console.error(`Portable build not found: ${exe}`)

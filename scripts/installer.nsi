@@ -6,25 +6,25 @@
   !error "PROJECT_ROOT is required"
 !endif
 
-!define APP_NAME "方界启动器"
+!define APP_NAME "unflod bindery launcher"
 !ifndef APP_VERSION
-  !define APP_VERSION "0.0.4"
+  !define APP_VERSION "0.0.5"
 !endif
 !ifndef APP_VERSION_NUMERIC
-  !define APP_VERSION_NUMERIC "0.0.4.0"
+  !define APP_VERSION_NUMERIC "0.0.5.0"
 !endif
 !define APP_PUBLISHER "11ly322"
-!define APP_EXE "Fangjie.exe"
-!define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\FangjieLauncher"
+!define APP_EXE "UBL.exe"
+!define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\UBLLauncher"
 
-!if /FileExists "${PROJECT_ROOT}\release\Fangjie-win32-x64\Fangjie.exe"
+!if /FileExists "${PROJECT_ROOT}\release\UBL-win32-x64\UBL.exe"
 !else
   !error "Portable build not found. Run npm run package first."
 !endif
 
 Name "${APP_NAME} ${APP_VERSION}"
-OutFile "${PROJECT_ROOT}\release\Fangjie-Launcher-${APP_VERSION}-Setup.exe"
-InstallDir "$LOCALAPPDATA\Programs\Fangjie Launcher"
+OutFile "${PROJECT_ROOT}\release\UBL-Launcher-${APP_VERSION}-Setup.exe"
+InstallDir "$LOCALAPPDATA\Programs\UBL"
 InstallDirRegKey HKCU "${UNINSTALL_KEY}" "InstallLocation"
 RequestExecutionLevel user
 SetCompressor /SOLID zlib
@@ -42,7 +42,7 @@ VIAddVersionKey /LANG=2052 "LegalCopyright" "MIT License"
 !define MUI_UNICON "${PROJECT_ROOT}\resources\icon.ico"
 !define MUI_ABORTWARNING
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${APP_EXE}"
-!define MUI_FINISHPAGE_RUN_TEXT "启动方界启动器"
+!define MUI_FINISHPAGE_RUN_TEXT "启动 unflod bindery launcher"
 !define MUI_FINISHPAGE_LINK "项目主页：github.com/11ly322/fangjie-launcher"
 !define MUI_FINISHPAGE_LINK_LOCATION "https://github.com/11ly322/fangjie-launcher"
 
@@ -57,18 +57,18 @@ VIAddVersionKey /LANG=2052 "LegalCopyright" "MIT License"
 
 !insertmacro MUI_LANGUAGE "SimpChinese"
 
-Section "安装方界启动器" SecInstall
+Section "安装 unflod bindery launcher" SecInstall
   SetShellVarContext current
   SetRegView 64
   SetOutPath "$INSTDIR"
-  File /r "${PROJECT_ROOT}\release\Fangjie-win32-x64\*.*"
+  File /r "${PROJECT_ROOT}\release\UBL-win32-x64\*.*"
 
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
-  CreateDirectory "$SMPROGRAMS\方界启动器"
-  CreateShortcut "$SMPROGRAMS\方界启动器\方界启动器.lnk" "$INSTDIR\${APP_EXE}"
-  CreateShortcut "$SMPROGRAMS\方界启动器\卸载方界启动器.lnk" "$INSTDIR\Uninstall.exe"
-  CreateShortcut "$DESKTOP\方界启动器.lnk" "$INSTDIR\${APP_EXE}"
+  CreateDirectory "$SMPROGRAMS\UBL"
+  CreateShortcut "$SMPROGRAMS\UBL\unflod bindery launcher.lnk" "$INSTDIR\${APP_EXE}"
+  CreateShortcut "$SMPROGRAMS\UBL\卸载 UBL.lnk" "$INSTDIR\Uninstall.exe"
+  CreateShortcut "$DESKTOP\unflod bindery launcher.lnk" "$INSTDIR\${APP_EXE}"
 
   WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayName" "${APP_NAME}"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayVersion" "${APP_VERSION}"
@@ -90,8 +90,8 @@ Section "Uninstall"
   SetShellVarContext current
   SetRegView 64
 
-  Delete "$DESKTOP\方界启动器.lnk"
-  RMDir /r "$SMPROGRAMS\方界启动器"
+  Delete "$DESKTOP\unflod bindery launcher.lnk"
+  RMDir /r "$SMPROGRAMS\UBL"
   DeleteRegKey HKCU "${UNINSTALL_KEY}"
 
   Delete "$INSTDIR\Uninstall.exe"

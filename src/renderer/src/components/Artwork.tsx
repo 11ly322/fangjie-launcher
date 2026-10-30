@@ -28,7 +28,7 @@ export function BrandMark({ size = 38 }: { size?: number }): React.JSX.Element {
       height={size}
       viewBox="0 0 48 48"
       role="img"
-      aria-label="方界"
+      aria-label="unflod bindery launcher"
       className="brand-mark"
     >
       <defs>
@@ -45,11 +45,14 @@ export function BrandMark({ size = 38 }: { size?: number }): React.JSX.Element {
           <stop offset="1" stopColor="#4e6c20" />
         </linearGradient>
       </defs>
-      <path d="M24 4 44 15 24 26 4 15Z" fill="url(#brand-top)" />
-      <path d="M4 15 24 26 24 44 4 33Z" fill="url(#brand-left)" />
-      <path d="M44 15 24 26 24 44 44 33Z" fill="url(#brand-right)" />
-      <path d="M24 4 44 15 24 26 4 15Z" fill="none" stroke="#e8ffc2" strokeOpacity=".45" />
-      <path d="m15 10.5 9-5 9 5-9 5Z" fill="#f6ffe8" fillOpacity=".18" />
+      <path d="M7 38h34v5a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2z" fill="#6a4a2c" />
+      <path d="M7 38h34v2H7z" fill="#a8784d" />
+      <path d="M11 10h7v26h-7z" fill="url(#brand-left)" />
+      <path d="M18 6h8v30h-8z" fill="url(#brand-top)" />
+      <path d="M26 13h7v23h-7z" fill="url(#brand-right)" />
+      <path d="M31 16l5-2 4 20-5 2z" fill="#c49a62" />
+      <path d="M13 14h3v4h-3zm0 7h3v4h-3zm8-10h4v4h-4zm0 7h4v4h-4z" fill="#f7ffe9" fillOpacity=".55" />
+      <path d="M24 6v30M18 6v30M26 13v23" stroke="#e9ffc8" strokeOpacity=".25" strokeWidth="1" />
     </svg>
   )
 }
@@ -194,6 +197,53 @@ export function InstanceEmblem({
         {ICONS[icon] || <Pickaxe />}
       </span>
     </span>
+  )
+}
+
+const PIXEL_SHELF = [
+  '......................',
+  '..aaa.bbb.ccc.ddd.....',
+  '..aaa.bbb.ccc.ddd..e..',
+  '..aaa.bbb.ccc.ddd..e..',
+  '..aaa.bbb.ccc.ddd..e..',
+  '######################',
+  '......................',
+  '..ff.ggg.hh.iii.jjj...',
+  '..ff.ggg.hh.iii.jjj...',
+  '..ff.ggg.hh.iii.jjj...',
+  '######################'
+]
+
+const PIXEL_COLORS: Record<string, string> = {
+  a: 'var(--pixel-accent, var(--accent))',
+  b: '#ffd166',
+  c: '#64d2ff',
+  d: '#ff9f9a',
+  e: '#b8a1f5',
+  f: '#8ce3a4',
+  g: '#ffb86b',
+  h: '#bf5af2',
+  i: '#30d158',
+  j: '#5ac8fa'
+}
+
+export function PixelShelfArt({ accent }: { accent: string }): React.JSX.Element {
+  return (
+    <div
+      className="pixel-shelf-art"
+      style={{ '--pixel-accent': accent } as CSSProperties}
+      aria-hidden="true"
+    >
+      {PIXEL_SHELF.flatMap((row, rowIndex) =>
+        [...row].map((cell, columnIndex) => (
+          <span
+            key={`${rowIndex}-${columnIndex}`}
+            className={`pixel-shelf-art__cell${cell === '#' ? ' is-shelf' : ''}`}
+            style={cell === '.' || cell === '#' ? undefined : { background: PIXEL_COLORS[cell] }}
+          />
+        ))
+      )}
+    </div>
   )
 }
 

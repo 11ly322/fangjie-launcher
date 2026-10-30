@@ -39,7 +39,15 @@ export const MOD_CATEGORIES: Array<{ id: string; label: string }> = [
   { id: 'adventure', label: '冒险' },
   { id: 'decoration', label: '装饰' },
   { id: 'worldgen', label: '世界生成' },
-  { id: 'library', label: '前置库' }
+  { id: 'library', label: '前置库' },
+  { id: 'storage', label: '存储' },
+  { id: 'transportation', label: '交通' },
+  { id: 'food', label: '食物' },
+  { id: 'mobs', label: '生物' },
+  { id: 'equipment', label: '装备' },
+  { id: 'utility', label: '实用工具' },
+  { id: 'management', label: '管理' },
+  { id: 'game-mechanics', label: '游戏机制' }
 ]
 
 export const LOADER_LABEL: Record<string, string> = {

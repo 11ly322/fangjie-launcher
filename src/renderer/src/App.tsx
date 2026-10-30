@@ -13,7 +13,7 @@ import {
 } from 'react'
 import type { Bootstrap, LogLine, Settings, TaskView } from '../../shared/types'
 import { PAGE_LABELS, type PageName } from './lib/navigation'
-import { applyTheme } from './lib/theme'
+import { applyColorMode, applyTheme } from './lib/theme'
 import {
   LauncherContext,
   type ConfirmOptions,
@@ -246,15 +246,17 @@ export default function App(): React.JSX.Element {
   }, [activeInstanceId, boot])
 
   useEffect(() => {
-    if (boot) applyTheme(boot.settings.theme)
-  }, [boot?.settings.theme])
+    if (!boot) return
+    applyTheme(boot.settings.theme)
+    applyColorMode(boot.settings.colorMode)
+  }, [boot?.settings.theme, boot?.settings.colorMode])
 
   useEffect(() => {
     if (boot) {
       const name = activeInstanceId
         ? boot.instances.find((instance) => instance.id === activeInstanceId)?.name
         : undefined
-      document.title = name ? `${name} · 方界启动器` : '方界启动器'
+      document.title = name ? `${name} · UBL` : 'unflod bindery launcher'
     }
     return undefined
   }, [boot, activeInstanceId])
@@ -594,7 +596,7 @@ function BootScreen({
       <div className="boot-screen__glow" />
       <div className="boot-screen__brand">
         <BrandMark size={56} />
-        <span>方界</span>
+        <span>UBL</span>
       </div>
       {error ? (
         <div className="boot-screen__error">

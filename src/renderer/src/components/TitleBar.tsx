@@ -14,7 +14,7 @@ export function TitleBar({ pageLabel }: { pageLabel: string }): React.JSX.Elemen
       <div className="titlebar__drag">
         <span className="titlebar__label">{pageLabel}</span>
         <span className="titlebar__sep" />
-        <span className="titlebar__hint">方界 · 本地启动器</span>
+        <span className="titlebar__hint">UBL · unflod bindery launcher</span>
       </div>
       <div className="titlebar__controls">
         <button

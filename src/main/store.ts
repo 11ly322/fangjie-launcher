@@ -98,6 +98,7 @@ export class LauncherStore {
       settings: {
         memoryMb: defaultMemoryMb(),
         theme: 'moss',
+        colorMode: 'dark',
         javaPath: '',
         showSnapshots: false,
         minimizeOnLaunch: false,
@@ -144,6 +145,7 @@ export class LauncherStore {
           ...settings,
           memoryMb: clampMemory(Number(settings.memoryMb)),
           theme: normalizeTheme(settings.theme),
+          colorMode: settings.colorMode === 'light' ? 'light' : 'dark',
           offline: settings.offline === true,
           proxyUrl: typeof settings.proxyUrl === 'string' ? settings.proxyUrl : '',
           modrinthBase: typeof settings.modrinthBase === 'string' ? settings.modrinthBase : 'https://api.modrinth.com/v2',
@@ -231,6 +233,7 @@ export class LauncherStore {
     }
     next.memoryMb = clampMemory(Number(next.memoryMb))
     next.theme = normalizeTheme(next.theme)
+    next.colorMode = next.colorMode === 'light' ? 'light' : 'dark'
     next.downloadConcurrency = Math.min(64, Math.max(4, Number(next.downloadConcurrency) || 16))
     next.javaPath = typeof next.javaPath === 'string' ? next.javaPath : ''
     this.config.settings = next

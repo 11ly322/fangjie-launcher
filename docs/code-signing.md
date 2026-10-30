@@ -1,6 +1,6 @@
 # Windows 代码签名与 SmartScreen
 
-目标：让 `Fangjie.exe` 和 NSIS 安装包具备可验证的 Authenticode 签名，并逐步建立 SmartScreen 声誉。代码签名不能保证立即消除警告，尤其是新证书和下载量较低的版本。
+目标：让 `UBL.exe` 和 NSIS 安装包具备可验证的 Authenticode 签名，并逐步建立 SmartScreen 声誉。代码签名不能保证立即消除警告，尤其是新证书和下载量较低的版本。
 
 ## 证书选择
 
@@ -14,7 +14,7 @@
 
 ## 签名顺序
 
-1. 构建 `Fangjie.exe`。
+1. 构建 `UBL.exe`。
 2. 用 `signtool` 对主程序签名。
 3. 构建 NSIS 安装包。
 4. 对 Setup.exe 再次签名。
@@ -24,10 +24,10 @@
 完整脚本见 [`scripts/sign-windows.ps1`](../scripts/sign-windows.ps1)：
 
 ```powershell
-$env:FJ_SIGN_CERT_PATH = 'C:\secure\fangjie.pfx'
+$env:FJ_SIGN_CERT_PATH = 'C:\secure\ubl.pfx'
 $env:FJ_SIGN_CERT_PASSWORD = '<from secret store>'
-./scripts/sign-windows.ps1 -Path 'release\Fangjie-win32-x64\Fangjie.exe'
-./scripts/sign-windows.ps1 -Path 'release\Fangjie-Launcher-0.0.4-Setup.exe'
+./scripts/sign-windows.ps1 -Path 'release\UBL-win32-x64\Fangjie.exe'
+./scripts/sign-windows.ps1 -Path 'release\UBL-Launcher-0.0.5-Setup.exe'
 ```
 
 CI 中不要把 PFX 写入磁盘明文；优先使用 Azure Trusted Signing 的 GitHub Action 或短期证书挂载。时间戳必须使用 RFC3161 服务。

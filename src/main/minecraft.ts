@@ -437,7 +437,7 @@ export async function launchInstance(options: {
       gameProfile: profile,
       accessToken,
       userType: userType as unknown as 'mojang' | 'legacy',
-      launcherName: 'Fangjie',
+      launcherName: 'UBL',
       launcherBrand: APP_VERSION,
       versionType:
         instance.loader !== 'vanilla'
