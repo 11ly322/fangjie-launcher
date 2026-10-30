@@ -22,9 +22,46 @@ export interface JsonRequest {
   signal?: AbortSignal
 }
 
+type ElectronNet = typeof import('electron').net
+
+/**
+ * Node's bundled CA store does not include corporate/user root certificates.
+ * In Electron the Chromium network stack does, so use it as a TLS fallback
+ * instead of surfacing the opaque `fetch failed` error to the updater.
+ */
+function electronNet(): ElectronNet | null {
+  if (!process.versions.electron) return null
+  try {
+    const electron = require('electron') as typeof import('electron')
+    return electron.net ?? null
+  } catch {
+    return null
+  }
+}
+
+function isCertificateError(error: unknown): boolean {
+  const cause = (error as { cause?: { code?: string } } | null)?.cause
+  switch (cause?.code) {
+    case 'UNABLE_TO_VERIFY_LEAF_SIGNATURE':
+    case 'SELF_SIGNED_CERT_IN_CHAIN':
+    case 'DEPTH_ZERO_SELF_SIGNED_CERT':
+    case 'CERT_HAS_EXPIRED':
+    case 'ERR_TLS_CERT_ALTNAME_INVALID':
+      return true
+    default:
+      return false
+  }
+}
+
 export async function requestResponse(url: string, init?: RequestInit): Promise<Response> {
   assertNetworkAllowed()
-  return fetch(url, init)
+  try {
+    return await fetch(url, init)
+  } catch (error) {
+    const net = electronNet()
+    if (!net || !isCertificateError(error)) throw error
+    return net.fetch(url, init)
+  }
 }
 
 function assertNetworkAllowed(): void {

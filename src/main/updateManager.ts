@@ -75,6 +75,24 @@ function normalizeRelease(raw: FeedRelease): CoreUpdateManifest | null {
   }
 }
 
+function feedErrorMessage(error: unknown): string {
+  const cause = (error as { cause?: { code?: string } } | null)?.cause
+  const code = cause?.code
+  if (
+    code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' ||
+    code === 'SELF_SIGNED_CERT_IN_CHAIN' ||
+    code === 'DEPTH_ZERO_SELF_SIGNED_CERT' ||
+    code === 'CERT_HAS_EXPIRED' ||
+    code === 'ERR_TLS_CERT_ALTNAME_INVALID'
+  ) {
+    return `无法建立安全连接（${code}）；请检查系统代理、根证书，或在设置中填写可用代理。`
+  }
+  if (error instanceof Error && error.message === 'fetch failed') {
+    return '无法连接 GitHub Releases；请检查网络、代理或防火墙。'
+  }
+  return error instanceof Error ? error.message : String(error)
+}
+
 async function fetchFeed(): Promise<FeedRelease[]> {
   const url = process.env.FJ_UPDATE_FEED || DEFAULT_FEED
   const response = await requestResponse(url, {
@@ -90,7 +108,12 @@ async function fetchFeed(): Promise<FeedRelease[]> {
 }
 
 export async function checkForUpdates(rustCore: RustCoreClient): Promise<CoreUpdateCheck> {
-  const releases = await fetchFeed()
+  let releases: FeedRelease[]
+  try {
+    releases = await fetchFeed()
+  } catch (error) {
+    throw new Error(`无法访问 GitHub Releases：${feedErrorMessage(error)}`)
+  }
   const manifest = releases
     .map(normalizeRelease)
     .find((candidate): candidate is CoreUpdateManifest => Boolean(candidate))
