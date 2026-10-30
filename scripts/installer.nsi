@@ -8,7 +8,7 @@
 
 !define APP_NAME "方界启动器"
 !ifndef APP_VERSION
-  !define APP_VERSION "0.0.2-alpha"
+  !define APP_VERSION "0.0.2-beta"
 !endif
 !ifndef APP_VERSION_NUMERIC
   !define APP_VERSION_NUMERIC "0.0.2.0"

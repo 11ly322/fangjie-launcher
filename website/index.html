@@ -26,7 +26,7 @@
         "name": "方界启动器",
         "applicationCategory": "GameApplication",
         "operatingSystem": "Windows 10, Windows 11",
-        "softwareVersion": "0.0.2-alpha",
+        "softwareVersion": "0.0.2-beta",
         "description": "支持房间码联机、五种加载器、双模组源、正版登录与本地皮肤的 Minecraft 启动器。",
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
         "url": "https://11ly322.github.io/fangjie-launcher/"
@@ -61,7 +61,7 @@
 
         <div class="header-actions">
           <a class="button button--ghost button--sm" href="https://github.com/11ly322/fangjie-launcher" target="_blank" rel="noreferrer">源码</a>
-          <a class="button button--primary button--sm" href="#download">下载 0.0.2-alpha</a>
+          <a class="button button--primary button--sm" href="#download">下载 0.0.2-beta</a>
           <button class="menu-toggle" type="button" aria-controls="site-nav" aria-expanded="false" aria-label="打开菜单" data-menu-toggle>
             <span></span><span></span>
           </button>
@@ -75,17 +75,17 @@
         <div class="hero-glow hero-glow--two" aria-hidden="true"></div>
         <div class="container hero-grid">
           <div class="hero-copy reveal">
-            <p class="eyebrow"><span class="status-dot"></span> MINECRAFT LAUNCHER · 0.0.2-ALPHA</p>
+            <p class="eyebrow"><span class="status-dot"></span> MINECRAFT LAUNCHER · 0.0.2-BETA</p>
             <h1 id="hero-title">一个房间码，<br /><em>把朋友带进你的世界。</em></h1>
             <p class="hero-lede">
               方界是一款轻量的 Windows Minecraft 启动器。五加载器、双模组源、正版登录、本地皮肤，
               以及不需要公网 IP 和 VPN 软件的房间联机。
             </p>
             <div class="hero-actions">
-              <a class="button button--primary button--lg" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.2-alpha/Fangjie-Launcher-0.0.2-alpha-Setup.exe">
+              <a class="button button--primary button--lg" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.2-beta/Fangjie-Launcher-0.0.2-beta-Setup.exe">
                 下载 Windows 安装包 <span aria-hidden="true">↓</span>
               </a>
-              <a class="button button--ghost button--lg" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.2-alpha/Fangjie-Portable-0.0.2-alpha.zip">
+              <a class="button button--ghost button--lg" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.2-beta/Fangjie-Portable-0.0.2-beta.zip">
                 免安装便携版
               </a>
             </div>
@@ -158,7 +158,7 @@
               <div class="feature-icon" aria-hidden="true">✦</div>
               <p class="card-label">MODS</p>
               <h3>双模组源</h3>
-              <p>Modrinth 与 CurseForge 搜索、版本过滤、前置自动补齐，安装后可直接启动。</p>
+              <p>Modrinth 与 CurseForge 搜索、版本选择、必需前置索引与跳转、介绍页；已安装模组可切换版本。</p>
             </article>
 
             <article class="feature-card reveal" data-delay="120">
@@ -194,7 +194,7 @@
             </div>
           </div>
           <div class="split-copy reveal" data-delay="100">
-            <p class="eyebrow">ROOM LINK · 0.0.2-ALPHA</p>
+            <p class="eyebrow">ROOM LINK · 0.0.2-BETA</p>
             <h2 id="multiplayer-title">朋友只需要一个房间码。</h2>
             <p>
               房主在 Minecraft 中开放局域网，把聊天栏端口填进方界；房客输入房间码，
@@ -227,7 +227,7 @@
             </figure>
             <figure class="gallery-item reveal" data-delay="80">
               <img src="assets/mods.webp" width="1600" height="1000" alt="模组工坊" loading="lazy" />
-              <figcaption><span>02</span> 模组工坊：双源、版本过滤与前置补齐</figcaption>
+              <figcaption><span>02</span> 模组工坊：双源、版本选择与前置索引</figcaption>
             </figure>
             <figure class="gallery-item reveal" data-delay="160">
               <img src="assets/account.webp" width="1600" height="1000" alt="玩家档案与本地皮肤" loading="lazy" />
@@ -242,17 +242,17 @@
           <div class="roadmap-panel reveal">
             <div>
               <p class="eyebrow">NEXT ON THE BENCH</p>
-              <h2 id="roadmap-title">下一站：让崩溃更容易被修好。</h2>
+              <h2 id="roadmap-title">下一站：把模组工坊打磨得更顺手。</h2>
               <p>
-                面向 Tauri v2 的 Rust 核心已经包含崩溃模式映射、JAR 依赖扫描、diff 预览与可回滚修复。
-                它尚未接入当前 Electron UI，接入正在进行；不把“已完成核心”说成“已上线功能”。
+                0.0.2-beta 把模组版本选择、必需前置索引、介绍页和 CurseForge 源带进模组工坊，
+                并支持已安装模组直接切换版本。P0 崩溃诊断与实例工具也已接入 Electron UI。
               </p>
             </div>
             <div class="roadmap-list" aria-label="开发路线">
-              <div class="roadmap-item"><span class="roadmap-dot roadmap-dot--active"></span><div><strong>0.0.2-alpha</strong><p>整合包、资源包/光影、OptiFine、插件与离线模式</p></div><span class="tag tag--accent">已发布</span></div>
-              <div class="roadmap-item"><span class="roadmap-dot"></span><div><strong>崩溃诊断 core</strong><p>10 类模式、JAR 扫描、diff 与回滚已通过 Rust 测试</p></div><span class="tag">待接入 UI</span></div>
-              <div class="roadmap-item"><span class="roadmap-dot"></span><div><strong>实例模板 / 模组批量</strong><p>实例复制、模板元数据、勾选式启停已可用</p></div><span class="tag">核心已就绪</span></div>
-              <div class="roadmap-item"><span class="roadmap-dot"></span><div><strong>Flight Recorder / 插件接口</strong><p>CSV 采样、版本与权限声明已定义</p></div><span class="tag">实验</span></div>
+              <div class="roadmap-item"><span class="roadmap-dot roadmap-dot--active"></span><div><strong>0.0.2-beta</strong><p>模组前置索引、版本选择、CurseForge 与安装版本切换</p></div><span class="tag tag--accent">已发布</span></div>
+              <div class="roadmap-item"><span class="roadmap-dot"></span><div><strong>P0 诊断与实例工具</strong><p>崩溃模式、JAR 扫描、diff 回滚、批量启停与实例模板已接入</p></div><span class="tag">已接入 UI</span></div>
+              <div class="roadmap-item"><span class="roadmap-dot"></span><div><strong>更新器稳定性</strong><p>检查、下载、SHA256 与 NSIS 入口已实现；真实签名替换待实测</p></div><span class="tag">待实测</span></div>
+              <div class="roadmap-item"><span class="roadmap-dot"></span><div><strong>跨机器 NAT / P2P</strong><p>房间码控制面与 TCP 回显已验证；跨机器 RTT 仍按文档实测</p></div><span class="tag">待实测</span></div>
             </div>
           </div>
         </div>
@@ -261,34 +261,34 @@
       <section class="section download-section" id="download" aria-labelledby="download-title">
         <div class="container">
           <div class="section-heading reveal">
-            <p class="eyebrow">DOWNLOAD · 0.0.2-ALPHA</p>
+            <p class="eyebrow">DOWNLOAD · 0.0.2-BETA</p>
             <h2 id="download-title">把方界放到桌面上。</h2>
             <p>Windows 10/11 x64。安装版按当前用户安装，不请求管理员权限；卸载不会删除游戏存档。</p>
           </div>
           <div class="download-grid">
-            <a class="download-card download-card--primary reveal" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.2-alpha/Fangjie-Launcher-0.0.2-alpha-Setup.exe">
+            <a class="download-card download-card--primary reveal" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.2-beta/Fangjie-Launcher-0.0.2-beta-Setup.exe">
               <span class="download-card__label">RECOMMENDED · SETUP</span>
               <strong>Windows 安装包</strong>
-              <span>Fangjie-Launcher-0.0.2-alpha-Setup.exe · 170.8 MiB</span>
+              <span>Fangjie-Launcher-0.0.2-beta-Setup.exe · 170.8 MiB</span>
               <span class="download-card__action">下载安装包 <span aria-hidden="true">↓</span></span>
             </a>
-            <a class="download-card reveal" data-delay="80" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.2-alpha/Fangjie-Portable-0.0.2-alpha.zip">
+            <a class="download-card reveal" data-delay="80" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.2-beta/Fangjie-Portable-0.0.2-beta.zip">
               <span class="download-card__label">PORTABLE · ZIP</span>
               <strong>免安装便携版</strong>
               <span>解压后双击 Fangjie.exe · 171.1 MiB</span>
               <span class="download-card__action">下载便携版 <span aria-hidden="true">↓</span></span>
             </a>
-            <a class="download-card download-card--muted reveal" data-delay="160" href="https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.2-alpha">
+            <a class="download-card download-card--muted reveal" data-delay="160" href="https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.2-beta">
               <span class="download-card__label">VERIFY</span>
               <strong>SHA256 与更新记录</strong>
-              <span>校验发布包，查看 0.0.2-alpha 变更</span>
+              <span>校验发布包，查看 0.0.2-beta 变更</span>
               <span class="download-card__action">打开 Release <span aria-hidden="true">↗</span></span>
             </a>
           </div>
           <div class="checksum reveal">
             <span>安装包 SHA256</span>
-            <code>2a92d00c9b5d599b2479c577f79fc8cd601510543880480a03a6858cd9001621</code>
-            <button type="button" class="copy-button" data-copy="6fafe58ab3157bd03d5bdcd3d6fd2a51682fb228fc795135ccaefa3807e57154">复制</button>
+            <code>35c74d741c31c5cbcf91af10a68a091eb6219e9a0cd5f61ffae0756a59ff4f57</code>
+            <button type="button" class="copy-button" data-copy="35c74d741c31c5cbcf91af10a68a091eb6219e9a0cd5f61ffae0756a59ff4f57">复制</button>
           </div>
         </div>
       </section>
@@ -319,11 +319,11 @@
             </details>
             <details>
               <summary>为什么安装包提示未知发布者？</summary>
-              <p>0.0.2-alpha 尚未做代码签名，Windows SmartScreen 可能提示未知发布者。校验 SHA256 后再运行。</p>
+              <p>0.0.2-beta 尚未做代码签名，Windows SmartScreen 可能提示未知发布者。校验 SHA256 后再运行。</p>
             </details>
             <details>
               <summary>哪些还没做？</summary>
-              <p>0.0.2-alpha 已接入整合包、资源包/光影、OptiFine 无窗口安装、自动更新器与崩溃诊断 UI；真实签名更新、跨机器 NAT 与 P2P RTT 仍是边界。</p>
+              <p>0.0.2-beta 已接入模组版本选择、前置索引、CurseForge 源与安装版本切换，以及整合包、资源包/光影、OptiFine、自动更新器与崩溃诊断；真实签名更新、跨机器 NAT 与 P2P RTT 仍是边界。</p>
             </details>
           </div>
         </div>

@@ -12,8 +12,8 @@ body:
     id: version
     attributes:
       label: 启动器版本
-      description: 例如 0.0.1-alpha
-      placeholder: 0.0.1-alpha
+      description: 例如 0.0.2-beta
+      placeholder: 0.0.2-beta
     validations:
       required: true
   - type: input
