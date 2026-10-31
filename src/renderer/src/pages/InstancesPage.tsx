@@ -97,7 +97,7 @@ export function InstancesPage(): React.JSX.Element {
               aria-label="搜索实例"
             />
           </div>
-          <div className="segmented" role="group" aria-label="筛选实例类型">
+          <div className="segmented" role="tablist" aria-label="筛选实例类型">
             {([
               ['all', '全部'],
               ['modded', '模组化'],
@@ -106,9 +106,10 @@ export function InstancesPage(): React.JSX.Element {
               <button
                 key={value}
                 type="button"
+                role="tab"
                 className={classNames('segmented__item', filter === value && 'is-active')}
                 onClick={() => setFilter(value)}
-                aria-pressed={filter === value}
+                aria-selected={filter === value}
               >
                 {label}
               </button>

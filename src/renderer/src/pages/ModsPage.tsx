@@ -352,7 +352,7 @@ export function ModsPage(): React.JSX.Element {
         </InlineNotice>
       ) : null}
 
-      <div className="asset-kind-tabs segmented" role="group" aria-label="项目类型">
+      <div className="asset-kind-tabs segmented" role="tablist" aria-label="项目类型">
         {([
           ['mod', '模组'],
           ['modpack', '整合包'],
@@ -362,8 +362,9 @@ export function ModsPage(): React.JSX.Element {
           <button
             key={value}
             type="button"
+            role="tab"
             className={classNames('segmented__item', projectType === value && 'is-active')}
-            aria-pressed={projectType === value}
+            aria-selected={projectType === value}
             onClick={() => {
               setProjectType(value)
               setCategory('')

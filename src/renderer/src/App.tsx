@@ -316,11 +316,13 @@ export default function App(): React.JSX.Element {
         navigate('home')
       }
     },
-    onTabSwitch: switchGamepadTab
+    onTabSwitch: switchGamepadTab,
+    onPageSwitch: switchGamepadTab
   })
 
   useEffect(() => {
     if (!gamepad.connected) return
+    if (document.querySelector('[role="dialog"]')) return
     const frame = window.requestAnimationFrame(() => {
       focusGamepadTarget(document.querySelector<HTMLElement>('.app-nav__tab.is-active'))
     })
@@ -676,7 +678,7 @@ export default function App(): React.JSX.Element {
         {gamepad.connected ? (
           <div className="gamepad-hint" role="status">
             <Gamepad2 size={15} />
-            <span>方向键切换 · LB/RB 切换页面 · A 选择 · B 返回</span>
+            <span>方向键/左摇杆 移动 · A 选择 · B 返回 · LB/RB 标签 · LT/RT 页面 · 右摇杆滚动</span>
           </div>
         ) : null}
       </div>

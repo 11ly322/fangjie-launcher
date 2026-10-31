@@ -272,19 +272,21 @@ export function MultiplayerPage(): React.JSX.Element {
             </div>
           ) : (
             <>
-              <div className="segmented multiplayer-tabs">
+              <div className="segmented multiplayer-tabs" role="tablist" aria-label="联机方式">
                 <button
                   type="button"
+                  role="tab"
                   className={classNames('segmented__item', tab === 'host' && 'is-active')}
-                  aria-pressed={tab === 'host'}
+                  aria-selected={tab === 'host'}
                   onClick={() => setTab('host')}
                 >
                   <Radio size={16} /> 创建房间
                 </button>
                 <button
                   type="button"
+                  role="tab"
                   className={classNames('segmented__item', tab === 'guest' && 'is-active')}
-                  aria-pressed={tab === 'guest'}
+                  aria-selected={tab === 'guest'}
                   onClick={() => setTab('guest')}
                 >
                   <LogIn size={16} /> 加入房间

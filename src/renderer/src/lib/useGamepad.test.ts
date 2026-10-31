@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { nextGamepadFocus, spatialGamepadFocus } from './useGamepad'
+import {
+  nextEnabledOptionIndex,
+  nextGamepadFocus,
+  spatialGamepadFocus,
+  stepRangeValue
+} from './useGamepad'
 
 function box(id: string, left: number, top: number, width = 80, height = 32): HTMLElement {
   return {
@@ -46,5 +51,28 @@ describe('gamepad focus traversal', () => {
     expect(spatialGamepadFocus(grid, topLeft, 'down')).toBe(bottomLeft)
     expect(spatialGamepadFocus(grid, bottomRight, 'up')).toBe(topRight)
     expect(spatialGamepadFocus(grid, bottomLeft, 'right')).toBe(bottomRight)
+  })
+})
+
+describe('gamepad range and select control', () => {
+  it('steps a range by its native step and clamps at both ends', () => {
+    expect(stepRangeValue(4096, 1024, 16384, 512, 1)).toBe(4608)
+    expect(stepRangeValue(4096, 1024, 16384, 512, -1)).toBe(3584)
+    expect(stepRangeValue(1024, 1024, 16384, 512, -1)).toBe(1024)
+    expect(stepRangeValue(16384, 1024, 16384, 512, 1)).toBe(16384)
+  })
+
+  it('falls back to sane values for an invalid range', () => {
+    expect(stepRangeValue(Number.NaN, 0, 100, 0, 1)).toBe(1)
+    expect(stepRangeValue(50, 0, 100, 10, 1)).toBe(60)
+  })
+
+  it('cycles select options while skipping disabled entries and wrapping', () => {
+    const options = [{}, { disabled: true }, {}, {}]
+    expect(nextEnabledOptionIndex(options, 0, 1)).toBe(2)
+    expect(nextEnabledOptionIndex(options, 2, 1)).toBe(3)
+    expect(nextEnabledOptionIndex(options, 3, 1)).toBe(0)
+    expect(nextEnabledOptionIndex(options, 0, -1)).toBe(3)
+    expect(nextEnabledOptionIndex([{ disabled: true }], 0, 1)).toBe(-1)
   })
 })

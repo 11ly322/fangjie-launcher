@@ -349,16 +349,24 @@ export function Modal({
   useEffect(() => {
     if (!open) return
     const previousOverflow = document.body.style.overflow
+    const previousFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
     document.body.style.overflow = 'hidden'
     const timer = window.setTimeout(() => {
-      const target = panelRef.current?.querySelector<HTMLElement>(
-        'input, button, select, textarea, [tabindex]:not([tabindex="-1"])'
-      )
-      target?.focus()
+      const body = panelRef.current?.querySelector<HTMLElement>('.modal__body')
+      const explicit = body?.querySelector<HTMLElement>('[data-autofocus]')
+      const target =
+        explicit ||
+        body?.querySelector<HTMLElement>(
+          'input:not([disabled]), button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [role="button"]:not([aria-disabled="true"]), [role="tab"]:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ) ||
+        panelRef.current
+      target?.focus({ preventScroll: true })
     }, 30)
     return () => {
       window.clearTimeout(timer)
       document.body.style.overflow = previousOverflow
+      if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true })
     }
   }, [open])
 
@@ -404,6 +412,7 @@ export function Modal({
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
+          tabIndex={-1}
         >
           <header className="modal__header">
             <div>

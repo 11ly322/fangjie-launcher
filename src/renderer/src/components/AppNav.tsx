@@ -161,8 +161,8 @@ export function AppNav({
         {gamepadConnected ? (
           <span
             className="app-nav__gamepad"
-            title="手柄已连接 · 方向键切换 · LB/RB 切换页面 · A 选择 · B 返回"
-            aria-label="手柄已连接，方向键切换，LB/RB 切换页面，A 选择，B 返回"
+            title="手柄已连接 · 方向键/左摇杆移动 · A 选择 · B 返回 · LB/RB 标签 · LT/RT 页面 · 右摇杆滚动"
+            aria-label="手柄已连接，方向键或左摇杆移动，A 选择，B 返回，LB/RB 切换标签，LT/RT 切换页面，右摇杆滚动"
           >
             <Gamepad2 size={16} />
           </span>

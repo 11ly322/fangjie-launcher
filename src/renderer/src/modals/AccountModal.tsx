@@ -208,11 +208,12 @@ export function AccountModal({
         )
       }
     >
-      <div className="account-entry-switch" role="group" aria-label="选择进入方式">
+      <div className="account-entry-switch" role="tablist" aria-label="选择进入方式">
         <button
           type="button"
+          role="tab"
           className={classNames('account-entry', isPremium && 'is-selected')}
-          aria-pressed={isPremium}
+          aria-selected={isPremium}
           disabled={switching}
           onClick={() => {
             setTab('microsoft')
@@ -225,8 +226,9 @@ export function AccountModal({
         </button>
         <button
           type="button"
+          role="tab"
           className={classNames('account-entry', !isPremium && 'is-selected')}
-          aria-pressed={!isPremium}
+          aria-selected={!isPremium}
           disabled={switching}
           onClick={() => {
             setTab('offline')
