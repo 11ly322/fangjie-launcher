@@ -24,13 +24,21 @@ import {
   Button,
   Field,
   InlineNotice,
+  Select,
   StatusDot,
   TextInput,
   ToggleRow
 } from '../components/ui'
 import { classNames, rangeProgress } from '../lib/format'
 import { applyColorMode, applyTheme, THEMES } from '../lib/theme'
-import type { ColorMode, CoreUpdateCheck, PluginRecord, ThemeId } from '../../../shared/types'
+import { VERSION_ISOLATION_OPTIONS } from '../../../shared/versionIsolation'
+import type {
+  ColorMode,
+  CoreUpdateCheck,
+  PluginRecord,
+  ThemeId,
+  VersionIsolationMode
+} from '../../../shared/types'
 
 export function SettingsPage(): React.JSX.Element {
   const { boot, confirm, openAccount, refreshJava, saveSettings, toast } = useLauncher()
@@ -40,6 +48,9 @@ export function SettingsPage(): React.JSX.Element {
   const [minimizeOnLaunch, setMinimizeOnLaunch] = useState(boot.settings.minimizeOnLaunch)
   const [autoSnapshotBeforeLaunch, setAutoSnapshotBeforeLaunch] = useState(
     boot.settings.autoSnapshotBeforeLaunch
+  )
+  const [versionIsolationMode, setVersionIsolationMode] = useState<VersionIsolationMode>(
+    boot.settings.versionIsolationMode
   )
   const [proxyUrl, setProxyUrl] = useState(boot.settings.proxyUrl)
   const [modrinthBase, setModrinthBase] = useState(boot.settings.modrinthBase)
@@ -92,6 +103,7 @@ export function SettingsPage(): React.JSX.Element {
     showSnapshots !== boot.settings.showSnapshots ||
     minimizeOnLaunch !== boot.settings.minimizeOnLaunch ||
     autoSnapshotBeforeLaunch !== boot.settings.autoSnapshotBeforeLaunch ||
+    versionIsolationMode !== boot.settings.versionIsolationMode ||
     proxyUrl !== boot.settings.proxyUrl ||
     modrinthBase !== boot.settings.modrinthBase ||
     curseforgeBase !== boot.settings.curseforgeBase
@@ -105,6 +117,7 @@ export function SettingsPage(): React.JSX.Element {
       showSnapshots,
       minimizeOnLaunch,
       autoSnapshotBeforeLaunch,
+      versionIsolationMode,
       proxyUrl,
       modrinthBase,
       curseforgeBase
@@ -429,6 +442,28 @@ export function SettingsPage(): React.JSX.Element {
             </Field>
             <p className="settings-hint">
               新建实例会使用这个默认值。每个实例可以在实例详情中单独调整。
+            </p>
+            <div className="setting-divider" />
+            <Field
+              label="默认版本隔离"
+              hint="仅影响新建实例；已有实例的设置不会被批量改写。"
+            >
+              <Select
+                value={versionIsolationMode}
+                onChange={(event) =>
+                  setVersionIsolationMode(event.target.value as VersionIsolationMode)
+                }
+                aria-label="默认版本隔离"
+              >
+                {VERSION_ISOLATION_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <p className="settings-hint">
+              关闭后新实例共享存档、模组与配置；选择隔离后每个符合条件的实例使用独立目录。
             </p>
             <div className="setting-divider" />
             <ToggleRow
@@ -813,6 +848,7 @@ export function SettingsPage(): React.JSX.Element {
               setShowSnapshots(boot.settings.showSnapshots)
               setMinimizeOnLaunch(boot.settings.minimizeOnLaunch)
               setAutoSnapshotBeforeLaunch(boot.settings.autoSnapshotBeforeLaunch)
+              setVersionIsolationMode(boot.settings.versionIsolationMode)
             }}
           >
             还原

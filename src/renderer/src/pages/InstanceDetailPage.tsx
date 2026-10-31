@@ -38,7 +38,8 @@ import {
   Spinner,
   TextArea,
   TextInput,
-  Toggle
+  Toggle,
+  ToggleRow
 } from '../components/ui'
 import { classNames, formatDate, formatPlaytime, formatRelative, rangeProgress } from '../lib/format'
 import { CrashDiagnosticsModal } from '../components/CrashDiagnosticsModal'
@@ -912,25 +913,11 @@ export function InstanceDetailPage({ instance }: { instance: InstanceSummary }):
                   </Select>
                 </Field>
               </div>
-              <Toggle
+              <ToggleRow
+                title="版本隔离"
+                description="每个实例独立存放存档、模组与配置；关闭后与其它关闭隔离的实例共享。"
                 checked={versionIsolation}
                 onChange={setVersionIsolation}
-                label="版本隔离（每个实例独立存档、模组与配置）"
-              />
-              <Toggle
-                checked={highPerformanceGpu}
-                onChange={setHighPerformanceGpu}
-                label="使用高性能显卡（Windows 兼容性标记）"
-              />
-              <Toggle
-                checked={disableJavaLaunchWrapper}
-                onChange={setDisableJavaLaunchWrapper}
-                label="禁用 Java Launch Wrapper（旧版 Forge 兼容）"
-              />
-              <Toggle
-                checked={disableLwjglUnsafeAgent}
-                onChange={setDisableLwjglUnsafeAgent}
-                label="禁用 LWJGL Unsafe Agent（实验）"
               />
               <p className="settings-hint">
                 版本隔离关闭后，该实例会与其它关闭隔离的实例共享 <code>saves</code>、<code>mods</code>、<code>config</code>；删除实例不会删除共享目录。

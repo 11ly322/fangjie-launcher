@@ -34,6 +34,7 @@ import { DownloadsPage } from './pages/DownloadsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { CreateInstanceModal } from './modals/CreateInstanceModal'
 import { AccountModal } from './modals/AccountModal'
+import { useGamepad } from './lib/useGamepad'
 
 interface ConfirmState {
   options: ConfirmOptions
@@ -288,6 +289,16 @@ export default function App(): React.JSX.Element {
     [modsInstanceId]
   )
 
+  const gamepad = useGamepad({
+    onBack: () => {
+      if (page === 'instance') {
+        navigate('instances')
+      } else if (page !== 'home') {
+        navigate('home')
+      }
+    }
+  })
+
   const openInstance = useCallback((id: string) => {
     setActiveInstanceId(id)
     setPage('instance')
@@ -375,6 +386,19 @@ export default function App(): React.JSX.Element {
     },
     [confirmState]
   )
+
+  const exitLauncher = useCallback(async () => {
+    const approved = await confirm({
+      title: '退出启动器？',
+      description: running.size
+        ? '启动器会退出，正在运行的游戏进程不会被强制结束。下次打开启动器时可以继续管理实例。'
+        : '退出后下载中的任务会停止；已经完成的文件不会被删除。',
+      confirmLabel: '退出'
+    })
+    if (!approved) return
+    const result = await window.fangjie.windowAction('close')
+    if (!result.ok) toast(result.error, 'error')
+  }, [confirm, running, toast])
 
   const requestDeleteInstance = useCallback(
     async (id: string, keepSnapshots = false) => {
@@ -500,6 +524,8 @@ export default function App(): React.JSX.Element {
             else setPage('home')
           }}
           onAccountClick={() => setAccountOpen(true)}
+          onExit={() => void exitLauncher()}
+          gamepadConnected={gamepad.connected}
         />
         <main className="main-scroll" id="main-content">
           {page === 'home' ? <HomePage /> : null}

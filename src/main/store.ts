@@ -3,6 +3,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import type { Account, Instance, Settings, ThemeId } from '../shared/types'
+import { shouldIsolateVersion } from '../shared/versionIsolation'
 
 export interface StoredSkin {
   fileName: string
@@ -28,6 +29,8 @@ interface PersistedConfig {
   schemaVersion: 1
   settings: Settings
   account: StoredAccount
+  accounts?: StoredAccount[]
+  accountAuth?: Record<string, StoredMicrosoftAuth>
   instances: Instance[]
   microsoftAuth?: StoredMicrosoftAuth
 }
@@ -90,6 +93,7 @@ export class LauncherStore {
     mkdirSync(this.skinsPath, { recursive: true })
 
     this.config = this.load()
+    this.ensureAccountBook()
   }
 
   private load(): PersistedConfig {
@@ -103,6 +107,7 @@ export class LauncherStore {
         showSnapshots: false,
         minimizeOnLaunch: false,
         autoSnapshotBeforeLaunch: false,
+        versionIsolationMode: 'all',
         downloadConcurrency: 16,
         offline: false,
         proxyUrl: '',
@@ -139,6 +144,29 @@ export class LauncherStore {
                 : []
             }
           : undefined
+      const activeAccount: StoredAccount = {
+        name: accountName || 'Steve',
+        uuid:
+          accountType === 'microsoft' && rawAccount?.uuid
+            ? rawAccount.uuid
+            : rawAccount?.uuid || offlineUuid(accountName || 'Steve'),
+        type: accountType,
+        skin
+      }
+      const accounts = (Array.isArray(raw.accounts) ? raw.accounts : [])
+        .map(normalizeStoredAccount)
+        .filter((entry): entry is StoredAccount => Boolean(entry))
+      if (!accounts.some((entry) => entry.uuid === activeAccount.uuid)) accounts.unshift(activeAccount)
+      const accountAuth: Record<string, StoredMicrosoftAuth> = {
+        ...(raw.accountAuth && typeof raw.accountAuth === 'object' ? raw.accountAuth : {})
+      }
+      if (
+        activeAccount.type === 'microsoft' &&
+        raw.microsoftAuth &&
+        typeof raw.microsoftAuth.refreshTokenEnc === 'string'
+      ) {
+        accountAuth[activeAccount.uuid] = raw.microsoftAuth
+      }
       const merged: PersistedConfig = {
         schemaVersion: 1,
         settings: {
@@ -146,23 +174,19 @@ export class LauncherStore {
           memoryMb: clampMemory(Number(settings.memoryMb)),
           theme: normalizeTheme(settings.theme),
           colorMode: settings.colorMode === 'light' ? 'light' : 'dark',
+          versionIsolationMode: normalizeVersionIsolationMode(settings.versionIsolationMode),
           offline: settings.offline === true,
           proxyUrl: typeof settings.proxyUrl === 'string' ? settings.proxyUrl : '',
           modrinthBase: typeof settings.modrinthBase === 'string' ? settings.modrinthBase : 'https://api.modrinth.com/v2',
           curseforgeBase: typeof settings.curseforgeBase === 'string' ? settings.curseforgeBase : 'https://mod.mcimirror.top/curseforge/v1',
           downloadConcurrency: Math.min(64, Math.max(4, Number(settings.downloadConcurrency) || 16))
         },
-        account: {
-          name: accountName || 'Steve',
-          uuid: accountType === 'microsoft' && rawAccount?.uuid ? rawAccount.uuid : (rawAccount?.uuid || offlineUuid(accountName || 'Steve')),
-          type: accountType,
-          skin
-        },
+        account: activeAccount,
+        accounts,
+        accountAuth,
         instances,
         microsoftAuth:
-          raw.microsoftAuth && typeof raw.microsoftAuth.refreshTokenEnc === 'string'
-            ? raw.microsoftAuth
-            : undefined
+          activeAccount.type === 'microsoft' ? accountAuth[activeAccount.uuid] : undefined
       }
       return merged
     } catch {
@@ -219,7 +243,29 @@ export class LauncherStore {
 
   save(): void {
     this.config.settings.memoryMb = clampMemory(this.config.settings.memoryMb)
+    this.syncActiveAccount()
     this.write(this.config)
+  }
+
+  private ensureAccountBook(): void {
+    if (!this.config.accounts?.length) this.config.accounts = [this.config.account]
+    if (!this.config.accountAuth) this.config.accountAuth = {}
+    if (!this.config.accounts.some((entry) => entry.uuid === this.config.account.uuid)) {
+      this.config.accounts.push(this.config.account)
+    }
+  }
+
+  private syncActiveAccount(): void {
+    const active = this.config.account
+    const accounts = this.config.accounts || []
+    const index = accounts.findIndex((entry) => entry.uuid === active.uuid)
+    if (index >= 0) accounts[index] = active
+    else accounts.push(active)
+    this.config.accounts = accounts
+    if (!this.config.accountAuth) this.config.accountAuth = {}
+    if (active.type === 'microsoft' && this.config.microsoftAuth) {
+      this.config.accountAuth[active.uuid] = this.config.microsoftAuth
+    }
   }
 
   get settings(): Settings {
@@ -234,6 +280,7 @@ export class LauncherStore {
     next.memoryMb = clampMemory(Number(next.memoryMb))
     next.theme = normalizeTheme(next.theme)
     next.colorMode = next.colorMode === 'light' ? 'light' : 'dark'
+    next.versionIsolationMode = normalizeVersionIsolationMode(next.versionIsolationMode)
     next.downloadConcurrency = Math.min(64, Math.max(4, Number(next.downloadConcurrency) || 16))
     next.javaPath = typeof next.javaPath === 'string' ? next.javaPath : ''
     this.config.settings = next
@@ -243,12 +290,17 @@ export class LauncherStore {
 
   setAccountName(name: string): Account {
     const cleaned = name.replace(/[\r\n\t]/g, ' ').trim().slice(0, 16) || 'Steve'
-    this.config.account = {
-      ...this.config.account,
-      name: cleaned,
-      uuid: offlineUuid(cleaned),
-      type: 'offline'
-    }
+    this.syncActiveAccount()
+    const uuid = offlineUuid(cleaned)
+    const existing = this.config.accounts?.find((entry) => entry.uuid === uuid)
+    this.config.account = existing
+      ? { ...existing, name: cleaned, type: 'offline' }
+      : {
+          name: cleaned,
+          uuid,
+          type: 'offline',
+          skin: this.config.account.skin
+        }
     this.config.microsoftAuth = undefined
     this.save()
     return this.getPublicAccount()
@@ -321,7 +373,12 @@ export class LauncherStore {
       preLaunchCommand: '',
       javaPath: '',
       memoryPreset: 'balanced',
-      versionIsolation: input.versionIsolation !== false,
+      versionIsolation:
+        input.versionIsolation ??
+        shouldIsolateVersion(this.settings.versionIsolationMode, {
+          loader: input.loader,
+          mcVersion: input.mcVersion
+        }),
       disableJavaLaunchWrapper: false,
       disableLwjglUnsafeAgent: false,
       highPerformanceGpu: false,
@@ -342,7 +399,16 @@ export class LauncherStore {
   }
 
   getPublicAccount(): Account {
-    const stored = this.config.account
+    return this.publicAccount(this.config.account)
+  }
+
+  getPublicAccounts(): Account[] {
+    return (this.config.accounts || [this.config.account]).map((stored) =>
+      this.publicAccount(stored)
+    )
+  }
+
+  private publicAccount(stored: StoredAccount): Account {
     let skin: Account['skin']
     if (stored.skin) {
       const skinPath = join(this.skinsPath, stored.skin.fileName)
@@ -366,17 +432,32 @@ export class LauncherStore {
     }
   }
 
+  setActiveAccount(uuid: string): Account {
+    const target = (this.config.accounts || []).find((entry) => entry.uuid === uuid)
+    if (!target) throw new Error('找不到这个账号')
+    if (target.uuid === this.config.account.uuid) return this.getPublicAccount()
+    this.syncActiveAccount()
+    this.config.account = target
+    this.config.microsoftAuth =
+      target.type === 'microsoft' ? this.config.accountAuth?.[target.uuid] : undefined
+    this.save()
+    return this.getPublicAccount()
+  }
+
   setMicrosoftAccount(profile: { name: string; id: string }, auth: {
     accessToken: string
     refreshToken: string
     expiresAt: number
     xuid?: string
   }): Account {
+    this.syncActiveAccount()
+    const uuid = formatUuid(profile.id)
+    const existing = this.config.accounts?.find((entry) => entry.uuid === uuid)
     this.config.account = {
       name: profile.name,
-      uuid: formatUuid(profile.id),
+      uuid,
       type: 'microsoft',
-      skin: this.config.account.skin
+      skin: existing?.skin || this.config.account.skin
     }
     this.config.microsoftAuth = {
       accessTokenEnc: encryptSecret(auth.accessToken),
@@ -427,11 +508,14 @@ export class LauncherStore {
   }
 
   clearMicrosoftAuth(): void {
+    const activeUuid = this.config.account.uuid
+    this.config.accountAuth = { ...(this.config.accountAuth || {}) }
+    delete this.config.accountAuth[activeUuid]
+    this.config.accounts = (this.config.accounts || []).filter((entry) => entry.uuid !== activeUuid)
     this.config.microsoftAuth = undefined
-    this.config.account = {
-      ...createDefaultAccount(),
-      skin: this.config.account.skin
-    }
+    const next =
+      this.config.accounts.find((entry) => entry.type === 'offline') || createDefaultAccount()
+    this.config.account = next
     this.save()
   }
 
@@ -489,6 +573,41 @@ function formatUuid(value: string): string {
   const cleaned = value.replace(/-/g, '')
   if (cleaned.length !== 32) return value
   return `${cleaned.slice(0, 8)}-${cleaned.slice(8, 12)}-${cleaned.slice(12, 16)}-${cleaned.slice(16, 20)}-${cleaned.slice(20)}`
+}
+
+function normalizeVersionIsolationMode(value: unknown) {
+  return value === 'off' ||
+    value === 'modded' ||
+    value === 'snapshot' ||
+    value === 'modded-snapshot' ||
+    value === 'all'
+    ? value
+    : 'all'
+}
+
+function normalizeStoredAccount(value: unknown): StoredAccount | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const raw = value as Partial<StoredAccount>
+  if (typeof raw.uuid !== 'string' || typeof raw.name !== 'string') return undefined
+  if (raw.type !== 'offline' && raw.type !== 'microsoft') return undefined
+  const skin =
+    raw.skin &&
+    typeof raw.skin.fileName === 'string' &&
+    (raw.skin.model === 'classic' || raw.skin.model === 'slim')
+      ? {
+          fileName: basename(raw.skin.fileName),
+          model: raw.skin.model,
+          appliedInstanceIds: Array.isArray(raw.skin.appliedInstanceIds)
+            ? raw.skin.appliedInstanceIds.filter((id): id is string => typeof id === 'string')
+            : []
+        }
+      : undefined
+  return {
+    name: raw.name.slice(0, 16) || 'Steve',
+    uuid: raw.uuid,
+    type: raw.type,
+    skin
+  }
 }
 
 function isInstanceLike(value: unknown): value is Instance {

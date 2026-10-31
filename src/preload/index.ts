@@ -77,6 +77,7 @@ const api: LauncherApi = {
   onJavaUpdated: (callback) => subscribe<JavaStatus>('java:updated', callback),
   updateSettings: (patch: Partial<Settings>) => invoke<Settings>('settings:update', patch),
   updateAccount: (name: string) => invoke<Account>('account:update', name),
+  setActiveAccount: (uuid: string) => invoke<Account>('auth:set-active', uuid),
   loginMicrosoft: () => invoke<Account>('auth:microsoft-login'),
   logoutAccount: () => invoke<Account>('auth:logout'),
   chooseSkin: (model: 'classic' | 'slim') => invoke<Account | null>('skin:choose', model),

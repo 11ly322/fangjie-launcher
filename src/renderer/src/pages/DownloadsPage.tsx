@@ -18,10 +18,11 @@ import {
   Wrench,
   XCircle
 } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { TaskView } from '../../../shared/types'
 import { useLauncher } from '../state/LauncherContext'
 import { Badge, Button, EmptyState, IconButton, InlineNotice, ProgressBar } from '../components/ui'
+import { LoaderDownloadModal } from '../modals/LoaderDownloadModal'
 import { classNames, formatRelative, formatSpeed } from '../lib/format'
 
 export function DownloadsPage(): React.JSX.Element {
@@ -37,6 +38,7 @@ export function DownloadsPage(): React.JSX.Element {
     refresh,
     toast
   } = useLauncher()
+  const [loaderOpen, setLoaderOpen] = useState(false)
   const active = tasks.filter((task) => task.status === 'running' || task.status === 'queued')
   const finished = tasks
     .filter((task) => ['success', 'error', 'cancelled'].includes(task.status))
@@ -121,7 +123,7 @@ export function DownloadsPage(): React.JSX.Element {
           </span>
           <ArrowRight size={16} />
         </button>
-        <button type="button" className="download-hub__card" onClick={openCreateInstance}>
+        <button type="button" className="download-hub__card" onClick={() => setLoaderOpen(true)}>
           <span className="download-hub__icon"><Wrench size={20} /></span>
           <span className="download-hub__copy">
             <strong>加载器</strong>
@@ -262,6 +264,8 @@ export function DownloadsPage(): React.JSX.Element {
           </div>
         </div>
       ) : null}
+
+      <LoaderDownloadModal open={loaderOpen} onClose={() => setLoaderOpen(false)} />
     </div>
   )
 }

@@ -24,8 +24,7 @@ import {
   Modal,
   Select,
   Skeleton,
-  TextInput,
-  Toggle
+  TextInput
 } from '../components/ui'
 import { useLauncher } from '../state/LauncherContext'
 import { classNames, formatDate, formatVersionType, rangeProgress } from '../lib/format'
@@ -76,11 +75,9 @@ export function CreateInstanceModal({
   const [loaderError, setLoaderError] = useState('')
   const availabilityRequest = useRef(0)
   const [memoryMb, setMemoryMb] = useState(boot.settings.memoryMb)
-  const [versionIsolation, setVersionIsolation] = useState(true)
   const [icon, setIcon] = useState('trees')
   const [accent, setAccent] = useState<string>(INSTANCE_ACCENTS[0])
   const [creating, setCreating] = useState(false)
-  const [installingLoader, setInstallingLoader] = useState(false)
   const [formError, setFormError] = useState('')
 
   const loadVersions = async (includeSnapshots: boolean): Promise<void> => {
@@ -105,7 +102,6 @@ export function CreateInstanceModal({
     setName('生存世界')
     setLoader('fabric')
     setMemoryMb(boot.settings.memoryMb)
-    setVersionIsolation(true)
     setIcon(INSTANCE_ICONS[Math.floor(Math.random() * INSTANCE_ICONS.length)])
     setAccent(INSTANCE_ACCENTS[Math.floor(Math.random() * INSTANCE_ACCENTS.length)])
     setVersion('')
@@ -177,27 +173,6 @@ export function CreateInstanceModal({
     ? LOADER_OPTIONS.length - 1 - availableLoaders.size
     : 0
 
-  const installOnlyLoader = async (): Promise<void> => {
-    if (loader === 'vanilla') {
-      toast('请选择一个模组加载器', 'error')
-      return
-    }
-    setInstallingLoader(true)
-    try {
-      const result = await window.fangjie.installLoaderStandalone({
-        mcVersion: version,
-        loader
-      })
-      if (!result.ok) {
-        toast(result.error, 'error')
-        return
-      }
-      toast(`${LOADER_LABEL[loader]} ${result.value.loaderVersion} 已安装到共享版本目录`, 'success')
-    } finally {
-      setInstallingLoader(false)
-    }
-  }
-
   const submit = async (): Promise<void> => {
     const cleaned = name.trim().replace(/\s+/g, ' ')
     if (!cleaned) {
@@ -224,8 +199,7 @@ export function CreateInstanceModal({
       loader,
       memoryMb,
       icon,
-      accent,
-      versionIsolation
+      accent
     })
     setCreating(false)
     if (!result.ok) {
@@ -254,20 +228,9 @@ export function CreateInstanceModal({
               ? `包含 ${LOADER_LABEL[loader]} 加载器与 Java 运行时`
               : '包含原版游戏与 Java 运行时'}
           </div>
-          <Button variant="ghost" onClick={onClose} disabled={creating || installingLoader}>
+          <Button variant="ghost" onClick={onClose} disabled={creating}>
             取消
           </Button>
-          {loader !== 'vanilla' ? (
-            <Button
-              variant="secondary"
-              icon={<Layers size={16} />}
-              onClick={() => void installOnlyLoader()}
-              loading={installingLoader}
-              disabled={!version || checkingLoaders || creating || !availableLoaders.has(loader)}
-            >
-              仅安装加载器
-            </Button>
-          ) : null}
           <Button
             variant="primary"
             onClick={() => void submit()}
@@ -491,14 +454,6 @@ export function CreateInstanceModal({
             </div>
           </Field>
 
-          <Toggle
-            checked={versionIsolation}
-            onChange={setVersionIsolation}
-            label="版本隔离（推荐）"
-          />
-          <p className="settings-hint">
-            开启后，该实例拥有独立的存档、模组与配置；关闭则与其它关闭隔离的实例共享 <code>saves</code>、<code>mods</code>、<code>config</code>。
-          </p>
 
           {formError ? (
             <InlineNotice tone="danger" title="无法创建实例">

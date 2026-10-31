@@ -35,6 +35,12 @@ export function AccountModal({
   const [skinTarget, setSkinTarget] = useState('')
   const [skinError, setSkinError] = useState('')
   const [avatarFailed, setAvatarFailed] = useState(false)
+  const [switching, setSwitching] = useState(false)
+
+  const accounts = boot.accounts?.length ? boot.accounts : [boot.account]
+  const microsoftAccounts = accounts.filter((entry) => entry.type === 'microsoft')
+  const offlineAccounts = accounts.filter((entry) => entry.type === 'offline')
+  const activeUuid = boot.activeAccountId || boot.account.uuid
 
   const moddedInstances = useMemo(
     () =>
@@ -94,7 +100,7 @@ export function AccountModal({
   const logout = async (): Promise<void> => {
     const approved = await confirm({
       title: '退出正版账号？',
-      description: '退出后，本机将切换回离线档案。正版登录令牌会从本地清除。',
+      description: '只会退出当前正版账号并清除它的本地令牌；其他已保存的账号不会被删除。',
       confirmLabel: '退出登录',
       danger: true
     })
@@ -107,6 +113,22 @@ export function AccountModal({
     await refresh()
     setTab('offline')
     toast('已退出正版账号', 'info')
+  }
+
+  const switchAccount = async (uuid: string): Promise<void> => {
+    if (uuid === activeUuid || switching) return
+    setSwitching(true)
+    setError('')
+    const result = await window.fangjie.setActiveAccount(uuid)
+    setSwitching(false)
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    await refresh()
+    setTab(result.value.type === 'microsoft' ? 'microsoft' : 'offline')
+    setName(result.value.name)
+    toast(`已切换到 ${result.value.name}`, 'success')
   }
 
   const chooseSkin = async (): Promise<void> => {
@@ -184,35 +206,68 @@ export function AccountModal({
         )
       }
     >
-      <div className="account-tabs" role="tablist" aria-label="账户类型">
+      <div className="account-entry-switch" role="group" aria-label="选择进入方式">
         <button
           type="button"
-          role="tab"
-          aria-selected={tab === 'offline'}
-          className={classNames('account-tab', tab === 'offline' && 'is-active')}
-          onClick={() => {
-            setTab('offline')
-            setError('')
-          }}
-        >
-          <UserRound size={15} />
-          离线登录
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'microsoft'}
-          className={classNames('account-tab', tab === 'microsoft' && 'is-active')}
+          className={classNames('account-entry', isPremium && 'is-selected')}
+          aria-pressed={isPremium}
+          disabled={switching}
           onClick={() => {
             setTab('microsoft')
-            setError('')
+            if (!isPremium && microsoftAccounts[0]) void switchAccount(microsoftAccounts[0].uuid)
           }}
         >
           <ShieldCheck size={15} />
-          正版登录
-          {isPremium ? <span className="account-tab__dot" /> : null}
+          正版
+          <span>{microsoftAccounts.length}</span>
+        </button>
+        <button
+          type="button"
+          className={classNames('account-entry', !isPremium && 'is-selected')}
+          aria-pressed={!isPremium}
+          disabled={switching}
+          onClick={() => {
+            setTab('offline')
+            if (isPremium && offlineAccounts[0]) void switchAccount(offlineAccounts[0].uuid)
+          }}
+        >
+          <UserRound size={15} />
+          离线
+          <span>{offlineAccounts.length}</span>
         </button>
       </div>
+
+      {accounts.length > 1 ? (
+        <div className="account-switcher" aria-label="已保存的账号">
+          <div className="account-switcher__label">已保存的账号 · 点击热切换</div>
+          <div className="account-switcher__list">
+            {accounts.map((entry) => {
+              const active = entry.uuid === activeUuid
+              return (
+                <button
+                  key={entry.uuid}
+                  type="button"
+                  className={classNames('account-choice', active && 'is-active')}
+                  aria-pressed={active}
+                  disabled={active || switching}
+                  onClick={() => void switchAccount(entry.uuid)}
+                >
+                  {entry.skin?.dataUrl ? (
+                    <SkinHead dataUrl={entry.skin.dataUrl} size={26} />
+                  ) : (
+                    <PixelAvatar name={entry.name} size={26} />
+                  )}
+                  <span>
+                    <strong>{entry.name}</strong>
+                    <small>{entry.type === 'microsoft' ? '正版账号' : '离线档案'}</small>
+                  </span>
+                  {active ? <Check size={14} /> : null}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ) : null}
 
       {tab === 'offline' ? (
         <>
@@ -228,7 +283,7 @@ export function AccountModal({
                 <ShieldCheck size={13} /> 离线登录 · 无需密码
               </span>
             </div>
-            {isPremium ? <Badge tone="warn">保存后将退出正版</Badge> : null}
+            {isPremium ? <Badge tone="warn">保存后切换为离线</Badge> : null}
           </div>
 
           <Field
@@ -253,7 +308,7 @@ export function AccountModal({
 
           {isPremium ? (
             <InlineNotice tone="warn" title="当前使用正版账户">
-              保存离线档案会清除本机的正版登录令牌。想继续使用正版时，可在「正版登录」标签重新登录。
+              保存离线档案会自动切换到这个离线身份；正版账号和登录令牌会保留，可随时切回。
             </InlineNotice>
           ) : (
             <InlineNotice tone="info" icon={<UserRound size={17} />} title="关于离线档案">

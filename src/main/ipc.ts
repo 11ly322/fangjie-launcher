@@ -138,6 +138,13 @@ export function registerIpcHandlers(context: IpcContext): void {
     return account
   })
 
+  handle('auth:set-active', async (uuid: string) => {
+    if (typeof uuid !== 'string' || !uuid.trim()) throw new Error('请选择要切换的账号')
+    const account = store.setActiveAccount(uuid.trim())
+    notifyChange('account')
+    return account
+  })
+
   handle('auth:logout', async () => {
     store.clearMicrosoftAuth()
     notifyChange('account')
@@ -185,6 +192,8 @@ export function registerIpcHandlers(context: IpcContext): void {
     dataPath: store.dataPath,
     settings: store.settings,
     account: store.getPublicAccount(),
+    accounts: store.getPublicAccounts(),
+    activeAccountId: store.getPublicAccount().uuid,
     instances: store.instances.map((instance) => {
       const { mods: _mods, ...summary } = instance
       return { ...summary, modCount: listInstanceMods(store, instance).length }

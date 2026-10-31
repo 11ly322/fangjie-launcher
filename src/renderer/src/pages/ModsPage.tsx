@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  ArrowLeft,
   Check,
   Clock3,
   Download,
@@ -66,6 +67,7 @@ export function ModsPage(): React.JSX.Element {
     modsInstanceId,
     modsProjectType,
     setModsInstanceId,
+    navigate,
     openCreateInstance,
     openInstance,
     toast
@@ -324,9 +326,14 @@ export function ModsPage(): React.JSX.Element {
           <h1>模组工坊</h1>
           <p>发现、下载并管理模组。选择实例后，只显示兼容版本，前置依赖会自动补齐。</p>
         </div>
-        <Button variant="secondary" icon={<Plus size={16} />} onClick={openCreateInstance}>
-          新建实例
-        </Button>
+        <div className="mods-header-actions">
+          <Button variant="ghost" icon={<ArrowLeft size={16} />} onClick={() => navigate('downloads')}>
+            退出工坊
+          </Button>
+          <Button variant="secondary" icon={<Plus size={16} />} onClick={openCreateInstance}>
+            新建实例
+          </Button>
+        </div>
       </header>
 
       {!moddedInstances.length ? (

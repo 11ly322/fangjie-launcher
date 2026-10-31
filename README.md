@@ -8,18 +8,18 @@
 
 一个面向 Windows 的 Minecraft 桌面启动器，使用 Electron + React + TypeScript 构建。以游戏版本为中心组织启动、下载与实例管理：游戏实例、加载器安装、模组搜索下载、正版登录与离线皮肤。0.0.5 起更名为 **unflod bindery launcher（UBL）**，以书架和低 bit 像素为视觉主体。
 
-> **0.0.9**：重做顶部工作台与启动页，启动/下载/联机/设置集中到顶栏；启动页增加横向版本列表，下载中心按游戏版本、模组、整合包、资源包、光影和加载器分类，并补充实例与模组列表的自动刷新。
+> **0.0.10-beta**：补齐正版/离线入口、多正版账号热切换与全局默认版本隔离；加载器下载从创建实例中分离，新增顶栏退出、二级页面返回和手柄导航，并清理设置页里没有标题的兼容性开关。
 >
-> 0.0.8 及更早版本的内置更新器仍有替换缺陷，请手动安装一次 0.0.9；0.0.9 起更新助手改用独立 PowerShell 流程，后续更新会写入安装目录并在完成后自动重启。
+> 0.0.8 及更早版本的内置更新器仍有替换缺陷，请手动安装一次 0.0.9 或更新版本；0.0.9 起更新助手改用独立 PowerShell 流程，后续更新会写入安装目录并在完成后自动重启。
 
 ![UBL](resources/icon.png)
 
 ## 下载
 
-从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.9) 选择：
+从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.10-beta) 选择：
 
-- `UBL-Launcher-0.0.9-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建开始菜单项并注册卸载信息。
-- `UBL-Portable-0.0.9.zip`：免安装便携版，解压后双击 `UBL.exe`。
+- `UBL-Launcher-0.0.10-beta-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建开始菜单项并注册卸载信息。
+- `UBL-Portable-0.0.10-beta.zip`：免安装便携版，解压后双击 `UBL.exe`。
 - `SHA256SUMS.txt`：两个发布包的 SHA256 校验和。
 
 系统要求：Windows 10/11 x64。首次创建实例会自动下载对应 Java 运行时；安装版默认安装到 `%LOCALAPPDATA%\Programs\UBL`，卸载不会删除游戏存档和用户数据。启动器继续复用 `%APPDATA%\fangjie-launcher` 数据目录，升级不会丢失旧实例。更新包与安装助手现在只写入安装目录下的 `updates/`，不再写入 `%APPDATA%\fangjie-launcher\updates`；不希望安装程序写卸载注册项时可直接使用便携版。
@@ -45,6 +45,9 @@
 ## 当前能力
 
 - **顶部工作台**：启动、下载、联机与设置集中在顶栏；启动页用横向版本列表选择实例，下载中心按内容类型组织入口，实例与模组列表支持自动刷新。
+- **账号切换**：正版/离线入口可随时切换，已登录状态保留；可保存多个 Microsoft 账号并热切换，每个账号的令牌独立加密。
+- **版本隔离**：设置中可选择关闭、隔离可安装 Mod 的版本、隔离非正式版、隔离可安装 Mod 的版本与非正式版或隔离所有版本；只影响新建实例。
+- **手柄与退出**：支持 D-pad/摇杆移动焦点、A 确认、B 返回；顶栏提供退出启动器，二级页面可返回上一级。
 - **游戏实例**：为每个世界创建独立目录，存档、模组、配置与日志互不干扰。
 - **多加载器**：原版、Fabric、Quilt、Forge、NeoForge。创建实例时先按所选 Minecraft 版本核验元数据，只展示真正有版本可下载的加载器；也可不建实例、单独把加载器装进共享版本目录。
 - **实例加载器管理**：实例设置中可随时切换或移除模组加载器；切换前会核验该游戏版本可用的加载器，只更新实例的启动版本与加载器记录，不删除存档、配置或模组文件。
@@ -57,7 +60,7 @@
 - **OptiFine**：选择官方 installer，无窗口调用本地安装接口并绑定生成的 profile。
 - **网络设置**：HTTP(S) 代理、Modrinth/CurseForge API 基址；所有主进程 native fetch 走统一 seam。
 - **插件与离线**：本地 manifest 校验、版本/权限展示；全局离线开关。
-- **正版登录**：通过 Microsoft 官方登录窗口完成 Xbox Live 与 Minecraft 服务验证，登录令牌使用 Electron `safeStorage` 加密保存；刷新令牌可维持登录状态。
+- **正版登录**：通过 Microsoft 官方登录窗口完成 Xbox Live 与 Minecraft 服务验证，可保存多个正版账号；每个账号的登录令牌使用 Electron `safeStorage` 加密保存，切换账号后仍可保留登录状态。
 - **离线皮肤**：上传 64×64 PNG 皮肤，按实例安装 CustomSkinLoader 并写入本地皮肤配置。仅在自己的客户端显示。
 - **房间联机（实验）**：房主生成 `U/XXXX-XXXX-XXXX-XXXX` 房间码，房客凭码加入并获得可直接粘贴进 Minecraft 的地址。EasyTier 以 Rust 库内嵌；不需要管理员权限、TUN 网卡或第三方 VPN。
 - **故障诊断（P0）**：崩溃模式映射、JAR 依赖扫描、修复 diff 预览、逐文件备份与回滚；需要 `npm run build:core` 构建 Rust sidecar。
@@ -94,7 +97,7 @@ npm run package
 npm run package:installer
 ```
 
-安装包输出到 `release/UBL-Launcher-0.0.9-Setup.exe`。
+安装包输出到 `release/UBL-Launcher-0.0.10-beta-Setup.exe`。
 
 联机连接器不提交二进制，需先通过 `.github/workflows/connector-build.yml` 构建到 `resources/bin/qomicex-connector-cli.exe`；发布包中已包含该组件。构建脚本会查找 electron-builder 缓存或系统安装的 NSIS 3.x；也可用 `MAKENSIS` 环境变量指定 `makensis.exe`。安装包未做代码签名，Windows SmartScreen 可能提示未知发布者。
 

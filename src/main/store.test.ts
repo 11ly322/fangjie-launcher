@@ -62,3 +62,39 @@ describe('LauncherStore version isolation', () => {
     expect(store.instanceGamePath(instance)).not.toContain(join('instances', instance.id))
   })
 })
+
+describe('LauncherStore account book', () => {
+  it('keeps Microsoft login state while switching to an offline account', () => {
+    const store = new LauncherStore()
+    const microsoft = store.setMicrosoftAccount(
+      { name: 'Alex', id: '11111111222233334444555555555555' },
+      { accessToken: 'access', refreshToken: 'refresh', expiresAt: Date.now() + 3600_000 }
+    )
+
+    store.setAccountName('Offline Steve')
+    expect(store.getMicrosoftAuth()).toBeUndefined()
+    expect(store.getPublicAccounts()).toHaveLength(3)
+
+    const switched = store.setActiveAccount(microsoft.uuid)
+    expect(switched.type).toBe('microsoft')
+    expect(store.getMicrosoftAuth()?.refreshToken).toBe('refresh')
+  })
+})
+
+describe('global version isolation mode', () => {
+  it('applies the default policy when creating an instance', () => {
+    const store = new LauncherStore()
+    store.setSettings({ ...store.settings, versionIsolationMode: 'modded' })
+    const base = {
+      name: 'Policy test',
+      mcVersion: '1.20.1',
+      versionId: '1.20.1',
+      accent: '#b8e85c',
+      icon: 'grass',
+      memoryMb: 4096
+    }
+
+    expect(store.createInstanceRecord({ ...base, loader: 'fabric' }).versionIsolation).toBe(true)
+    expect(store.createInstanceRecord({ ...base, loader: 'vanilla' }).versionIsolation).toBe(false)
+  })
+})

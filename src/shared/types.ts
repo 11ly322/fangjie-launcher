@@ -44,6 +44,7 @@ export interface Account {
 export type ThemeId = 'moss' | 'ocean' | 'ember'
 export type ColorMode = 'dark' | 'light'
 export type MemoryPreset = 'balanced' | 'g1gc' | 'lowlatency' | 'zgc'
+export type VersionIsolationMode = 'off' | 'modded' | 'snapshot' | 'modded-snapshot' | 'all'
 
 export interface Settings {
   memoryMb: number
@@ -53,6 +54,7 @@ export interface Settings {
   showSnapshots: boolean
   minimizeOnLaunch: boolean
   autoSnapshotBeforeLaunch: boolean
+  versionIsolationMode: VersionIsolationMode
   downloadConcurrency: number
   offline: boolean
   proxyUrl: string
@@ -256,6 +258,8 @@ export interface AppSnapshot {
   dataPath: string
   settings: Settings
   account: Account
+  accounts?: Account[]
+  activeAccountId?: string
   instances: InstanceSummary[]
   tasks: TaskView[]
   runningInstanceIds: string[]
@@ -665,6 +669,7 @@ export interface LauncherApi {
   onJavaUpdated(callback: (status: JavaStatus) => void): () => void
   updateSettings(patch: Partial<Settings>): Promise<Result<Settings>>
   updateAccount(name: string): Promise<Result<Account>>
+  setActiveAccount(uuid: string): Promise<Result<Account>>
   loginMicrosoft(): Promise<Result<Account>>
   logoutAccount(): Promise<Result<Account>>
   chooseSkin(model: 'classic' | 'slim'): Promise<Result<Account | null>>

@@ -1,9 +1,11 @@
 import {
   Boxes,
   Download,
+  Gamepad2,
   Home,
   Loader2,
   Play,
+  Power,
   Settings,
   Square,
   Users
@@ -37,7 +39,9 @@ export function AppNav({
   launching,
   onLaunch,
   onOpenActive,
-  onAccountClick
+  onAccountClick,
+  onExit,
+  gamepadConnected
 }: {
   page: PageName
   onNavigate: (page: PageName) => void
@@ -49,6 +53,8 @@ export function AppNav({
   onLaunch: () => void
   onOpenActive: () => void
   onAccountClick: () => void
+  onExit: () => void
+  gamepadConnected?: boolean
 }): React.JSX.Element {
   const activeTasks = tasks.filter((task) => task.status === 'running' || task.status === 'queued').length
   const tab = activeTab(page)
@@ -129,6 +135,20 @@ export function AppNav({
             <PixelAvatar name={account.name} size={30} />
           )}
           <span>{account.name}</span>
+        </button>
+        {gamepadConnected ? (
+          <span className="app-nav__gamepad" title="手柄已连接" aria-label="手柄已连接">
+            <Gamepad2 size={15} />
+          </span>
+        ) : null}
+        <button
+          type="button"
+          className="app-nav__exit"
+          onClick={onExit}
+          aria-label="退出启动器"
+          title="退出启动器"
+        >
+          <Power size={16} />
         </button>
       </div>
     </header>
