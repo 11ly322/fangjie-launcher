@@ -21,7 +21,7 @@
 ### 验证与边界
 
 - `npm run typecheck`、`npm test`（19 个文件 / 62 个测试）、`npm run build`、`npm run package:installer` 通过。
-- 发布包：Setup 178,992,515 B / `2f5ab879fe611cc795cb7fc9d1c8e625660db102ba8593eb6dc2bd3170d925f7`；Portable 179,397,952 B / `7120a1c942cc9b3161627cf0bdd9d8c5e5f8fb702b528465702ac15a8fc7ad22`；SHA256SUMS `625848a8e6336d791140595efeb2fb41f4014a6e9291838f6b71b51a2437c3ff`。
+- 发布包：Setup 178,992,515 B / `2f5ab879fe611cc795cb7fc9d1c8e625660db102ba8593eb6dc2bd3170d925f7`；Portable 179,397,952 B / `960218316bfa6364b85d34c81a30d343c706a88fa91946b1886258a9196f41cc`；SHA256SUMS `d05eafcf53c2953e8d1b23ade31a1e94672a79b6f4129a9be2d5e9772a0be295`。
 - 便携版 smoke、NSIS 静默安装/卸载、0.0.8 → 0.0.9 数据保留
 - 自动更新助手：0.0.9 → 0.0.10 测试包完成替换、重启并保留自定义用户数据目录（0.0.10 包仅用于测试，未发布）通过。
 - 已知边界：发布包未做代码签名；安装包会创建开始菜单项并写入卸载注册信息；更新包与安装助手只写入安装目录。0.0.8 及更早版本仍需手动安装一次 0.0.9，之后才能使用安装目录内的自动更新。
