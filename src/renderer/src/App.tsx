@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   Check,
+  Gamepad2,
   Info,
   X
 } from 'lucide-react'
@@ -597,6 +598,13 @@ export default function App(): React.JSX.Element {
         </Modal>
 
         <ToastViewport toasts={toasts} onDismiss={dismissToast} />
+
+        {gamepad.connected ? (
+          <div className="gamepad-hint" role="status">
+            <Gamepad2 size={15} />
+            <span>方向键切换 · A 选择 · B 返回</span>
+          </div>
+        ) : null}
       </div>
     </LauncherContext.Provider>
   )

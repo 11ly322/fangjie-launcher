@@ -122,10 +122,12 @@ export function HomePage(): React.JSX.Element {
 
       <section className="home-grid">
         <div
-          className="hero-play"
+          className={`hero-play${activeInstance ? '' : ' hero-play--empty'}`}
           style={{ '--hero-accent': activeInstance?.accent || 'var(--accent)' } as React.CSSProperties}
         >
-          <PixelShelfArt accent={activeInstance?.accent || 'var(--accent)'} />
+          {activeInstance ? (
+            <PixelShelfArt accent={activeInstance.accent || 'var(--accent)'} />
+          ) : null}
           <div className="hero-play__shade" />
           {activeInstance ? (
             <>
@@ -184,29 +186,34 @@ export function HomePage(): React.JSX.Element {
             </>
           ) : (
             <div className="hero-empty">
-              <div className="hero-empty__art">
-                <InstanceEmblem accent="#b8e85c" icon="trees" size={86} />
+              <div className="hero-empty__copy">
+                <div className="hero-empty__art">
+                  <InstanceEmblem accent="#b8e85c" icon="trees" size={86} />
+                </div>
+                <div className="hero-play__kicker">
+                  <Sparkles size={14} />
+                  从第一块方块开始
+                </div>
+                <h2>你的世界，还没命名</h2>
+                <p>
+                  创建一个游戏实例，选择原版或 Fabric、Forge、NeoForge 等加载器，再挑几个喜欢的模组。剩下的，就交给想象力。
+                </p>
+                <div className="hero-play__actions">
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    icon={<Plus size={17} />}
+                    onClick={openCreateInstance}
+                  >
+                    创建第一个实例
+                  </Button>
+                  <Button variant="ghost" size="lg" onClick={() => navigate('mods')}>
+                    先逛逛模组
+                  </Button>
+                </div>
               </div>
-              <div className="hero-play__kicker">
-                <Sparkles size={14} />
-                从第一块方块开始
-              </div>
-              <h2>你的世界，还没命名</h2>
-              <p>
-                创建一个游戏实例，选择原版或 Fabric、Forge、NeoForge 等加载器，再挑几个喜欢的模组。剩下的，就交给想象力。
-              </p>
-              <div className="hero-play__actions">
-                <Button
-                  variant="primary"
-                  size="lg"
-                  icon={<Plus size={17} />}
-                  onClick={openCreateInstance}
-                >
-                  创建第一个实例
-                </Button>
-                <Button variant="ghost" size="lg" onClick={() => navigate('mods')}>
-                  先逛逛模组
-                </Button>
+              <div className="hero-empty__shelf" aria-hidden="true">
+                <PixelShelfArt accent="#b8e85c" />
               </div>
             </div>
           )}

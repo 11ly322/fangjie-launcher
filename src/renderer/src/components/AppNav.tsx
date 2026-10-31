@@ -137,8 +137,13 @@ export function AppNav({
           <span>{account.name}</span>
         </button>
         {gamepadConnected ? (
-          <span className="app-nav__gamepad" title="手柄已连接" aria-label="手柄已连接">
+          <span
+            className="app-nav__gamepad"
+            title="手柄已连接 · 方向键切换 · A 选择 · B 返回"
+            aria-label="手柄已连接，方向键切换，A 选择，B 返回"
+          >
             <Gamepad2 size={15} />
+            <span>手柄</span>
           </span>
         ) : null}
         <button

@@ -11,10 +11,27 @@ const FOCUSABLE = [
 
 const REPEAT_MS = 180
 const AXIS_THRESHOLD = 0.62
+const GAMEPAD_FOCUS_CLASS = 'is-gamepad-focus'
+
+export function clearGamepadFocus(): void {
+  for (const element of document.querySelectorAll<HTMLElement>(`.${GAMEPAD_FOCUS_CLASS}`)) {
+    element.classList.remove(GAMEPAD_FOCUS_CLASS)
+  }
+}
+
+export function focusGamepadTarget(target: HTMLElement | null): void {
+  clearGamepadFocus()
+  if (!target) return
+  target.classList.add(GAMEPAD_FOCUS_CLASS)
+  target.focus({ preventScroll: true })
+  target.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' })
+}
 
 export function gamepadFocusables(): HTMLElement[] {
   return [...document.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((element) => {
     if (element.closest('[aria-hidden="true"]')) return false
+    if (element.closest('[data-gamepad-skip="true"]')) return false
+    if (element.closest('.titlebar')) return false
     const style = window.getComputedStyle(element)
     return style.display !== 'none' && style.visibility !== 'hidden' && element.offsetParent !== null
   })
@@ -30,6 +47,20 @@ export function nextGamepadFocus(
   if (index < 0) return direction === 'next' ? focusables[0] : focusables[focusables.length - 1]
   const delta = direction === 'next' ? 1 : -1
   return focusables[(index + delta + focusables.length) % focusables.length]
+}
+
+function initialGamepadTarget(): HTMLElement | null {
+  const dialog = document.querySelector<HTMLElement>('[role="dialog"]')
+  if (dialog) {
+    const candidates = gamepadFocusables().filter((element) => dialog.contains(element))
+    return candidates[0] || dialog
+  }
+  const preferred =
+    document.querySelector<HTMLElement>('.app-nav__tab.is-active') ||
+    document.querySelector<HTMLElement>('.app-nav__tab') ||
+    document.querySelector<HTMLElement>('.hero-play__actions button')
+  if (preferred) return preferred
+  return gamepadFocusables()[0] || null
 }
 
 function isTextInput(element: HTMLElement | null): boolean {
@@ -53,12 +84,31 @@ export function useGamepad({ onBack }: { onBack?: () => void } = {}): {
       const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : []
       setCount(pads.length)
       setConnected(pads.length > 0)
+      if (pads.length > 0) {
+        if (!document.querySelector(`.${GAMEPAD_FOCUS_CLASS}`)) {
+          focusGamepadTarget(initialGamepadTarget())
+        }
+      } else {
+        clearGamepadFocus()
+      }
     }
     const onConnected = (): void => refresh()
     const onDisconnected = (): void => refresh()
+    const onPointerDown = (): void => clearGamepadFocus()
+    const onKeyboard = (): void => clearGamepadFocus()
     window.addEventListener('gamepadconnected', onConnected)
     window.addEventListener('gamepaddisconnected', onDisconnected)
+    window.addEventListener('pointerdown', onPointerDown)
+    window.addEventListener('keydown', onKeyboard)
     refresh()
+
+    const observer = new MutationObserver(() => {
+      const dialog = document.querySelector<HTMLElement>('[role="dialog"]')
+      if (!dialog) return
+      if (dialog.contains(document.activeElement)) return
+      focusGamepadTarget(initialGamepadTarget())
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
 
     const press = (key: string): boolean => {
       const now = performance.now()
@@ -71,7 +121,7 @@ export function useGamepad({ onBack }: { onBack?: () => void } = {}): {
     const move = (direction: 'next' | 'prev'): void => {
       const focusables = gamepadFocusables()
       const target = nextGamepadFocus(focusables, document.activeElement as HTMLElement | null, direction)
-      target?.focus()
+      focusGamepadTarget(target)
     }
 
     const activate = (): void => {
@@ -119,7 +169,11 @@ export function useGamepad({ onBack }: { onBack?: () => void } = {}): {
     return () => {
       window.removeEventListener('gamepadconnected', onConnected)
       window.removeEventListener('gamepaddisconnected', onDisconnected)
+      window.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('keydown', onKeyboard)
       window.cancelAnimationFrame(frame.current)
+      observer.disconnect()
+      clearGamepadFocus()
     }
   }, [])
 
