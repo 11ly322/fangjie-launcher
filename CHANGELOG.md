@@ -2,7 +2,9 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)，当前处于 `0.0.x` 预览阶段。
 
-## 未发布
+## 0.0.6 — 2026-10-31
+
+0.0.6 是 0.0.5 之后的修复与功能版本：修复更新安装后不重启、白天模式弹窗发黑，并把首页实例书架、整合包下载、版本隔离和高级启动设置带入正式版。
 
 ### 修复
 
@@ -18,8 +20,9 @@
 
 ### 验证与边界
 
-- `npm run typecheck`、`npm test`（18 个文件 / 56 个测试）、`npm run build` 通过。
-- 更新安装 E2E：本地 0.0.6 测试更新包从旧进程 PID 5496 切换到新进程 PID 18420，安装目录 `D:\ubl-update-e2e` 与自定义 user-data 均保留。
+- `npm run typecheck`、`npm test`（18 个文件 / 56 个测试）、`npm run build`、`npm run package:installer` 通过。
+- 更新安装 E2E：从 0.0.6 检测并安装本地 0.0.7 测试包，旧进程 PID 4864 切换到新进程 PID 1520，安装目录 `D:\ubl-update-e2e` 与自定义 user-data 均保留。
+- 发布包验证：便携版 smoke 显示 `v0.0.6`；NSIS 静默安装/卸载通过，FileVersion/ProductVersion 为 0.0.6，`UBL.exe` 与 Rust sidecar 均存在。
 - 功能 E2E：书架点击可切换实例；整合包搜索并下载 `Fabulously.Optimized-5.4.1.mrpack`（58,960 B）；白天模式弹窗底栏为 `rgb(247,247,250)`；高级设置持久化。
 - 已知边界：真实签名更新包未验证；整合包下载后仍需手动导入实例；版本隔离关闭时删除实例不会删除共享世界。
 
@@ -42,7 +45,7 @@
 
 ### 验证与边界
 
-- `npm run typecheck`、`npm test`（17 个文件 / 54 个测试）、`npm run build`、`npm run package:installer` 通过。
+- `npm run typecheck`、`npm test`（18 个文件 / 56 个测试）、`npm run build`、`npm run package:installer` 通过。
 - 加载器可用性实测：Minecraft 1.7.10 仅 Forge 有版本，创建弹窗只显示 Forge 与原版，并提示隐藏 3 个无版本加载器；Minecraft 1.20.1 显示 Fabric/Quilt/Forge/NeoForge。
 - 独立模组下载实测：Sodium 文件保存为 `downloads/mods/sodium-fabric-0.5.13+mc1.20.1.jar`，并创建下载任务。
 - 界面对比实测：黑夜/白天模式、三套配色、像素书架与低 bit 图标均在打包前页面渲染；模组搜索中文转换与高级筛选在真实 Modrinth/CurseForge 请求下返回结果。
@@ -61,7 +64,7 @@
 
 ### 验证与边界
 
-- `npm run typecheck`、`npm test`（12 个文件 / 37 个测试）、`npm run build` 通过。
+- `npm run typecheck`、`npm test`（18 个文件 / 56 个测试）、`npm run build`、`npm run package:installer` 通过。
 - Fabric 1.20.1 实例实测：Fabric API `0.92.11` → `0.92.12`，旧 JAR 不再留在 mods 目录；手动回滚恢复旧 JAR；删除 Sodium 后更新 Iris 会自动重新下载缺少的前置。
 - 离线模式实测显示“更新检查没有发起任何网络请求”，所有条目归为不可自动更新；单元测试同时断言两个模组源查询函数未被调用（未做系统级抓包）。
 - 203 个模组（其中 200 个本地 JAR）基线：扫描约 45–56 ms；检查冷启动约 3.3–3.6 s、热缓存约 670 ms。该数字包含 3 个真实网络项目，本地 JAR 不发起请求。
@@ -77,7 +80,7 @@
 
 ### 验证与边界
 
-- `npm run typecheck`、`npm test`（16 个文件 / 49 个测试）、`npm run build` 通过；新增模组索引、元数据 TTL/ETag、Java 缓存和任务合并测试。
+- `npm run typecheck`、`npm test`（18 个文件 / 56 个测试）、`npm run build`、`npm run package:installer` 通过。
 - 隔离 200 模组实例前后对比：冷启动到可交互 `2146 ms → 1487 ms`；`snapshot()` JSON `42,163 B → 992 B`；`instanceMods` 200 条 `66 ms → 15 ms`；重复打开详情页 API 请求 `1 → 0`（单次点击到详情 hero 的样本为 `206 → 258 ms`，存在测试噪声，未宣称该单项提升）。
 - 已知边界：当前脚本只测量一次点击样本；离线零请求由服务层短路和单测断言保证，未做系统级抓包；`mods-index` 的目录 mtime 快路径不逐文件 stat，文件被同名原地覆盖时可能保留旧的 `installedAt`（展示用标题/启用状态仍从文件名和实例记录推导）。
 
@@ -91,7 +94,7 @@
 
 ### 验证与边界
 
-- `npm run typecheck`、`npm test`（13 个文件 / 41 个测试）、`npm run build` 通过；快照单元测试覆盖创建/恢复、游戏运行拒绝、自动快照保留 5 份、删除并归档。
+- `npm run typecheck`、`npm test`（18 个文件 / 56 个测试）、`npm run build`、`npm run package:installer` 通过。
 - 隔离实例实测：创建快照、预览 3 项覆盖、修改文件后恢复，`options.txt` 和存档文件恢复，自动生成安全快照；503 MB 存档快照主进程峰值内存约 229 MB。
 - 自动快照实测：开启开关后启动实例，即使游戏版本不完整导致启动失败，仍会先生成 `启动前自动快照`。
 - 删除实例选择“保留快照并删除”后，快照 ZIP 与元数据完整迁移到 `snapshots-archive`。
