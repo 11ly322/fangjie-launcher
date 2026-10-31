@@ -1548,16 +1548,24 @@ body {
 
 /* Controller focus and hints */
 .app-nav__gamepad {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 10px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  place-items: center;
+  gap: 0;
   border: 1px solid rgba(183, 243, 74, 0.35);
   border-radius: 999px;
   color: var(--accent);
   background: rgba(183, 243, 74, 0.08);
-  font-size: 12px;
-  font-weight: 650;
+  overflow: visible;
+}
+
+.app-nav__gamepad svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
 }
 
 .gamepad-focus,
@@ -1602,4 +1610,12 @@ body {
     bottom: 12px;
     font-size: 11px;
   }
+}
+
+.app-nav__tab.is-gamepad-focus {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface-raised));
+  color: var(--text);
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 0 0 6px color-mix(in srgb, var(--accent) 18%, transparent);
 }

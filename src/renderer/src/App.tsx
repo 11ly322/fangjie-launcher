@@ -35,7 +35,7 @@ import { DownloadsPage } from './pages/DownloadsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { CreateInstanceModal } from './modals/CreateInstanceModal'
 import { AccountModal } from './modals/AccountModal'
-import { useGamepad } from './lib/useGamepad'
+import { useGamepad, focusGamepadTarget } from './lib/useGamepad'
 
 interface ConfirmState {
   options: ConfirmOptions
@@ -290,6 +290,23 @@ export default function App(): React.JSX.Element {
     [modsInstanceId]
   )
 
+  const switchGamepadTab = useCallback(
+    (delta: -1 | 1) => {
+      if (document.querySelector('[role="dialog"]')) return
+      const root: PageName =
+        page === 'mods'
+          ? 'downloads'
+          : page === 'instances' || page === 'instance'
+            ? 'home'
+            : page
+      const tabs: PageName[] = ['home', 'downloads', 'multiplayer', 'settings']
+      const index = tabs.indexOf(root)
+      if (index < 0) return
+      navigate(tabs[(index + delta + tabs.length) % tabs.length])
+    },
+    [navigate, page]
+  )
+
   const gamepad = useGamepad({
     onBack: () => {
       if (page === 'instance') {
@@ -297,8 +314,17 @@ export default function App(): React.JSX.Element {
       } else if (page !== 'home') {
         navigate('home')
       }
-    }
+    },
+    onTabSwitch: switchGamepadTab
   })
+
+  useEffect(() => {
+    if (!gamepad.connected) return
+    const frame = window.requestAnimationFrame(() => {
+      focusGamepadTarget(document.querySelector<HTMLElement>('.app-nav__tab.is-active'))
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [page, gamepad.connected])
 
   const openInstance = useCallback((id: string) => {
     setActiveInstanceId(id)
@@ -602,7 +628,7 @@ export default function App(): React.JSX.Element {
         {gamepad.connected ? (
           <div className="gamepad-hint" role="status">
             <Gamepad2 size={15} />
-            <span>方向键切换 · A 选择 · B 返回</span>
+            <span>方向键切换 · LB/RB 切换页面 · A 选择 · B 返回</span>
           </div>
         ) : null}
       </div>
