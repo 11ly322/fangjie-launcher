@@ -55,6 +55,7 @@ export default function App(): React.JSX.Element {
   const [modsProjectType, setModsProjectType] = useState<ProjectType>('mod')
   const [createOpen, setCreateOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
+  const [accountInitialTab, setAccountInitialTab] = useState<'offline' | 'microsoft' | undefined>()
   const [launchError, setLaunchError] = useState<LaunchError | null>(null)
   const [toasts, setToasts] = useState<ToastItem[]>([])
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null)
@@ -414,6 +415,47 @@ export default function App(): React.JSX.Element {
     [confirmState]
   )
 
+  const openAccount = useCallback((tab?: 'offline' | 'microsoft') => {
+    setAccountInitialTab(tab)
+    setAccountOpen(true)
+  }, [])
+
+  const closeAccount = useCallback(() => {
+    setAccountOpen(false)
+    setAccountInitialTab(undefined)
+  }, [])
+
+  const switchAccountType = useCallback(
+    async (type: 'microsoft' | 'offline') => {
+      const current = bootRef.current
+      if (!current || current.account.type === type) return
+      const accounts = current.accounts?.length ? current.accounts : [current.account]
+      const target = accounts.find((entry) => entry.type === type)
+      if (target) {
+        const result = await window.fangjie.setActiveAccount(target.uuid)
+        if (!result.ok) {
+          toast(result.error, 'error')
+          return
+        }
+        await refresh()
+        toast(`已切换到${type === 'microsoft' ? '正版账号' : '离线档案'} ${result.value.name}`, 'success')
+        return
+      }
+      if (type === 'offline') {
+        const result = await window.fangjie.updateAccount('Steve')
+        if (!result.ok) {
+          toast(result.error, 'error')
+          return
+        }
+        await refresh()
+        toast('已切换到离线档案 Steve；正版登录状态已保留', 'success')
+        return
+      }
+      openAccount('microsoft')
+    },
+    [openAccount, refresh, toast]
+  )
+
   const exitLauncher = useCallback(async () => {
     const approved = await confirm({
       title: '退出启动器？',
@@ -481,7 +523,7 @@ export default function App(): React.JSX.Element {
       openMods,
       openCreateInstance: () => setCreateOpen(true),
       closeCreateInstance: () => setCreateOpen(false),
-      openAccount: () => setAccountOpen(true),
+      openAccount: () => openAccount(),
       closeAccount: () => setAccountOpen(false),
       setModsInstanceId,
       refresh,
@@ -550,7 +592,9 @@ export default function App(): React.JSX.Element {
             if (activeInstance) openInstance(activeInstance.id)
             else setPage('home')
           }}
-          onAccountClick={() => setAccountOpen(true)}
+          onAccountClick={() => openAccount()}
+          onSwitchAccountType={(type) => void switchAccountType(type)}
+          accountType={boot.account.type}
           onExit={() => void exitLauncher()}
           gamepadConnected={gamepad.connected}
         />
@@ -567,7 +611,11 @@ export default function App(): React.JSX.Element {
         </main>
 
         <CreateInstanceModal open={createOpen} onClose={() => setCreateOpen(false)} />
-        <AccountModal open={accountOpen} onClose={() => setAccountOpen(false)} />
+        <AccountModal
+          open={accountOpen}
+          onClose={closeAccount}
+          initialTab={accountInitialTab}
+        />
 
         <Modal
           open={Boolean(confirmState)}

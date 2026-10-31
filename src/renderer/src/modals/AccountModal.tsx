@@ -19,10 +19,12 @@ type AccountTab = 'offline' | 'microsoft'
 
 export function AccountModal({
   open,
-  onClose
+  onClose,
+  initialTab
 }: {
   open: boolean
   onClose: () => void
+  initialTab?: AccountTab
 }): React.JSX.Element {
   const { boot, refresh, toast, confirm } = useLauncher()
   const [tab, setTab] = useState<AccountTab>('offline')
@@ -52,7 +54,7 @@ export function AccountModal({
 
   useEffect(() => {
     if (!open) return
-    setTab(boot.account.type === 'microsoft' ? 'microsoft' : 'offline')
+    setTab(initialTab || (boot.account.type === 'microsoft' ? 'microsoft' : 'offline'))
     setName(boot.account.name)
     setError('')
     setSaving(false)
@@ -63,7 +65,7 @@ export function AccountModal({
       moddedInstances.find((instance) => !boot.account.skin?.appliedInstanceIds.includes(instance.id)) ||
       moddedInstances[0]
     setSkinTarget(nextTarget?.id || '')
-  }, [open, boot.account, moddedInstances])
+  }, [open, boot.account, moddedInstances, initialTab])
 
   const saveOffline = async (): Promise<void> => {
     const cleaned = name.trim()

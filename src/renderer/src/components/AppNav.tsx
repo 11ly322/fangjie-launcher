@@ -40,6 +40,8 @@ export function AppNav({
   onLaunch,
   onOpenActive,
   onAccountClick,
+  onSwitchAccountType,
+  accountType,
   onExit,
   gamepadConnected
 }: {
@@ -53,6 +55,8 @@ export function AppNav({
   onLaunch: () => void
   onOpenActive: () => void
   onAccountClick: () => void
+  onSwitchAccountType: (type: 'microsoft' | 'offline') => void
+  accountType: 'microsoft' | 'offline'
   onExit: () => void
   gamepadConnected?: boolean
 }): React.JSX.Element {
@@ -90,6 +94,24 @@ export function AppNav({
       </nav>
 
       <div className="app-nav__right">
+        <div className="account-mode-switch" role="group" aria-label="登录方式">
+          <button
+            type="button"
+            className={classNames('account-mode-switch__button', accountType === 'microsoft' && 'is-active')}
+            aria-pressed={accountType === 'microsoft'}
+            onClick={() => onSwitchAccountType('microsoft')}
+          >
+            正版
+          </button>
+          <button
+            type="button"
+            className={classNames('account-mode-switch__button', accountType === 'offline' && 'is-active')}
+            aria-pressed={accountType === 'offline'}
+            onClick={() => onSwitchAccountType('offline')}
+          >
+            离线
+          </button>
+        </div>
         <button
           type="button"
           className="app-nav__version"
