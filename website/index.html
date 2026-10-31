@@ -26,7 +26,7 @@
         "name": "unflod bindery launcher",
         "applicationCategory": "GameApplication",
         "operatingSystem": "Windows 10, Windows 11",
-        "softwareVersion": "0.0.8",
+        "softwareVersion": "0.0.9",
         "description": "支持房间码联机、五种加载器、双模组源、正版登录与本地皮肤的 Minecraft 启动器。",
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
         "url": "https://11ly322.github.io/fangjie-launcher/"
@@ -61,7 +61,7 @@
 
         <div class="header-actions">
           <a class="button button--ghost button--sm" href="https://github.com/11ly322/fangjie-launcher" target="_blank" rel="noreferrer">源码</a>
-          <a class="button button--primary button--sm" href="#download">下载 0.0.8</a>
+          <a class="button button--primary button--sm" href="#download">下载 0.0.9</a>
           <button class="menu-toggle" type="button" aria-controls="site-nav" aria-expanded="false" aria-label="打开菜单" data-menu-toggle>
             <span></span><span></span>
           </button>
@@ -75,17 +75,16 @@
         <div class="hero-glow hero-glow--two" aria-hidden="true"></div>
         <div class="container hero-grid">
           <div class="hero-copy reveal">
-            <p class="eyebrow"><span class="status-dot"></span> MINECRAFT LAUNCHER · 0.0.8</p>
+            <p class="eyebrow"><span class="status-dot"></span> MINECRAFT LAUNCHER · 0.0.9</p>
             <h1 id="hero-title">把世界，<br /><em>收进你的书架。</em></h1>
             <p class="hero-lede">
-              UBL 是一款以书架为灵感的 Windows Minecraft 启动器。点书脊切换实例、五加载器、双模组源、
-              没有版本的加载器不出现、整合包与模组可单独下载，还有版本隔离、高级启动设置，以及不需要公网 IP 和 VPN 软件的房间联机。
+              UBL 是一款以书架为灵感的 Windows Minecraft 启动器。顶部工作台集中启动、下载、联机与设置，启动页用横向版本列表切换实例；支持五加载器、双模组源、整合包与模组单独下载，以及不需要公网 IP 和 VPN 软件的房间联机。
             </p>
             <div class="hero-actions">
-              <a class="button button--primary button--lg" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.8/UBL-Launcher-0.0.8-Setup.exe">
+              <a class="button button--primary button--lg" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.9/UBL-Launcher-0.0.9-Setup.exe">
                 下载 Windows 安装包 <span aria-hidden="true">↓</span>
               </a>
-              <a class="button button--ghost button--lg" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.8/UBL-Portable-0.0.8.zip">
+              <a class="button button--ghost button--lg" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.9/UBL-Portable-0.0.9.zip">
                 免安装便携版
               </a>
             </div>
@@ -201,7 +200,7 @@
             </div>
           </div>
           <div class="split-copy reveal" data-delay="100">
-            <p class="eyebrow">ROOM LINK · 0.0.8</p>
+            <p class="eyebrow">ROOM LINK · 0.0.9</p>
             <h2 id="multiplayer-title">朋友只需要一个房间码。</h2>
             <p>
               房主在 Minecraft 中开放局域网，把聊天栏端口填进 UBL；房客输入房间码，
@@ -229,8 +228,8 @@
           </div>
           <div class="gallery-grid">
             <figure class="gallery-item gallery-item--large reveal">
-              <img src="assets/home.webp" width="1600" height="1000" alt="UBL 首页：书架主体、低 bit 像素书架与运行状态" loading="lazy" />
-              <figcaption><span>01</span> 书架首页：像素书架、最近实例与运行状态</figcaption>
+              <img src="assets/home.webp" width="1600" height="1000" alt="UBL 启动页：顶部工作台、横向版本列表与运行状态" loading="lazy" />
+              <figcaption><span>01</span> 顶部工作台：版本列表、启动与运行状态</figcaption>
             </figure>
             <figure class="gallery-item reveal" data-delay="80">
               <img src="assets/create-instance.webp" width="1600" height="1000" alt="UBL 创建实例：只显示有版本的加载器" loading="lazy" />
@@ -249,14 +248,15 @@
           <div class="roadmap-panel reveal">
             <div>
               <p class="eyebrow">NEXT ON THE BENCH</p>
-              <h2 id="roadmap-title">这一版，把更新路径收好。</h2>
+              <h2 id="roadmap-title">这一版，把常用操作放到手边。</h2>
               <p>
-                0.0.8 修复更新包下载的 EPERM 锁文件错误，更新缓存、安装助手与日志只写入当前安装目录。
-                加载器切换、书架实例选择、整合包下载、版本隔离与高级启动设置继续保留。0.0.7 及更早版本需要手动安装一次 0.0.8。
+                0.0.9 重做顶部工作台与启动页，启动、下载、联机与设置集中到顶栏；下载中心按游戏版本、模组、整合包、资源包、光影与加载器分类，实例与模组列表支持自动刷新。
+                加载器切换、整合包下载、版本隔离与高级启动设置继续保留。0.0.8 及更早版本需要手动安装一次 0.0.9。
               </p>
             </div>
             <div class="roadmap-list" aria-label="开发路线">
-              <div class="roadmap-item"><span class="roadmap-dot roadmap-dot--active"></span><div><strong>0.0.8</strong><p>修复更新下载 EPERM；更新包/助手/日志迁入安装目录，不碰旧 AppData 缓存</p></div><span class="tag tag--accent">已发布</span></div>
+              <div class="roadmap-item"><span class="roadmap-dot roadmap-dot--active"></span><div><strong>0.0.9</strong><p>顶部工作台、横向版本列表、分类下载中心；自动刷新实例与模组列表</p></div><span class="tag tag--accent">已发布</span></div>
+              <div class="roadmap-item"><span class="roadmap-dot"></span><div><strong>0.0.8</strong><p>修复更新下载 EPERM；更新包/助手/日志迁入安装目录，不碰旧 AppData 缓存</p></div><span class="tag">已发布</span></div>
               <div class="roadmap-item"><span class="roadmap-dot"></span><div><strong>0.0.7</strong><p>实例加载器切换/移除，保留存档与模组文件；白天模式提示修复</p></div><span class="tag">已发布</span></div>
               <div class="roadmap-item"><span class="roadmap-dot"></span><div><strong>0.0.6</strong><p>书架实例切换、整合包下载、版本隔离、高级设置与更新重启修复</p></div><span class="tag">已发布</span></div>
               <div class="roadmap-item"><span class="roadmap-dot"></span><div><strong>0.0.5</strong><p>UBL 更名、扁平书架界面、日夜模式、智能加载器与独立下载</p></div><span class="tag">已发布</span></div>
@@ -274,34 +274,34 @@
       <section class="section download-section" id="download" aria-labelledby="download-title">
         <div class="container">
           <div class="section-heading reveal">
-            <p class="eyebrow">DOWNLOAD · 0.0.8</p>
+            <p class="eyebrow">DOWNLOAD · 0.0.9</p>
             <h2 id="download-title">把 UBL 放到桌面上。</h2>
             <p>Windows 10/11 x64。安装版按当前用户安装，不请求管理员权限；卸载不会删除游戏存档。</p>
           </div>
           <div class="download-grid">
-            <a class="download-card download-card--primary reveal" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.8/UBL-Launcher-0.0.8-Setup.exe">
+            <a class="download-card download-card--primary reveal" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.9/UBL-Launcher-0.0.9-Setup.exe">
               <span class="download-card__label">RECOMMENDED · SETUP</span>
               <strong>Windows 安装包</strong>
-              <span>UBL-Launcher-0.0.8-Setup.exe · 170.7 MiB</span>
+              <span>UBL-Launcher-0.0.9-Setup.exe · 170.7 MiB</span>
               <span class="download-card__action">下载安装包 <span aria-hidden="true">↓</span></span>
             </a>
-            <a class="download-card reveal" data-delay="80" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.8/UBL-Portable-0.0.8.zip">
+            <a class="download-card reveal" data-delay="80" href="https://github.com/11ly322/fangjie-launcher/releases/download/v0.0.9/UBL-Portable-0.0.9.zip">
               <span class="download-card__label">PORTABLE · ZIP</span>
               <strong>免安装便携版</strong>
               <span>解压后双击 UBL.exe · 171.1 MiB</span>
               <span class="download-card__action">下载便携版 <span aria-hidden="true">↓</span></span>
             </a>
-            <a class="download-card download-card--muted reveal" data-delay="160" href="https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.8">
+            <a class="download-card download-card--muted reveal" data-delay="160" href="https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.9">
               <span class="download-card__label">VERIFY</span>
               <strong>SHA256 与更新记录</strong>
-              <span>校验发布包，查看 0.0.8 变更</span>
+              <span>校验发布包，查看 0.0.9 变更</span>
               <span class="download-card__action">打开 Release <span aria-hidden="true">↗</span></span>
             </a>
           </div>
           <div class="checksum reveal">
             <span>安装包 SHA256</span>
-            <code>22dffa6472919fa1dc4a978578565ec9a2773c0880a5fbdb86235e5b4b268964</code>
-            <button type="button" class="copy-button" data-copy="22dffa6472919fa1dc4a978578565ec9a2773c0880a5fbdb86235e5b4b268964">复制</button>
+            <code>2f5ab879fe611cc795cb7fc9d1c8e625660db102ba8593eb6dc2bd3170d925f7</code>
+            <button type="button" class="copy-button" data-copy="2f5ab879fe611cc795cb7fc9d1c8e625660db102ba8593eb6dc2bd3170d925f7">复制</button>
           </div>
         </div>
       </section>
@@ -332,15 +332,15 @@
             </details>
             <details>
               <summary>为什么安装包提示未知发布者？</summary>
-              <p>0.0.8 尚未做代码签名，Windows SmartScreen 可能提示未知发布者。校验 SHA256 后再运行。</p>
+              <p>0.0.9 尚未做代码签名，Windows SmartScreen 可能提示未知发布者。校验 SHA256 后再运行。</p>
             </details>
             <details>
               <summary>从方界或 0.0.5 升级会丢实例吗？</summary>
-              <p>不会。0.0.8 继续复用内部包名和 <code>%APPDATA%\fangjie-launcher</code> 数据目录，只更新显示名称、安装目录与可执行文件；安装版新目录默认是 <code>%LOCALAPPDATA%\Programs\UBL</code>，卸载不会删除存档。</p>
+              <p>不会。0.0.9 继续复用内部包名和 <code>%APPDATA%\fangjie-launcher</code> 数据目录，只更新显示名称、安装目录与可执行文件；安装版新目录默认是 <code>%LOCALAPPDATA%\Programs\UBL</code>，卸载不会删除存档。</p>
             </details>
             <details>
-              <summary>0.0.5 / 0.0.7 能自动更新到 0.0.8 吗？</summary>
-              <p>不能。0.0.7 及更早版本仍使用旧 AppData 更新缓存，请手动安装一次 0.0.8；0.0.8 起后续更新会写入安装目录并在完成后自动重启。</p>
+              <summary>0.0.5 / 0.0.7 能自动更新到 0.0.9 吗？</summary>
+              <p>不能直接升级到 0.0.9。0.0.8 及更早版本的更新器无法完成自替换，请手动安装一次 0.0.9；0.0.9 起后续更新会写入安装目录并在完成后自动重启。</p>
             </details>
             <details>
               <summary>哪些还没做？</summary>

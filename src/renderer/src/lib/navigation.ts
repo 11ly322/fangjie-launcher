@@ -8,11 +8,11 @@ export type PageName =
   | 'settings'
 
 export const PAGE_LABELS: Record<PageName, string> = {
-  home: '首页',
-  instances: '游戏实例',
-  instance: '实例详情',
-  mods: '模组工坊',
-  multiplayer: '房间联机',
+  home: '启动',
+  instances: '版本库',
+  instance: '版本设置',
+  mods: '资源下载',
+  multiplayer: '联机',
   downloads: '下载中心',
   settings: '设置'
 }

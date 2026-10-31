@@ -1,7 +1,7 @@
 import { app } from 'electron'
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
-import { spawn } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import type { CoreUpdateAsset, CoreUpdateCheck, CoreUpdateManifest } from '../shared/types'
 import type { RustCoreClient } from './rustCore'
 import { downloadToFile, requestResponse } from './downloadSource'
@@ -177,73 +177,108 @@ export async function downloadUpdate(
   return destination
 }
 
-const APPLY_HELPER_SOURCE = String.raw`const { spawn } = require('node:child_process')
-const fs = require('node:fs')
-const [parentPid, installer, installDir, appExe, logPath, relaunchArgsJson] = process.argv.slice(2)
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-const log = (message) => {
+const APPLY_HELPER_SOURCE = String.raw`$ErrorActionPreference = 'Continue'
+
+function Write-Log([string]$message) {
   try {
-    fs.appendFileSync(logPath, new Date().toISOString() + ' ' + message + '\n')
+    $stamp = [DateTime]::UtcNow.ToString('o')
+    Add-Content -LiteralPath $LogPath -Value ($stamp + ' ' + $message) -Encoding UTF8
   } catch {
-    /* logging must never block the install */
   }
 }
-const alive = (pid) => {
-  try {
-    process.kill(pid, 0)
-    return true
-  } catch (error) {
-    return error && error.code === 'EPERM'
+
+try {
+  Write-Log ('helper started parent=' + $ParentPid + ' installer=' + $Installer)
+  Write-Log ('relaunch args=' + $RelaunchArgsJson)
+  $parent = Get-Process -Id $ParentPid -ErrorAction SilentlyContinue
+  if ($null -ne $parent) {
+    try { $parent.WaitForExit(45000) | Out-Null } catch { }
   }
-}
-async function main() {
-  const pid = Number(parentPid)
-  for (let i = 0; i < 160 && Number.isFinite(pid) && alive(pid); i += 1) await sleep(250)
-  await sleep(1200)
-  log('parent exited; running installer with /D=' + installDir)
-  const installerProcess = spawn(installer, ['/S', '/D=' + installDir], {
-    stdio: 'ignore',
-    windowsHide: true
+
+  $deadline = [DateTime]::UtcNow.AddSeconds(25)
+  while ([DateTime]::UtcNow -lt $deadline) {
+    $running = @(Get-Process -ErrorAction SilentlyContinue | Where-Object {
+      try { $_.Path -eq $AppExe } catch { $false }
+    })
+    if ($running.Count -eq 0) { break }
+    Start-Sleep -Milliseconds 350
+  }
+  $running = @(Get-Process -ErrorAction SilentlyContinue | Where-Object {
+    try { $_.Path -eq $AppExe } catch { $false }
   })
-  installerProcess.on('error', (error) => {
-    log('installer failed to start: ' + error.message)
-    process.exit(1)
-  })
-  installerProcess.on('close', async (code) => {
-    log('installer exit ' + code)
-    if (code !== 0) process.exit(code || 1)
-    for (let i = 0; i < 40 && !fs.existsSync(appExe); i += 1) await sleep(250)
-    if (!fs.existsSync(appExe)) {
-      log('target executable missing: ' + appExe)
-      process.exit(1)
-    }
-    const env = { ...process.env }
-    delete env.ELECTRON_RUN_AS_NODE
-    delete env.ELECTRON_NO_ATTACH_CONSOLE
-    let relaunchArgs = []
+  if ($running.Count -gt 0) {
+    Write-Log ('stopping ' + $running.Count + ' lingering launcher process(es)')
+    $running | Stop-Process -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Milliseconds 1200
+  }
+
+  $before = 0
+  if (Test-Path -LiteralPath $AppExe) {
+    $before = (Get-Item -LiteralPath $AppExe).LastWriteTimeUtc.Ticks
+  }
+
+  $installed = $false
+  for ($attempt = 1; $attempt -le 2; $attempt += 1) {
+    Write-Log ('running installer attempt ' + $attempt + ' with /D=' + $InstallDir)
     try {
-      const parsed = JSON.parse(relaunchArgsJson || '[]')
-      if (Array.isArray(parsed)) relaunchArgs = parsed.filter((item) => typeof item === 'string')
+      $process = Start-Process -FilePath $Installer -ArgumentList @('/S', ('/D=' + $InstallDir)) -Wait -PassThru -WindowStyle Hidden
+      Write-Log ('installer exit ' + $process.ExitCode)
+      if ($process.ExitCode -ne 0) { exit $process.ExitCode }
     } catch {
-      /* relaunch without optional arguments */
+      Write-Log ('installer failed: ' + $_.Exception.Message)
+      exit 1
     }
-    try {
-      const launched = spawn(appExe, relaunchArgs, {
-        detached: true,
-        stdio: 'ignore',
-        windowsHide: false,
-        env
-      })
-      launched.unref()
-      log('relaunched ' + appExe)
-    } catch (error) {
-      log('relaunch failed: ' + error.message)
-      process.exit(1)
+    Start-Sleep -Milliseconds 1400
+    if (-not (Test-Path -LiteralPath $AppExe)) {
+      Write-Log ('target executable missing: ' + $AppExe)
+      exit 1
     }
-    process.exit(0)
-  })
+    $after = (Get-Item -LiteralPath $AppExe).LastWriteTimeUtc.Ticks
+    if ($after -ne $before) {
+      $installed = $true
+      break
+    }
+    Write-Log 'target executable unchanged after installer; retrying'
+    Start-Sleep -Milliseconds 1800
+  }
+
+  if (-not $installed) {
+    Write-Log 'installer reported success but target executable was not replaced'
+    exit 1
+  }
+
+  $launch = @()
+  try {
+    $parsed = ConvertFrom-Json -InputObject $RelaunchArgsJson
+    if ($null -ne $parsed) {
+      foreach ($item in @($parsed)) {
+        if ($item -is [string] -and $item.Length -gt 0) {
+          if ($item -match '\s') { $launch += ('"' + $item + '"') } else { $launch += $item }
+        }
+      }
+    }
+  } catch {
+  }
+
+  try {
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $AppExe
+    $psi.WorkingDirectory = $InstallDir
+    $psi.UseShellExecute = $false
+    $psi.EnvironmentVariables.Remove('ELECTRON_RUN_AS_NODE') | Out-Null
+    $psi.EnvironmentVariables.Remove('ELECTRON_NO_ATTACH_CONSOLE') | Out-Null
+    if ($launch.Count -gt 0) { $psi.Arguments = ($launch -join ' ') }
+    [System.Diagnostics.Process]::Start($psi) | Out-Null
+    Write-Log ('relaunched ' + $AppExe + ' args=' + ($launch -join ' '))
+  } catch {
+    Write-Log ('relaunch failed: ' + $_.Exception.Message)
+    exit 1
+  }
+  exit 0
+} catch {
+  Write-Log ('update helper failed: ' + $_.Exception.Message)
+  exit 1
 }
-main()
 `
 
 export async function applyUpdate(installerPath: string): Promise<void> {
@@ -257,36 +292,42 @@ export async function applyUpdate(installerPath: string): Promise<void> {
   const installDir = dirname(process.execPath)
   const appExe = join(installDir, basename(process.execPath))
   const workDir = dirname(installerPath)
-  const helperPath = join(workDir, 'ubl-update-apply.cjs')
+  const helperPath = join(workDir, 'ubl-update-apply.ps1')
   const logPath = join(workDir, 'ubl-update-apply.log')
-  writeFileSync(helperPath, APPLY_HELPER_SOURCE, 'utf8')
+  // helperSource is built below and written immediately before spawning
   try {
     writeFileSync(logPath, '', 'utf8')
   } catch {
     /* an existing log is still useful */
   }
-  const helper = spawn(
-    process.execPath,
-    [
-      helperPath,
-      String(process.pid),
-      installerPath,
-      installDir,
-      appExe,
-      logPath,
-      JSON.stringify(process.argv.filter((argument) => argument.startsWith('--user-data-dir=')))
-    ],
-    {
-      detached: true,
-      stdio: 'ignore',
-      windowsHide: true,
-      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }
-    }
-  )
-  await new Promise<void>((resolve, reject) => {
-    helper.once('spawn', resolve)
-    helper.once('error', (error) => reject(new Error(`无法启动更新助手：${error.message}`)))
+  const powershell = process.env.SystemRoot
+    ? join(process.env.SystemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+    : 'powershell.exe'
+  const quotePowerShell = (value: string): string =>
+    "'" + value.replace(/\\\\/g, '\\').replace(/'/g, "''") + "'"
+  const relaunchArgs = process.argv
+    .filter((argument) => argument.startsWith('--user-data-dir='))
+    .map((argument) => argument.replace(/\\/g, '/'))
+  const helperSource = [
+    '$ParentPid = ' + String(process.pid),
+    '$Installer = ' + quotePowerShell(installerPath),
+    '$InstallDir = ' + quotePowerShell(installDir),
+    '$AppExe = ' + quotePowerShell(appExe),
+    '$LogPath = ' + quotePowerShell(logPath),
+    '$RelaunchArgsJson = ' + quotePowerShell(JSON.stringify(relaunchArgs)),
+    APPLY_HELPER_SOURCE
+  ].join('\n')
+  writeFileSync(helperPath, helperSource, 'utf8')
+  const helperCommand = `"${powershell}" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "${helperPath}"`
+  const psQuote = (value: string): string => "'" + value.replace(/'/g, "''") + "'"
+  const wmiCommand = [
+    '$result = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = ' + psQuote(helperCommand) + ' }',
+    'if ($result.ReturnValue -ne 0) { exit 1 }',
+    'Write-Output $result.ProcessId'
+  ].join('; ')
+  execFileSync(powershell, ['-NoProfile', '-NonInteractive', '-Command', wmiCommand], {
+    windowsHide: true,
+    timeout: 15000
   })
-  helper.unref()
-  setTimeout(() => app.quit(), 800)
+  setTimeout(() => app.quit(), 350)
 }

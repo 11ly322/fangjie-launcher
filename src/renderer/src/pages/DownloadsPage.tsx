@@ -6,9 +6,16 @@ import {
   Clock3,
   Cpu,
   Download,
+  Image,
+  Package,
+  Play,
   Puzzle,
   RefreshCw,
+  Settings2,
+  Sparkles,
+  Square,
   Trash2,
+  Wrench,
   XCircle
 } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -18,7 +25,18 @@ import { Badge, Button, EmptyState, IconButton, InlineNotice, ProgressBar } from
 import { classNames, formatRelative, formatSpeed } from '../lib/format'
 
 export function DownloadsPage(): React.JSX.Element {
-  const { tasks, boot, openInstance, openCreateInstance, refresh, toast } = useLauncher()
+  const {
+    tasks,
+    boot,
+    running,
+    launching,
+    openInstance,
+    openCreateInstance,
+    openMods,
+    launch,
+    refresh,
+    toast
+  } = useLauncher()
   const active = tasks.filter((task) => task.status === 'running' || task.status === 'queued')
   const finished = tasks
     .filter((task) => ['success', 'error', 'cancelled'].includes(task.status))
@@ -61,6 +79,100 @@ export function DownloadsPage(): React.JSX.Element {
           </Button>
         ) : null}
       </header>
+
+      <section className="download-hub">
+        <button type="button" className="download-hub__card download-hub__card--primary" onClick={openCreateInstance}>
+          <span className="download-hub__icon"><Boxes size={22} /></span>
+          <span className="download-hub__copy">
+            <strong>游戏版本</strong>
+            <small>安装原版或带加载器的完整版本</small>
+          </span>
+          <ArrowRight size={17} />
+        </button>
+        <button type="button" className="download-hub__card" onClick={() => openMods(undefined, 'mod')}>
+          <span className="download-hub__icon"><Puzzle size={20} /></span>
+          <span className="download-hub__copy">
+            <strong>模组</strong>
+            <small>Modrinth / CurseForge 双源</small>
+          </span>
+          <ArrowRight size={16} />
+        </button>
+        <button type="button" className="download-hub__card" onClick={() => openMods(undefined, 'modpack')}>
+          <span className="download-hub__icon"><Package size={20} /></span>
+          <span className="download-hub__copy">
+            <strong>整合包</strong>
+            <small>下载 .mrpack 或直接使用</small>
+          </span>
+          <ArrowRight size={16} />
+        </button>
+        <button type="button" className="download-hub__card" onClick={() => openMods(undefined, 'resourcepack')}>
+          <span className="download-hub__icon"><Image size={20} /></span>
+          <span className="download-hub__copy">
+            <strong>资源包</strong>
+            <small>材质、界面与音效</small>
+          </span>
+          <ArrowRight size={16} />
+        </button>
+        <button type="button" className="download-hub__card" onClick={() => openMods(undefined, 'shader')}>
+          <span className="download-hub__icon"><Sparkles size={20} /></span>
+          <span className="download-hub__copy">
+            <strong>光影</strong>
+            <small>为世界换一套光线</small>
+          </span>
+          <ArrowRight size={16} />
+        </button>
+        <button type="button" className="download-hub__card" onClick={openCreateInstance}>
+          <span className="download-hub__icon"><Wrench size={20} /></span>
+          <span className="download-hub__copy">
+            <strong>加载器</strong>
+            <small>单独安装 Fabric / Forge 等</small>
+          </span>
+          <ArrowRight size={16} />
+        </button>
+      </section>
+
+      {boot.instances.length ? (
+        <section className="download-versions">
+          <div className="download-section__heading">
+            <h2>已安装版本</h2>
+            <span>选择版本后可直接启动</span>
+          </div>
+          <div className="download-version-list">
+            {boot.instances.map((instance) => {
+              const isRunning = running.has(instance.id)
+              const isLaunching = launching.has(instance.id)
+              return (
+                <div className="download-version" key={instance.id}>
+                  <button type="button" className="download-version__open" onClick={() => openInstance(instance.id)}>
+                    <strong>{instance.name}</strong>
+                    <small>
+                      Minecraft {instance.mcVersion} · {instance.loader === 'vanilla' ? '原版' : instance.loader}
+                      {instance.modCount ? ` · ${instance.modCount} 个模组` : ''}
+                    </small>
+                  </button>
+                  <Button
+                    size="sm"
+                    variant={isRunning ? 'danger' : 'primary'}
+                    loading={isLaunching}
+                    icon={isRunning ? <Square size={11} fill="currentColor" /> : <Play size={11} fill="currentColor" />}
+                    onClick={() => void launch(instance.id)}
+                  >
+                    {isRunning ? '结束' : '启动'}
+                  </Button>
+                  <button
+                    type="button"
+                    className="download-version__settings"
+                    onClick={() => openInstance(instance.id)}
+                    aria-label={`${instance.name} 版本设置`}
+                  >
+                    <Settings2 size={15} />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      ) : null}
 
       <section className="download-summary">
         <div>

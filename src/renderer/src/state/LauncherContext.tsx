@@ -4,6 +4,7 @@ import type {
   InstanceSummary,
   LaunchState,
   LogLine,
+  ProjectType,
   Settings,
   TaskView
 } from '../../../shared/types'
@@ -40,6 +41,7 @@ export interface LauncherContextValue {
   activeInstanceId: string | null
   activeInstance: InstanceSummary | null
   modsInstanceId: string | null
+  modsProjectType: ProjectType
   logs: Record<string, LogLine[]>
   createOpen: boolean
   accountOpen: boolean
@@ -47,7 +49,7 @@ export interface LauncherContextValue {
   navigate: (page: PageName) => void
   openInstance: (id: string) => void
   selectInstance: (id: string) => void
-  openMods: (instanceId?: string) => void
+  openMods: (instanceId?: string, projectType?: ProjectType) => void
   openCreateInstance: () => void
   closeCreateInstance: () => void
   openAccount: () => void

@@ -64,6 +64,7 @@ export function ModsPage(): React.JSX.Element {
     boot,
     tasks,
     modsInstanceId,
+    modsProjectType,
     setModsInstanceId,
     openCreateInstance,
     openInstance,
@@ -77,7 +78,7 @@ export function ModsPage(): React.JSX.Element {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
   const [sort, setSort] = useState<SortMode>('downloads')
-  const [projectType, setProjectType] = useState<ProjectType>('mod')
+  const [projectType, setProjectType] = useState<ProjectType>(modsProjectType)
   const [source, setSource] = useState<ModSource>(() =>
     localStorage.getItem('fangjie.modSource') === 'curseforge' ? 'curseforge' : 'modrinth'
   )
@@ -97,6 +98,11 @@ export function ModsPage(): React.JSX.Element {
     () => localStorage.getItem('fangjie.modTranslate') !== '0'
   )
   const requestId = useRef(0)
+  const [dataTick, setDataTick] = useState(0)
+  useEffect(() => window.fangjie.onDataChanged(() => setDataTick((value) => value + 1)), [])
+  useEffect(() => {
+    setProjectType(modsProjectType)
+  }, [modsProjectType])
   const searchPlaceholder =
     projectType === 'mod'
       ? '搜索模组，例如 Sodium、Create、地图…'
@@ -133,7 +139,7 @@ export function ModsPage(): React.JSX.Element {
     return () => {
       active = false
     }
-  }, [selectedInstance?.id, selectedInstance?.modCount, modTaskState])
+  }, [selectedInstance?.id, selectedInstance?.modCount, modTaskState, dataTick])
 
   useEffect(() => {
     setDetail(null)

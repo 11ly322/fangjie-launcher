@@ -11,7 +11,7 @@ import {
   useRef,
   useState
 } from 'react'
-import type { Bootstrap, LogLine, Settings, TaskView } from '../../shared/types'
+import type { Bootstrap, LogLine, ProjectType, Settings, TaskView } from '../../shared/types'
 import { PAGE_LABELS, type PageName } from './lib/navigation'
 import { applyColorMode, applyTheme } from './lib/theme'
 import {
@@ -21,7 +21,7 @@ import {
   type ToastItem,
   type ToastTone
 } from './state/LauncherContext'
-import { Sidebar } from './components/Sidebar'
+import { AppNav } from './components/AppNav'
 import { TitleBar } from './components/TitleBar'
 import { BrandMark } from './components/Artwork'
 import { Button, Modal, Spinner } from './components/ui'
@@ -50,6 +50,7 @@ export default function App(): React.JSX.Element {
   const [page, setPage] = useState<PageName>('home')
   const [activeInstanceId, setActiveInstanceId] = useState<string | null>(null)
   const [modsInstanceId, setModsInstanceId] = useState<string | null>(null)
+  const [modsProjectType, setModsProjectType] = useState<ProjectType>('mod')
   const [createOpen, setCreateOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const [launchError, setLaunchError] = useState<LaunchError | null>(null)
@@ -146,6 +147,21 @@ export default function App(): React.JSX.Element {
   useEffect(() => {
     void loadBootstrap()
   }, [loadBootstrap])
+
+  useEffect(() => {
+    if (!boot) return
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible' && bootRef.current) void refresh()
+    }, 8000)
+    const onFocus = (): void => {
+      if (bootRef.current) void refresh()
+    }
+    window.addEventListener('focus', onFocus)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [boot, refresh])
 
   useEffect(() => {
     if (!boot) return
@@ -281,13 +297,14 @@ export default function App(): React.JSX.Element {
     setActiveInstanceId(id)
   }, [])
 
-  const openMods = useCallback((instanceId?: string) => {
+  const openMods = useCallback((instanceId?: string, projectType?: ProjectType) => {
     const instances = bootRef.current?.instances || []
     const candidate = instanceId
       ? instances.find((instance) => instance.id === instanceId && instance.loader !== 'vanilla')
       : instances.find((instance) => instance.id === activeInstanceId && instance.loader !== 'vanilla') ||
         instances.find((instance) => instance.loader !== 'vanilla')
     if (candidate) setModsInstanceId(candidate.id)
+    if (projectType) setModsProjectType(projectType)
     setPage('mods')
   }, [activeInstanceId])
 
@@ -402,6 +419,7 @@ export default function App(): React.JSX.Element {
       activeInstanceId,
       activeInstance,
       modsInstanceId,
+      modsProjectType,
       logs,
       createOpen,
       accountOpen,
@@ -435,6 +453,7 @@ export default function App(): React.JSX.Element {
     activeInstanceId,
     activeInstance,
     modsInstanceId,
+    modsProjectType,
     logs,
     createOpen,
     accountOpen,
@@ -463,30 +482,36 @@ export default function App(): React.JSX.Element {
 
   return (
     <LauncherContext.Provider value={contextValue}>
-      <div className="app-shell">
+      <div className="app-shell app-shell--topnav">
         <TitleBar pageLabel={title} />
-        <div className="app-body">
-          <Sidebar
-            page={page}
-            onNavigate={navigate}
-            account={boot.account}
-            tasks={tasks}
-            java={boot.java}
-            appVersion={boot.appVersion}
-            onAccountClick={() => setAccountOpen(true)}
-          />
-          <main className="main-scroll" id="main-content">
-            {page === 'home' ? <HomePage /> : null}
-            {page === 'instances' ? <InstancesPage /> : null}
-            {page === 'instance' && activeInstance ? (
-              <InstanceDetailPage instance={activeInstance} />
-            ) : null}
-            {page === 'mods' ? <ModsPage /> : null}
-            {page === 'multiplayer' ? <MultiplayerPage /> : null}
-            {page === 'downloads' ? <DownloadsPage /> : null}
-            {page === 'settings' ? <SettingsPage /> : null}
-          </main>
-        </div>
+        <AppNav
+          page={page}
+          onNavigate={navigate}
+          account={boot.account}
+          tasks={tasks}
+          activeInstance={activeInstance}
+          running={activeInstance ? running.has(activeInstance.id) : false}
+          launching={activeInstance ? launching.has(activeInstance.id) : false}
+          onLaunch={() => {
+            if (activeInstance) void launch(activeInstance.id)
+          }}
+          onOpenActive={() => {
+            if (activeInstance) openInstance(activeInstance.id)
+            else setPage('home')
+          }}
+          onAccountClick={() => setAccountOpen(true)}
+        />
+        <main className="main-scroll" id="main-content">
+          {page === 'home' ? <HomePage /> : null}
+          {page === 'instances' ? <InstancesPage /> : null}
+          {page === 'instance' && activeInstance ? (
+            <InstanceDetailPage instance={activeInstance} />
+          ) : null}
+          {page === 'mods' ? <ModsPage /> : null}
+          {page === 'multiplayer' ? <MultiplayerPage /> : null}
+          {page === 'downloads' ? <DownloadsPage /> : null}
+          {page === 'settings' ? <SettingsPage /> : null}
+        </main>
 
         <CreateInstanceModal open={createOpen} onClose={() => setCreateOpen(false)} />
         <AccountModal open={accountOpen} onClose={() => setAccountOpen(false)} />

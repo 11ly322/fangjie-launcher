@@ -1575,7 +1575,6 @@ img {
   text-overflow: ellipsis;
   white-space: nowrap;
   writing-mode: vertical-rl;
-  transform: rotate(180deg);
 }
 
 .book-spine--blank {

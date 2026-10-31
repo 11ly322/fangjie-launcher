@@ -6,20 +6,20 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-c4f06a.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-4a7c1f)
 
-一个面向 Windows 的 Minecraft 桌面启动器，使用 Electron + React + TypeScript 构建。目标是接近 PCL2 的核心使用体验：游戏实例、加载器安装、模组搜索下载、正版登录与离线皮肤。0.0.5 起更名为 **unflod bindery launcher（UBL）**，以书架和低 bit 像素为视觉主体。
+一个面向 Windows 的 Minecraft 桌面启动器，使用 Electron + React + TypeScript 构建。以游戏版本为中心组织启动、下载与实例管理：游戏实例、加载器安装、模组搜索下载、正版登录与离线皮肤。0.0.5 起更名为 **unflod bindery launcher（UBL）**，以书架和低 bit 像素为视觉主体。
 
-> **0.0.8**：修复更新下载在旧 `%APPDATA%\fangjie-launcher\updates` 残留锁文件导致的 EPERM；更新包、安装助手与日志改为只写入当前安装目录，并自动清理旧更新缓存。
+> **0.0.9**：重做顶部工作台与启动页，启动/下载/联机/设置集中到顶栏；启动页增加横向版本列表，下载中心按游戏版本、模组、整合包、资源包、光影和加载器分类，并补充实例与模组列表的自动刷新。
 >
-> 0.0.7 及更早版本的内置更新器仍使用旧 AppData 缓存，请手动安装一次 0.0.8；0.0.8 起后续更新会写入安装目录并在完成后自动重启。
+> 0.0.8 及更早版本的内置更新器仍有替换缺陷，请手动安装一次 0.0.9；0.0.9 起更新助手改用独立 PowerShell 流程，后续更新会写入安装目录并在完成后自动重启。
 
 ![UBL](resources/icon.png)
 
 ## 下载
 
-从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.8) 选择：
+从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.9) 选择：
 
-- `UBL-Launcher-0.0.8-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；不创建桌面/开始菜单快捷方式，仅注册卸载项。
-- `UBL-Portable-0.0.8.zip`：免安装便携版，解压后双击 `UBL.exe`。
+- `UBL-Launcher-0.0.9-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建开始菜单项并注册卸载信息。
+- `UBL-Portable-0.0.9.zip`：免安装便携版，解压后双击 `UBL.exe`。
 - `SHA256SUMS.txt`：两个发布包的 SHA256 校验和。
 
 系统要求：Windows 10/11 x64。首次创建实例会自动下载对应 Java 运行时；安装版默认安装到 `%LOCALAPPDATA%\Programs\UBL`，卸载不会删除游戏存档和用户数据。启动器继续复用 `%APPDATA%\fangjie-launcher` 数据目录，升级不会丢失旧实例。更新包与安装助手现在只写入安装目录下的 `updates/`，不再写入 `%APPDATA%\fangjie-launcher\updates`；不希望安装程序写卸载注册项时可直接使用便携版。
@@ -44,6 +44,7 @@
 
 ## 当前能力
 
+- **顶部工作台**：启动、下载、联机与设置集中在顶栏；启动页用横向版本列表选择实例，下载中心按内容类型组织入口，实例与模组列表支持自动刷新。
 - **游戏实例**：为每个世界创建独立目录，存档、模组、配置与日志互不干扰。
 - **多加载器**：原版、Fabric、Quilt、Forge、NeoForge。创建实例时先按所选 Minecraft 版本核验元数据，只展示真正有版本可下载的加载器；也可不建实例、单独把加载器装进共享版本目录。
 - **实例加载器管理**：实例设置中可随时切换或移除模组加载器；切换前会核验该游戏版本可用的加载器，只更新实例的启动版本与加载器记录，不删除存档、配置或模组文件。
@@ -93,7 +94,7 @@ npm run package
 npm run package:installer
 ```
 
-安装包输出到 `release/UBL-Launcher-0.0.8-Setup.exe`。
+安装包输出到 `release/UBL-Launcher-0.0.9-Setup.exe`。
 
 联机连接器不提交二进制，需先通过 `.github/workflows/connector-build.yml` 构建到 `resources/bin/qomicex-connector-cli.exe`；发布包中已包含该组件。构建脚本会查找 electron-builder 缓存或系统安装的 NSIS 3.x；也可用 `MAKENSIS` 环境变量指定 `makensis.exe`。安装包未做代码签名，Windows SmartScreen 可能提示未知发布者。
 

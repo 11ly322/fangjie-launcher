@@ -11,6 +11,7 @@ import {
   Plus,
   Puzzle,
   RefreshCw,
+  Settings2,
   Sparkles,
   Square
 } from 'lucide-react'
@@ -36,8 +37,6 @@ export function HomePage(): React.JSX.Element {
     running,
     launching,
     activeInstance,
-    activeInstanceId,
-    selectInstance,
     navigate,
     openInstance,
     openMods,
@@ -117,51 +116,9 @@ export function HomePage(): React.JSX.Element {
         </div>
       </header>
 
-      {activeTask ? <ActiveTaskStrip task={activeTask} onClick={() => navigate('downloads')} /> : null}
+      <VersionRail />
 
-      <div className="book-shelf" role="group" aria-label="选择游戏实例">
-        <div className="book-shelf__caption">
-          <span>UBL · YOUR LIBRARY</span>
-          <span className="book-shelf__meta">
-            {shelfInstances.length ? '点击书脊切换实例' : '书架还空着，创建第一个世界吧'}
-            {boot.instances.length > shelfInstances.length ? ` · 共 ${boot.instances.length} 个` : ''}
-            <button type="button" className="text-action" onClick={() => navigate('instances')}>
-              全部实例
-            </button>
-          </span>
-        </div>
-        <div className="book-shelf__row">
-          {shelfInstances.map((instance, index) => (
-            <button
-              key={instance.id}
-              type="button"
-              className={
-                instance.id === activeInstanceId
-                  ? 'book-spine book-spine--interactive is-active'
-                  : 'book-spine book-spine--interactive'
-              }
-              style={{
-                '--book-accent': instance.accent,
-                '--book-height': `${86 + (index % 4) * 12}px`
-              } as React.CSSProperties}
-              onClick={() => selectInstance(instance.id)}
-              aria-pressed={instance.id === activeInstanceId}
-              title={`${instance.name} · Minecraft ${instance.mcVersion}`}
-            >
-              <i>{instance.name}</i>
-              <span className="book-spine__mark" />
-            </button>
-          ))}
-          {Array.from({ length: Math.max(0, 4 - shelfInstances.length) }).map((_, index) => (
-            <span
-              key={`blank-${index}`}
-              className={index % 2 ? 'book-spine book-spine--blank book-spine--short' : 'book-spine book-spine--blank'}
-            />
-          ))}
-          <span className="book-shelf__lamp" />
-        </div>
-        <div className="book-shelf__plank" />
-      </div>
+      {activeTask ? <ActiveTaskStrip task={activeTask} onClick={() => navigate('downloads')} /> : null}
 
       <section className="home-grid">
         <div
@@ -407,6 +364,109 @@ export function HomePage(): React.JSX.Element {
 
       <FeaturedMods />
     </div>
+  )
+}
+
+function VersionRail(): React.JSX.Element {
+  const {
+    boot,
+    activeInstanceId,
+    running,
+    launching,
+    selectInstance,
+    openInstance,
+    openCreateInstance,
+    launch,
+    navigate
+  } = useLauncher()
+  const versions = [...boot.instances].sort(
+    (left, right) => (right.lastPlayedAt || right.createdAt) - (left.lastPlayedAt || left.createdAt)
+  )
+
+  return (
+    <section className="version-rail" aria-label="版本列表">
+      <div className="version-rail__head">
+        <div>
+          <span className="version-rail__eyebrow">VERSIONS</span>
+          <strong>版本列表</strong>
+        </div>
+        <div className="version-rail__head-actions">
+          <span>{versions.length} 个</span>
+          <Button size="sm" variant="ghost" onClick={() => navigate('instances')}>
+            版本库
+          </Button>
+          <Button size="sm" variant="primary" icon={<Plus size={14} />} onClick={openCreateInstance}>
+            安装版本
+          </Button>
+        </div>
+      </div>
+      {versions.length ? (
+        <div className="version-rail__list">
+          {versions.map((instance) => {
+            const active = instance.id === activeInstanceId
+            const isRunning = running.has(instance.id)
+            const isLaunching = launching.has(instance.id)
+            return (
+              <div key={instance.id} className={active ? 'version-row is-active' : 'version-row'}>
+                <button
+                  type="button"
+                  className="version-row__select"
+                  onClick={() => selectInstance(instance.id)}
+                  onDoubleClick={() => openInstance(instance.id)}
+                  aria-pressed={active}
+                  title={`${instance.name} · Minecraft ${instance.mcVersion}`}
+                >
+                  <span className="version-row__emblem">
+                    <InstanceEmblem accent={instance.accent} icon={instance.icon} size={38} />
+                  </span>
+                  <span className="version-row__copy">
+                    <strong>{instance.name}</strong>
+                    <small>
+                      {instance.mcVersion} · {LOADER_LABEL[instance.loader] || instance.loader}
+                      {instance.modCount ? ` · ${instance.modCount} 个模组` : ''}
+                    </small>
+                  </span>
+                </button>
+                <div className="version-row__actions">
+                  <Button
+                    size="sm"
+                    variant={isRunning ? 'danger' : active ? 'primary' : 'secondary'}
+                    loading={isLaunching}
+                    icon={
+                      isRunning ? (
+                        <Square size={12} fill="currentColor" />
+                      ) : (
+                        <Play size={12} fill="currentColor" />
+                      )
+                    }
+                    onClick={() => void launch(instance.id)}
+                    aria-label={isRunning ? `结束 ${instance.name}` : `启动 ${instance.name}`}
+                  >
+                    {isRunning ? '结束' : '启动'}
+                  </Button>
+                  <button
+                    type="button"
+                    className="version-row__settings"
+                    onClick={() => openInstance(instance.id)}
+                    title="版本设置"
+                    aria-label={`${instance.name} 版本设置`}
+                  >
+                    <Settings2 size={15} />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="version-rail__empty">
+          <span>还没有安装任何版本。</span>
+          <Button size="sm" variant="primary" icon={<Plus size={14} />} onClick={openCreateInstance}>
+            安装第一个版本
+          </Button>
+        </div>
+      )}
+    </section>
   )
 }
 
