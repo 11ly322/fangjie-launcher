@@ -1,7 +1,7 @@
-import { createHash } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import { createWriteStream, mkdirSync, renameSync, rmSync } from 'node:fs'
 import { once } from 'node:events'
-import { dirname } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { Readable } from 'node:stream'
 import { isOffline } from './networkPolicy'
 import { withNetworkSlot } from './networkQueue'
@@ -88,10 +88,26 @@ function isReplaceConflict(error: unknown): boolean {
 }
 
 /**
- * Commit a verified temporary file with rename semantics. Windows cannot
- * atomically overwrite an existing file, so the old file is moved aside first
- * and restored if the final rename fails.
+ * A unique staging name means an interrupted download can never block the next
+ * attempt. Windows antivirus/indexers can briefly lock a just-closed `.part`
+ * file, so cleanup must also stay best-effort and must not replace the real
+ * download error with EPERM.
  */
+function temporaryPath(destination: string): string {
+  return join(
+    dirname(destination),
+    `.${basename(destination)}.part-${process.pid}-${Date.now()}-${randomBytes(4).toString('hex')}`
+  )
+}
+
+function safeRemove(path: string): void {
+  try {
+    rmSync(path, { force: true })
+  } catch {
+    /* locked by antivirus or another process; a later retry can remove it */
+  }
+}
+
 function commitDownloadedFile(temporary: string, destination: string): void {
   try {
     renameSync(temporary, destination)
@@ -101,7 +117,7 @@ function commitDownloadedFile(temporary: string, destination: string): void {
   }
 
   const displaced = `${destination}.replace-${process.pid}`
-  rmSync(displaced, { force: true })
+  safeRemove(displaced)
   let movedAside = false
   try {
     renameSync(destination, displaced)
@@ -122,7 +138,7 @@ function commitDownloadedFile(temporary: string, destination: string): void {
     }
     throw error
   }
-  if (movedAside) rmSync(displaced, { force: true })
+  if (movedAside) safeRemove(displaced)
 }
 
 /**
@@ -132,9 +148,8 @@ function commitDownloadedFile(temporary: string, destination: string): void {
  */
 export async function downloadToFile(request: DownloadRequest): Promise<void> {
   assertNetworkAllowed()
-  const temporary = `${request.destination}.part-${process.pid}`
+  const temporary = temporaryPath(request.destination)
   mkdirSync(dirname(request.destination), { recursive: true })
-  rmSync(temporary, { force: true })
   let stream: ReturnType<typeof createWriteStream> | undefined
   try {
     const response = await requestResponse(request.url, {
@@ -173,8 +188,12 @@ export async function downloadToFile(request: DownloadRequest): Promise<void> {
     }
     commitDownloadedFile(temporary, request.destination)
   } catch (error) {
-    stream?.destroy()
-    rmSync(temporary, { force: true })
+    if (stream) {
+      stream.destroy()
+      if (!stream.closed) await once(stream, 'close').catch(() => undefined)
+      stream = undefined
+    }
+    safeRemove(temporary)
     if (request.signal?.aborted) throw new DOMException('Aborted', 'AbortError')
     throw error
   }

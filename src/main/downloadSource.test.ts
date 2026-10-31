@@ -42,6 +42,7 @@ describe('unified download source', () => {
     }).catch(() => undefined)
     // The deliberately wrong SHA1 must leave no final file.
     expect(() => readFileSync(destination)).toThrow()
+    expect(readdirSync(directory).filter((name) => name.includes('.part-'))).toEqual([])
     await downloadToFile({ url, destination, expectedSize: payload.length })
     expect(readFileSync(destination).toString()).toBe('fangjie-download')
     rmSync(directory, { recursive: true, force: true })
@@ -58,6 +59,21 @@ describe('unified download source', () => {
 
     expect(readFileSync(destination).toString()).toBe('replacement')
     expect(readdirSync(directory).filter((name) => name.includes('.part-') || name.includes('.replace-'))).toEqual([])
+    rmSync(directory, { recursive: true, force: true })
+  })
+
+  it('does not reuse a stale .part name', async () => {
+    const payload = Buffer.from('fresh-download')
+    const url = await serve(payload)
+    const directory = mkdtempSync(join(tmpdir(), 'fangjie-download-part-'))
+    const destination = join(directory, 'artifact.bin')
+    const stale = join(directory, `artifact.bin.part-${process.pid}`)
+    writeFileSync(stale, 'stale-interrupted-download')
+
+    await downloadToFile({ url, destination, expectedSize: payload.length })
+
+    expect(readFileSync(destination).toString()).toBe('fresh-download')
+    expect(readFileSync(stale).toString()).toBe('stale-interrupted-download')
     rmSync(directory, { recursive: true, force: true })
   })
 

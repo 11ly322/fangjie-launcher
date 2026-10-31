@@ -1,5 +1,5 @@
 import { app } from 'electron'
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { spawn } from 'node:child_process'
 import type { CoreUpdateAsset, CoreUpdateCheck, CoreUpdateManifest } from '../shared/types'
@@ -124,14 +124,38 @@ export async function checkForUpdates(rustCore: RustCoreClient): Promise<CoreUpd
   })
 }
 
+function cleanupLegacyUpdateDirectory(): void {
+  // Older builds staged downloads under %APPDATA%\fangjie-launcher\updates.
+  // 0.0.8 keeps update files beside the launcher, so this cache is obsolete.
+  try {
+    rmSync(join(app.getPath('userData'), 'updates'), { recursive: true, force: true })
+  } catch {
+    /* locked by antivirus; harmless, the next attempt will retry */
+  }
+}
+
 export async function downloadUpdate(
   rustCore: RustCoreClient,
   asset: CoreUpdateAsset
 ): Promise<string> {
   if (!asset.url) throw new Error('更新资产缺少下载地址')
   if (!asset.sha256) throw new Error('发布资产缺少 SHA256，拒绝下载安装包')
-  const directory = join(app.getPath('userData'), 'updates')
-  mkdirSync(directory, { recursive: true })
+  cleanupLegacyUpdateDirectory()
+  // Installed builds keep the update package beside the launcher, never under
+  // %APPDATA%. This avoids leaving temporary files on C: outside the install
+  // directory and makes the whole update transaction visible in one folder.
+  const directory = app.isPackaged
+    ? join(dirname(process.execPath), 'updates')
+    : join(app.getPath('userData'), 'updates')
+  try {
+    mkdirSync(directory, { recursive: true })
+    const probe = join(directory, '.write-test')
+    writeFileSync(probe, '')
+    rmSync(probe, { force: true })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`安装目录不可写，无法安全更新：${message}`)
+  }
   let filename = 'UBL-update.exe'
   try {
     filename = decodeURIComponent(new URL(asset.url).pathname.split('/').pop() || filename)

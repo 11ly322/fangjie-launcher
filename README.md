@@ -8,21 +8,21 @@
 
 一个面向 Windows 的 Minecraft 桌面启动器，使用 Electron + React + TypeScript 构建。目标是接近 PCL2 的核心使用体验：游戏实例、加载器安装、模组搜索下载、正版登录与离线皮肤。0.0.5 起更名为 **unflod bindery launcher（UBL）**，以书架和低 bit 像素为视觉主体。
 
-> **0.0.7**：实例创建后可以重新选择或移除 Fabric/Quilt/Forge/NeoForge 加载器；切换只改启动版本，保留存档、配置和模组文件；同时修正白天模式悬浮提示仍为深色的问题。
+> **0.0.8**：修复更新下载在旧 `%APPDATA%\fangjie-launcher\updates` 残留锁文件导致的 EPERM；更新包、安装助手与日志改为只写入当前安装目录，并自动清理旧更新缓存。
 >
-> 0.0.6 及之后的版本可在安装更新后自动重启；0.0.5 及更早版本仍建议手动安装一次新版。
+> 0.0.7 及更早版本的内置更新器仍使用旧 AppData 缓存，请手动安装一次 0.0.8；0.0.8 起后续更新会写入安装目录并在完成后自动重启。
 
 ![UBL](resources/icon.png)
 
 ## 下载
 
-从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.7) 选择：
+从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.8) 选择：
 
-- `UBL-Launcher-0.0.7-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建桌面与开始菜单快捷方式，并注册卸载项。
-- `UBL-Portable-0.0.7.zip`：免安装便携版，解压后双击 `UBL.exe`。
+- `UBL-Launcher-0.0.8-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；不创建桌面/开始菜单快捷方式，仅注册卸载项。
+- `UBL-Portable-0.0.8.zip`：免安装便携版，解压后双击 `UBL.exe`。
 - `SHA256SUMS.txt`：两个发布包的 SHA256 校验和。
 
-系统要求：Windows 10/11 x64。首次创建实例会自动下载对应 Java 运行时；安装版默认安装到 `%LOCALAPPDATA%\Programs\UBL`，卸载不会删除游戏存档和用户数据。启动器继续复用 `%APPDATA%\fangjie-launcher` 数据目录，升级不会丢失旧实例。
+系统要求：Windows 10/11 x64。首次创建实例会自动下载对应 Java 运行时；安装版默认安装到 `%LOCALAPPDATA%\Programs\UBL`，卸载不会删除游戏存档和用户数据。启动器继续复用 `%APPDATA%\fangjie-launcher` 数据目录，升级不会丢失旧实例。更新包与安装助手现在只写入安装目录下的 `updates/`，不再写入 `%APPDATA%\fangjie-launcher\updates`；不希望安装程序写卸载注册项时可直接使用便携版。
 
 ## 界面
 
@@ -93,7 +93,7 @@ npm run package
 npm run package:installer
 ```
 
-安装包输出到 `release/UBL-Launcher-0.0.7-Setup.exe`。
+安装包输出到 `release/UBL-Launcher-0.0.8-Setup.exe`。
 
 联机连接器不提交二进制，需先通过 `.github/workflows/connector-build.yml` 构建到 `resources/bin/qomicex-connector-cli.exe`；发布包中已包含该组件。构建脚本会查找 electron-builder 缓存或系统安装的 NSIS 3.x；也可用 `MAKENSIS` 环境变量指定 `makensis.exe`。安装包未做代码签名，Windows SmartScreen 可能提示未知发布者。
 
