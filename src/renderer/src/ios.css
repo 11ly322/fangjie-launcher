@@ -1619,3 +1619,15 @@ body {
     0 0 0 2px var(--accent),
     0 0 0 6px color-mix(in srgb, var(--accent) 18%, transparent);
 }
+
+.update-progress {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0 4px;
+}
+
+.update-progress span {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}

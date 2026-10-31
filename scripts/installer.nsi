@@ -8,10 +8,10 @@
 
 !define APP_NAME "unflod bindery launcher"
 !ifndef APP_VERSION
-  !define APP_VERSION "0.0.12"
+  !define APP_VERSION "0.0.13"
 !endif
 !ifndef APP_VERSION_NUMERIC
-  !define APP_VERSION_NUMERIC "0.0.12.0"
+  !define APP_VERSION_NUMERIC "0.0.13.0"
 !endif
 !define APP_PUBLISHER "11ly322"
 !define APP_EXE "UBL.exe"

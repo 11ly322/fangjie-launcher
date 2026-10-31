@@ -642,6 +642,12 @@ export interface CoreUpdateCheck {
   available?: CoreUpdateManifest | null
 }
 
+export interface UpdateDownloadProgress {
+  received: number
+  total: number
+  percent: number
+}
+
 export interface CoreFlightSample {
   timestamp_ms: number
   fps: number
@@ -695,6 +701,8 @@ export interface LauncherApi {
   openPluginsFolder(): Promise<Result<void>>
   updateCheck(): Promise<Result<CoreUpdateCheck>>
   updateDownload(asset: CoreUpdateAsset): Promise<Result<string>>
+  onUpdateProgress(callback: (progress: UpdateDownloadProgress) => void): () => void
+  openExternal(url: string): Promise<Result<void>>
   updateApply(installerPath: string): Promise<Result<void>>
   createInstance(input: CreateInstanceInput): Promise<Result<{ instance: Instance; taskId: string }>>
   instanceDetail(id: string): Promise<Result<Instance>>

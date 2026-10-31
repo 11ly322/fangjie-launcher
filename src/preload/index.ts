@@ -18,6 +18,7 @@ import type {
   CoreUpdateAsset,
   CoreUpdateCheck,
   JavaStatus,
+  UpdateDownloadProgress,
   LaunchState,
   LauncherApi,
   LoaderAvailability,
@@ -136,6 +137,14 @@ const api: LauncherApi = {
   openPluginsFolder: () => invoke<void>('plugins:open-folder'),
   updateCheck: () => invoke<CoreUpdateCheck>('update:check'),
   updateDownload: (asset: CoreUpdateAsset) => invoke<string>('update:download', asset),
+  onUpdateProgress: (callback: (progress: UpdateDownloadProgress) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, progress: UpdateDownloadProgress): void => {
+      callback(progress)
+    }
+    ipcRenderer.on('update:download-progress', listener)
+    return () => ipcRenderer.removeListener('update:download-progress', listener)
+  },
+  openExternal: (url: string) => invoke<void>('app:open-external', url),
   updateApply: (installerPath: string) => invoke<void>('update:apply', installerPath),
   openLogsFolder: (id: string) => invoke<void>('instances:open-logs', id),
   instanceMods: (id: string) => invoke<InstalledMod[]>('mods:list', id),

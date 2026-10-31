@@ -15,6 +15,7 @@ export interface DownloadRequest {
   signal?: AbortSignal
   headers?: Record<string, string>
   onChunk?: (bytes: number) => void
+  onProgress?: (received: number, total: number) => void
 }
 
 export interface JsonRequest {
@@ -162,7 +163,10 @@ export async function downloadToFile(request: DownloadRequest): Promise<void> {
     }
     const sha1 = createHash('sha1')
     const sha256 = createHash('sha256')
+    const declaredLength = Number(response.headers.get('content-length')) || 0
+    const expectedTotal = request.expectedSize || declaredLength || 0
     let total = 0
+    request.onProgress?.(0, expectedTotal)
     stream = createWriteStream(temporary)
     const reader = Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0])
     for await (const chunk of reader) {
@@ -173,10 +177,12 @@ export async function downloadToFile(request: DownloadRequest): Promise<void> {
       total += buffer.length
       if (!stream.write(buffer)) await once(stream, 'drain')
       request.onChunk?.(buffer.length)
+      request.onProgress?.(total, expectedTotal || total)
     }
     stream.end()
     await once(stream, 'finish')
     stream = undefined
+    request.onProgress?.(total, expectedTotal || total)
     if (request.expectedSize && total !== request.expectedSize) {
       throw new Error(`文件大小不匹配：期望 ${request.expectedSize}，实际 ${total}`)
     }

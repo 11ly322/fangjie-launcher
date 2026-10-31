@@ -2,7 +2,12 @@ import { app } from 'electron'
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { execFileSync } from 'node:child_process'
-import type { CoreUpdateAsset, CoreUpdateCheck, CoreUpdateManifest } from '../shared/types'
+import type {
+  CoreUpdateAsset,
+  CoreUpdateCheck,
+  CoreUpdateManifest,
+  UpdateDownloadProgress
+} from '../shared/types'
 import type { RustCoreClient } from './rustCore'
 import { downloadToFile, requestResponse } from './downloadSource'
 
@@ -134,9 +139,79 @@ function cleanupLegacyUpdateDirectory(): void {
   }
 }
 
+const UPDATE_IDLE_TIMEOUT_MS = 45_000
+const UPDATE_ATTEMPTS = 2
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function downloadAssetWithProgress(
+  asset: CoreUpdateAsset,
+  destination: string,
+  onProgress?: (progress: UpdateDownloadProgress) => void
+): Promise<void> {
+  const fallbackTotal = asset.size > 0 ? asset.size : 0
+  let lastSentAt = 0
+  let lastPercent = -1
+  let lastError: unknown
+
+  const report = (received: number, total: number, force = false): void => {
+    if (!onProgress) return
+    const now = Date.now()
+    const safeTotal = total || fallbackTotal
+    const percent = safeTotal > 0 ? Math.min(100, Math.max(0, (received / safeTotal) * 100)) : 0
+    if (!force && now - lastSentAt < 120 && percent === lastPercent) return
+    lastSentAt = now
+    lastPercent = percent
+    onProgress({ received, total: safeTotal, percent })
+  }
+
+  for (let attempt = 1; attempt <= UPDATE_ATTEMPTS; attempt += 1) {
+    const controller = new AbortController()
+    let idleTimer: ReturnType<typeof setTimeout> | undefined
+    let timedOut = false
+    const armIdleTimer = (): void => {
+      if (idleTimer) clearTimeout(idleTimer)
+      idleTimer = setTimeout(() => {
+        timedOut = true
+        controller.abort()
+      }, UPDATE_IDLE_TIMEOUT_MS)
+    }
+    armIdleTimer()
+    report(0, fallbackTotal, true)
+    try {
+      await downloadToFile({
+        url: asset.url,
+        destination,
+        expectedSha256: asset.sha256,
+        expectedSize: asset.size > 0 ? asset.size : undefined,
+        headers: { 'User-Agent': USER_AGENT },
+        signal: controller.signal,
+        onProgress: (received, total) => {
+          armIdleTimer()
+          report(received, total || fallbackTotal)
+        }
+      })
+      if (idleTimer) clearTimeout(idleTimer)
+      return
+    } catch (error) {
+      if (idleTimer) clearTimeout(idleTimer)
+      lastError = timedOut
+        ? new Error(`下载超时：${Math.round(UPDATE_IDLE_TIMEOUT_MS / 1000)} 秒没有收到新数据，请检查网络后重试。`)
+        : error
+      if (attempt >= UPDATE_ATTEMPTS) break
+      report(0, fallbackTotal, true)
+      await sleep(1200)
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(String(lastError))
+}
+
 export async function downloadUpdate(
   rustCore: RustCoreClient,
-  asset: CoreUpdateAsset
+  asset: CoreUpdateAsset,
+  onProgress?: (progress: UpdateDownloadProgress) => void
 ): Promise<string> {
   if (!asset.url) throw new Error('更新资产缺少下载地址')
   if (!asset.sha256) throw new Error('发布资产缺少 SHA256，拒绝下载安装包')
@@ -163,17 +238,18 @@ export async function downloadUpdate(
     /* keep fallback */
   }
   const destination = join(directory, filename.replace(/[^A-Za-z0-9._-]/g, '_'))
-  await downloadToFile({
-    url: asset.url,
-    destination,
-    expectedSha256: asset.sha256,
-    expectedSize: asset.size > 0 ? asset.size : undefined,
-    headers: { 'User-Agent': USER_AGENT }
-  })
+  await downloadAssetWithProgress(asset, destination, onProgress)
   await rustCore.request('verify_update', {
     path: destination,
     asset
   })
+  if (onProgress) {
+    onProgress({
+      received: asset.size,
+      total: asset.size,
+      percent: 100
+    })
+  }
   return destination
 }
 

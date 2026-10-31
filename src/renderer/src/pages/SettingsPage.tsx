@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Cpu,
   Download,
+  ExternalLink,
   FolderOpen,
   HardDrive,
   Palette,
@@ -24,12 +25,13 @@ import {
   Button,
   Field,
   InlineNotice,
+  ProgressBar,
   Select,
   StatusDot,
   TextInput,
   ToggleRow
 } from '../components/ui'
-import { classNames, rangeProgress } from '../lib/format'
+import { classNames, formatBytes, rangeProgress } from '../lib/format'
 import { applyColorMode, applyTheme, THEMES } from '../lib/theme'
 import { VERSION_ISOLATION_OPTIONS } from '../../../shared/versionIsolation'
 import type {
@@ -37,6 +39,7 @@ import type {
   CoreUpdateCheck,
   PluginRecord,
   ThemeId,
+  UpdateDownloadProgress,
   VersionIsolationMode
 } from '../../../shared/types'
 
@@ -64,6 +67,7 @@ export function SettingsPage(): React.JSX.Element {
   const [updating, setUpdating] = useState(false)
   const [updateError, setUpdateError] = useState('')
   const [updatePath, setUpdatePath] = useState('')
+  const [updateProgress, setUpdateProgress] = useState<UpdateDownloadProgress | null>(null)
   const [applyingUpdate, setApplyingUpdate] = useState(false)
   const [plugins, setPlugins] = useState<PluginRecord[]>([])
   const [pendingDataPath, setPendingDataPath] = useState(() => {
@@ -96,6 +100,8 @@ export function SettingsPage(): React.JSX.Element {
       active = false
     }
   }, [])
+
+  useEffect(() => window.fangjie.onUpdateProgress(setUpdateProgress), [])
 
   const dirty =
     memoryMb !== boot.settings.memoryMb ||
@@ -217,6 +223,7 @@ export function SettingsPage(): React.JSX.Element {
     setUpdating(true)
     setUpdateError('')
     setUpdatePath('')
+    setUpdateProgress(null)
     const result = await window.fangjie.updateCheck()
     setUpdating(false)
     if (!result.ok) {
@@ -231,14 +238,27 @@ export function SettingsPage(): React.JSX.Element {
     if (!asset) return
     setUpdating(true)
     setUpdateError('')
+    setUpdatePath('')
+    setUpdateProgress({ received: 0, total: asset.size, percent: 0 })
     const result = await window.fangjie.updateDownload(asset)
     setUpdating(false)
     if (!result.ok) {
+      setUpdateProgress(null)
       setUpdateError(result.error)
       return
     }
+    setUpdateProgress({
+      received: asset.size,
+      total: asset.size,
+      percent: 100
+    })
     setUpdatePath(result.value)
     toast('更新包已下载并通过校验', 'success')
+  }
+
+  const openExternal = async (url: string): Promise<void> => {
+    const result = await window.fangjie.openExternal(url)
+    if (!result.ok) toast(result.error, 'error')
   }
 
   const installUpdate = async (): Promise<void> => {
@@ -724,11 +744,21 @@ export function SettingsPage(): React.JSX.Element {
                 {update.available.notes ? (
                   <p className="update-notes">{update.available.notes}</p>
                 ) : null}
+                {updating && updateProgress ? (
+                  <div className="update-progress">
+                    <ProgressBar value={updateProgress.percent} />
+                    <span>
+                      {formatBytes(updateProgress.received)} / {formatBytes(updateProgress.total)} ·{' '}
+                      {Math.round(updateProgress.percent)}%
+                    </span>
+                  </div>
+                ) : null}
                 <div className="settings-form__actions">
                   <Button
                     variant="primary"
                     icon={<Download size={15} />}
                     loading={updating}
+                    disabled={updating}
                     onClick={() => void downloadUpdatePackage()}
                   >
                     下载更新
@@ -743,12 +773,20 @@ export function SettingsPage(): React.JSX.Element {
                       {applyingUpdate ? '正在安装并重启…' : '安装并重启'}
                     </Button>
                   ) : null}
+                  <Button
+                    variant="secondary"
+                    icon={<ExternalLink size={15} />}
+                    onClick={() => void openExternal(update.available!.assets[0].url)}
+                  >
+                    浏览器下载
+                  </Button>
                 </div>
                 {updatePath ? <code className="update-path" title={updatePath}>{updatePath}</code> : null}
               </div>
             ) : null}
             <p className="settings-hint">
-              默认从 GitHub Releases 获取安装包；下载后由 Rust 核心校验大小与 SHA256。自动替换目前只支持安装版 .exe，便携版请手动替换。
+              下载会显示实时进度；45 秒没有新数据会自动重试一次，仍失败时可改用浏览器下载。安装包由 Rust
+              核心校验大小与 SHA256。自动替换目前只支持安装版 .exe，便携版请手动替换。
             </p>
           </div>
         </section>

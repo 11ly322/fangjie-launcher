@@ -10,6 +10,7 @@ import type {
   StartGuestInput,
   StartHostInput,
   CoreModListExport,
+  CoreUpdateAsset,
   UpdateInstanceInput
 } from '../shared/types'
 import type { ModSearchOptions } from '../shared/modSearch'
@@ -107,13 +108,17 @@ const NETWORK_CHANNELS = new Set([
   'crash:apply'
 ])
 
-function handle<T>(channel: string, callback: (...args: any[]) => Promise<T> | T): void {
-  ipcMain.handle(channel, async (_event, ...args): Promise<Result<T>> => {
+function handle<T>(
+  channel: string,
+  callback: (...args: any[]) => Promise<T> | T,
+  passEvent = false
+): void {
+  ipcMain.handle(channel, async (event, ...args): Promise<Result<T>> => {
     try {
       if (isOffline() && NETWORK_CHANNELS.has(channel)) {
         throw new Error('离线模式已开启，已阻止网络请求')
       }
-      return { ok: true, value: await callback(...args) }
+      return { ok: true, value: await callback(...(passEvent ? [event, ...args] : args)) }
     } catch (error) {
       return { ok: false, error: errorMessage(error) }
     }
@@ -497,7 +502,31 @@ export function registerIpcHandlers(context: IpcContext): void {
 
   handle('update:check', async () => checkForUpdates(rustCore))
 
-  handle('update:download', async (asset) => downloadUpdate(rustCore, asset))
+  handle('app:open-external', async (url: string) => {
+    let parsed: URL
+    try {
+      parsed = new URL(url)
+    } catch {
+      throw new Error('无效的下载链接')
+    }
+    const allowed =
+      parsed.protocol === 'https:' &&
+      (parsed.hostname === 'github.com' || parsed.hostname === 'api.github.com') &&
+      parsed.pathname.startsWith('/11ly322/fangjie-launcher')
+    if (!allowed) throw new Error('只允许打开本项目的 GitHub 发布页面')
+    await shell.openExternal(parsed.toString())
+  })
+
+  handle(
+    'update:download',
+    async (event, asset: CoreUpdateAsset) =>
+      downloadUpdate(rustCore, asset, (progress) => {
+        if (!event.sender.isDestroyed()) {
+          event.sender.send('update:download-progress', progress)
+        }
+      }),
+    true
+  )
 
   handle('update:apply', async (installerPath: string) => applyUpdate(installerPath))
 
