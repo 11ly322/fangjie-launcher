@@ -51,6 +51,7 @@ import {
 } from './curseforge'
 import { normalizeTheme, type LauncherStore } from './store'
 import { getLoaderAvailability } from './loaders'
+import { setInstanceLoader } from './instanceLoader'
 import { RustCoreClient, toRustInstance } from './rustCore'
 import { assertOnline, isOffline, setOffline } from './networkPolicy'
 import { configureNetwork } from './downloadAgent'
@@ -379,6 +380,13 @@ export function registerIpcHandlers(context: IpcContext): void {
   handle('loaders:availability', async (mcVersion: string) => {
     if (typeof mcVersion !== 'string' || !mcVersion.trim()) throw new Error('请先选择游戏版本')
     return getLoaderAvailability(mcVersion)
+  })
+
+  handle('instances:set-loader', async (id: string, loader: import('../shared/types').LoaderType) => {
+    if (typeof id !== 'string') throw new Error('无效的实例')
+    const instance = await setInstanceLoader(store, id, loader)
+    notifyChange('instance-loader')
+    return instance
   })
 
   handle('mods:download-file', async (request: import('../shared/types').StandaloneModDownloadRequest) => {

@@ -1,6 +1,6 @@
 {
   "name": "fangjie-launcher",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "unflod bindery launcher (UBL) — 以书架为灵感的 Minecraft 启动器，支持实例、模组、多加载器与正版登录",
   "main": "./out/main/index.js",
   "author": "11ly322 (https://github.com/11ly322)",

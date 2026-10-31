@@ -693,6 +693,7 @@ export interface LauncherApi {
   updateApply(installerPath: string): Promise<Result<void>>
   createInstance(input: CreateInstanceInput): Promise<Result<{ instance: Instance; taskId: string }>>
   instanceDetail(id: string): Promise<Result<Instance>>
+  setInstanceLoader(id: string, loader: LoaderType): Promise<Result<Instance>>
   loaderAvailability(mcVersion: string): Promise<Result<LoaderAvailability[]>>
   downloadModFile(request: StandaloneModDownloadRequest): Promise<Result<StandaloneModDownloadResult>>
   installLoaderStandalone(request: StandaloneLoaderInstallRequest): Promise<Result<StandaloneLoaderInstallResult>>

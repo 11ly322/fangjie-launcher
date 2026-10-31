@@ -18,7 +18,7 @@ import {
   Terminal,
   Trash2
 } from 'lucide-react'
-import type { InstanceSummary, InstalledMod } from '../../../shared/types'
+import type { InstanceSummary, InstalledMod, LoaderAvailability, LoaderType } from '../../../shared/types'
 import {
   INSTANCE_ACCENTS,
   INSTANCE_ICON_LABELS,
@@ -79,6 +79,10 @@ export function InstanceDetailPage({ instance }: { instance: InstanceSummary }):
   const [disableJavaLaunchWrapper, setDisableJavaLaunchWrapper] = useState(instance.disableJavaLaunchWrapper === true)
   const [disableLwjglUnsafeAgent, setDisableLwjglUnsafeAgent] = useState(instance.disableLwjglUnsafeAgent === true)
   const [highPerformanceGpu, setHighPerformanceGpu] = useState(instance.highPerformanceGpu === true)
+  const [loaderChoice, setLoaderChoice] = useState<LoaderType>(instance.loader)
+  const [loaderOptions, setLoaderOptions] = useState<LoaderAvailability[]>([])
+  const [loaderBusy, setLoaderBusy] = useState(false)
+  const [loaderError, setLoaderError] = useState('')
   const [width, setWidth] = useState(instance.width || 1280)
   const [height, setHeight] = useState(instance.height || 720)
   const [icon, setIcon] = useState(instance.icon)
@@ -100,6 +104,9 @@ export function InstanceDetailPage({ instance }: { instance: InstanceSummary }):
   const instanceLogs = logs[instance.id] || []
   const instanceTasks = tasks.filter((task) => task.instanceId === instance.id)
   const allSelected = mods.length > 0 && mods.every((mod) => selectedFiles.has(mod.fileName))
+  const availableLoaderRows = loaderOptions.filter((item) => item.available)
+  const currentLoaderListed = availableLoaderRows.some((item) => item.loader === instance.loader)
+  const loaderChanged = loaderChoice !== instance.loader
 
   useEffect(() => {
     setName(instance.name)
@@ -120,6 +127,24 @@ export function InstanceDetailPage({ instance }: { instance: InstanceSummary }):
     setSelectedFiles(new Set())
     setCopyName(instance.name + ' 副本')
   }, [instance.id, instance.name, instance.memoryMb, instance.icon, instance.accent])
+
+  useEffect(() => {
+    setLoaderChoice(instance.loader)
+  }, [instance.id, instance.loader])
+
+  useEffect(() => {
+    if (tab !== 'settings') return
+    let active = true
+    setLoaderError('')
+    void window.fangjie.loaderAvailability(instance.mcVersion).then((result) => {
+      if (!active) return
+      if (result.ok) setLoaderOptions(result.value)
+      else setLoaderError(result.error)
+    })
+    return () => {
+      active = false
+    }
+  }, [tab, instance.id, instance.mcVersion])
 
   useEffect(() => {
     let active = true
@@ -296,6 +321,40 @@ export function InstanceDetailPage({ instance }: { instance: InstanceSummary }):
     }
     await refresh()
     toast('实例设置已保存', 'success')
+  }
+
+  const applyLoader = async (): Promise<void> => {
+    if (!loaderChanged || loaderBusy) return
+    const target =
+      loaderChoice === 'vanilla'
+        ? '原版（移除模组加载器）'
+        : `${LOADER_LABEL[loaderChoice]}${loaderOptions.find((item) => item.loader === loaderChoice)?.latest ? ` ${loaderOptions.find((item) => item.loader === loaderChoice)?.latest}` : ''}`
+    const approved = await confirm({
+      title: loaderChoice === 'vanilla' ? '移除模组加载器？' : '切换模组加载器？',
+      description:
+        loaderChoice === 'vanilla'
+          ? `实例「${instance.name}」将改用原版启动。存档、配置和模组文件不会被删除，但已安装的模组不会加载。`
+          : `实例「${instance.name}」将从 ${LOADER_LABEL[instance.loader] || '原版'} 切换到 ${target}。存档和配置会保留，但已有模组可能不兼容，建议先备份。`,
+      confirmLabel: loaderChoice === 'vanilla' ? '移除加载器' : '切换加载器',
+      danger: loaderChoice === 'vanilla' || instance.loader !== 'vanilla'
+    })
+    if (!approved) return
+    setLoaderBusy(true)
+    setLoaderError('')
+    const result = await window.fangjie.setInstanceLoader(instance.id, loaderChoice)
+    setLoaderBusy(false)
+    if (!result.ok) {
+      setLoaderError(result.error)
+      toast(result.error, 'error')
+      return
+    }
+    await refresh()
+    toast(
+      loaderChoice === 'vanilla'
+        ? '已移除模组加载器，实例将使用原版启动'
+        : `已切换到 ${LOADER_LABEL[loaderChoice]}`,
+      'success'
+    )
   }
 
   const openFolder = async (logsOnly = false): Promise<void> => {
@@ -721,6 +780,76 @@ export function InstanceDetailPage({ instance }: { instance: InstanceSummary }):
 
       {tab === 'settings' ? (
         <div className="settings-grid">
+          <section className="panel detail-panel loader-panel">
+            <div className="panel__header">
+              <div>
+                <div className="panel__eyebrow">MOD LOADER</div>
+                <h3>模组加载器</h3>
+              </div>
+              <Badge tone={instance.loader === 'vanilla' ? 'neutral' : 'accent'}>
+                {instance.loader === 'vanilla' ? '原版' : LOADER_LABEL[instance.loader]}
+              </Badge>
+            </div>
+            <div className="loader-manager">
+              <div className="loader-current">
+                <span className="loader-current__icon"><Puzzle size={19} /></span>
+                <div>
+                  <span>当前组合</span>
+                  <strong>
+                    Minecraft {instance.mcVersion} · {LOADER_LABEL[instance.loader] || instance.loader}
+                    {instance.loaderVersion ? ` ${instance.loaderVersion}` : ''}
+                  </strong>
+                  <p>
+                    {instance.loader === 'vanilla'
+                      ? '当前未安装模组加载器，启动原版游戏。'
+                      : `当前版本 ID：${instance.versionId}`}
+                  </p>
+                </div>
+              </div>
+              <div className="loader-controls">
+                <Field
+                  label="切换或移除加载器"
+                  hint="只显示该游戏版本可下载的加载器；切换不会删除存档和模组文件"
+                >
+                  <Select
+                    value={loaderChoice}
+                    disabled={loaderBusy || isRunning}
+                    onChange={(event) => {
+                      setLoaderChoice(event.target.value as LoaderType)
+                      setLoaderError('')
+                    }}
+                  >
+                    <option value="vanilla">原版（移除模组加载器）</option>
+                    {availableLoaderRows.map((item) => (
+                      <option key={item.loader} value={item.loader}>
+                        {LOADER_LABEL[item.loader]} {item.latest ? `· ${item.latest}` : ''}
+                      </option>
+                    ))}
+                    {instance.loader !== 'vanilla' && !currentLoaderListed ? (
+                      <option value={instance.loader}>
+                        {LOADER_LABEL[instance.loader]} {instance.loaderVersion || '（当前版本）'}
+                      </option>
+                    ) : null}
+                  </Select>
+                </Field>
+                <Button
+                  variant={loaderChoice === 'vanilla' && instance.loader !== 'vanilla' ? 'danger' : 'primary'}
+                  loading={loaderBusy}
+                  disabled={!loaderChanged || loaderBusy || isRunning}
+                  onClick={() => void applyLoader()}
+                  icon={<RefreshCw size={16} />}
+                >
+                  {loaderChoice === 'vanilla' && instance.loader !== 'vanilla' ? '移除加载器' : '应用加载器'}
+                </Button>
+              </div>
+              {isRunning ? <InlineNotice tone="warn">请先结束正在运行的游戏，再修改加载器。</InlineNotice> : null}
+              {loaderError ? <InlineNotice tone="danger" title="加载器操作失败">{loaderError}</InlineNotice> : null}
+              <InlineNotice tone="warn" title="切换前请确认模组兼容性">
+                切换加载器只改变启动版本，不会删除存档、配置或模组文件。不同加载器之间通常不兼容，切换后已有模组可能无法加载；旧加载器文件会保留供其它实例使用。
+              </InlineNotice>
+            </div>
+          </section>
+
           <section className="panel detail-panel">
             <div className="panel__header">
               <div>

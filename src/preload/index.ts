@@ -86,6 +86,8 @@ const api: LauncherApi = {
   createInstance: (input: CreateInstanceInput) =>
     invoke<{ instance: Instance; taskId: string }>('instances:create', input),
   instanceDetail: (id: string) => invoke<Instance>('instances:detail', id),
+  setInstanceLoader: (id: string, loader: import('../shared/types').LoaderType) =>
+    invoke<Instance>('instances:set-loader', id, loader),
   loaderAvailability: (mcVersion: string) =>
     invoke<LoaderAvailability[]>('loaders:availability', mcVersion),
   downloadModFile: (request: import('../shared/types').StandaloneModDownloadRequest) =>

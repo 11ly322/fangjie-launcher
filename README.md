@@ -8,18 +8,18 @@
 
 一个面向 Windows 的 Minecraft 桌面启动器，使用 Electron + React + TypeScript 构建。目标是接近 PCL2 的核心使用体验：游戏实例、加载器安装、模组搜索下载、正版登录与离线皮肤。0.0.5 起更名为 **unflod bindery launcher（UBL）**，以书架和低 bit 像素为视觉主体。
 
-> **0.0.6**：书架实例切换、整合包下载、版本隔离、高级启动设置，以及“安装更新后自动重启”的更新器修复进入正式版；0.0.5 的 UBL 更名、扁平书架 UI、日夜模式、智能加载器、手动版本筛选与独立下载继续保留。
+> **0.0.7**：实例创建后可以重新选择或移除 Fabric/Quilt/Forge/NeoForge 加载器；切换只改启动版本，保留存档、配置和模组文件；同时修正白天模式悬浮提示仍为深色的问题。
 >
-> 由于 0.0.5 内置的是旧更新流程，已安装 0.0.5 的用户需要手动安装一次 0.0.6；从 0.0.6 起更新可在安装后自动重启。
+> 0.0.6 及之后的版本可在安装更新后自动重启；0.0.5 及更早版本仍建议手动安装一次新版。
 
 ![UBL](resources/icon.png)
 
 ## 下载
 
-从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.6) 选择：
+从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.7) 选择：
 
-- `UBL-Launcher-0.0.6-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建桌面与开始菜单快捷方式，并注册卸载项。
-- `UBL-Portable-0.0.6.zip`：免安装便携版，解压后双击 `UBL.exe`。
+- `UBL-Launcher-0.0.7-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建桌面与开始菜单快捷方式，并注册卸载项。
+- `UBL-Portable-0.0.7.zip`：免安装便携版，解压后双击 `UBL.exe`。
 - `SHA256SUMS.txt`：两个发布包的 SHA256 校验和。
 
 系统要求：Windows 10/11 x64。首次创建实例会自动下载对应 Java 运行时；安装版默认安装到 `%LOCALAPPDATA%\Programs\UBL`，卸载不会删除游戏存档和用户数据。启动器继续复用 `%APPDATA%\fangjie-launcher` 数据目录，升级不会丢失旧实例。
@@ -46,6 +46,7 @@
 
 - **游戏实例**：为每个世界创建独立目录，存档、模组、配置与日志互不干扰。
 - **多加载器**：原版、Fabric、Quilt、Forge、NeoForge。创建实例时先按所选 Minecraft 版本核验元数据，只展示真正有版本可下载的加载器；也可不建实例、单独把加载器装进共享版本目录。
+- **实例加载器管理**：实例设置中可随时切换或移除模组加载器；切换前会核验该游戏版本可用的加载器，只更新实例的启动版本与加载器记录，不删除存档、配置或模组文件。
 - **模组工坊**：支持 Modrinth 与 CurseForge 两个下载源；按实例加载器与游戏版本过滤，并可进一步筛选游戏版本、加载器与运行环境；游戏版本既可下拉，也可手动输入任意版本；内置离线中英词典，中文搜索词自动转换为英文关键词，结果标题/简介可自动显示中文；提供版本选择、必需前置索引与跳转、介绍页；已安装模组可直接切换版本并替换旧文件；资源包/光影同样支持双源。
 - **独立下载**：模组详情可直接“仅下载文件”，不安装到实例；保存到数据目录的 `downloads/mods/`，并进入下载任务列表。
 - **模组更新中心**：批量检查已安装模组的兼容更新，分组展示可更新/已是最新/不可自动更新；支持单个或全部更新、跳过版本、固定版本，更新前自动备份旧 JAR 并支持手动回滚。
@@ -92,7 +93,7 @@ npm run package
 npm run package:installer
 ```
 
-安装包输出到 `release/UBL-Launcher-0.0.6-Setup.exe`。
+安装包输出到 `release/UBL-Launcher-0.0.7-Setup.exe`。
 
 联机连接器不提交二进制，需先通过 `.github/workflows/connector-build.yml` 构建到 `resources/bin/qomicex-connector-cli.exe`；发布包中已包含该组件。构建脚本会查找 electron-builder 缓存或系统安装的 NSIS 3.x；也可用 `MAKENSIS` 环境变量指定 `makensis.exe`。安装包未做代码签名，Windows SmartScreen 可能提示未知发布者。
 

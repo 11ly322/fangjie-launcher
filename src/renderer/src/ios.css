@@ -685,3 +685,100 @@ body {
     padding: 12px;
   }
 }
+
+/* Instance loader management */
+.loader-panel {
+  grid-column: 1 / -1;
+}
+
+.loader-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.loader-current {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--surface-soft, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--line);
+}
+
+.loader-current__icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border-radius: 13px;
+  color: var(--accent);
+  background: var(--accent-soft, rgba(183, 243, 74, 0.12));
+}
+
+.loader-current > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.loader-current span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.loader-current strong {
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.loader-current p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.loader-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.loader-controls .field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.loader-controls .button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .loader-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+/* Light-mode popovers should never fall back to the old dark palette. */
+:root[data-mode='light'] .toast {
+  border-color: rgba(60, 60, 67, 0.12);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18px 42px rgba(31, 35, 28, 0.14);
+  color: #3a3a3c;
+}
+
+:root[data-mode='light'] .toast__close {
+  color: #8e8e93;
+}
+
+:root[data-mode='light'] .toast__close:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #1c1c1e;
+}
