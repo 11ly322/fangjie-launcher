@@ -256,6 +256,7 @@ export interface AppSnapshot {
   appVersion: string
   configPath: string
   dataPath: string
+  dataPathWarning?: string | null
   settings: Settings
   account: Account
   accounts?: Account[]

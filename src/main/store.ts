@@ -37,6 +37,14 @@ interface PersistedConfig {
 
 const ACCENTS = ['#b8e85c', '#f2b860', '#8ecae6', '#f08a8a', '#b8a1f5', '#6fd6b0', '#e7d36c']
 
+function describeDataPathError(error: unknown): string {
+  const code = (error as { code?: unknown } | null)?.code
+  if (code === 'ENOENT') return '路径不存在，磁盘可能未连接'
+  if (code === 'ENOTDIR') return '路径中包含同名文件'
+  if (code === 'EACCES' || code === 'EPERM') return '没有写入权限'
+  return error instanceof Error ? error.message : String(error)
+}
+
 export function offlineUuid(name: string): string {
   const hash = createHash('md5').update(`OfflinePlayer:${name}`, 'utf8').digest()
   hash[6] = (hash[6] & 0x0f) | 0x30
@@ -73,6 +81,7 @@ export class LauncherStore {
   readonly homePath: string
   readonly configPath: string
   readonly dataPath: string
+  readonly dataPathWarning: string | null
   readonly dataLocationPath: string
   readonly minecraftPath: string
   readonly instancesPath: string
@@ -83,13 +92,13 @@ export class LauncherStore {
     this.homePath = process.env.FJ_HOME ? resolve(process.env.FJ_HOME) : app.getPath('userData')
     this.configPath = join(this.homePath, 'config.json')
     this.dataLocationPath = join(this.homePath, 'data-location.json')
-    this.dataPath = this.resolveDataPath()
+    const dataRoot = this.resolveDataPath()
+    this.dataPath = dataRoot.path
+    this.dataPathWarning = dataRoot.warning
     this.minecraftPath = join(this.dataPath, 'minecraft')
     this.instancesPath = join(this.dataPath, 'instances')
     this.skinsPath = join(this.homePath, 'skins')
 
-    mkdirSync(this.minecraftPath, { recursive: true })
-    mkdirSync(this.instancesPath, { recursive: true })
     mkdirSync(this.skinsPath, { recursive: true })
 
     this.config = this.load()
@@ -208,17 +217,47 @@ export class LauncherStore {
     renameSync(temporary, this.configPath)
   }
 
-  private resolveDataPath(): string {
-    if (process.env.FJ_DATA) return resolve(process.env.FJ_DATA)
+  private resolveDataPath(): { path: string; warning: string | null } {
+    if (process.env.FJ_DATA) {
+      const path = resolve(process.env.FJ_DATA)
+      this.ensureDataRoot(path)
+      return { path, warning: null }
+    }
+
+    let configured = ''
     try {
       const pointer = JSON.parse(readFileSync(this.dataLocationPath, 'utf8')) as { dataPath?: unknown }
       if (typeof pointer.dataPath === 'string' && isAbsolute(pointer.dataPath)) {
-        return resolve(pointer.dataPath)
+        configured = resolve(pointer.dataPath)
       }
     } catch {
       /* no custom location yet, or an unreadable pointer; use the default */
     }
-    return join(this.homePath, 'game')
+
+    if (configured) {
+      try {
+        this.ensureDataRoot(configured)
+        return { path: configured, warning: null }
+      } catch (error) {
+        const reason = describeDataPathError(error)
+        const fallback = join(this.homePath, 'game')
+        this.ensureDataRoot(fallback)
+        return {
+          path: fallback,
+          warning: `已保存的数据目录「${configured}」当前不可用（${reason}），本次已临时使用「${fallback}」。原设置没有修改，磁盘恢复后重启启动器即可继续使用原目录。`
+        }
+      }
+    }
+
+    const fallback = join(this.homePath, 'game')
+    this.ensureDataRoot(fallback)
+    return { path: fallback, warning: null }
+  }
+
+  /** Create the data roots before the window is shown; callers decide how to recover. */
+  private ensureDataRoot(path: string): void {
+    mkdirSync(join(path, 'minecraft'), { recursive: true })
+    mkdirSync(join(path, 'instances'), { recursive: true })
   }
 
   /** Write the location pointer consumed on the next launch. */

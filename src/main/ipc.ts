@@ -195,6 +195,7 @@ export function registerIpcHandlers(context: IpcContext): void {
     appVersion: app.getVersion(),
     configPath: store.configPath,
     dataPath: store.dataPath,
+    dataPathWarning: store.dataPathWarning,
     settings: store.settings,
     account: store.getPublicAccount(),
     accounts: store.getPublicAccounts(),

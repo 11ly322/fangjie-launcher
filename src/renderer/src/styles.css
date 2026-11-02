@@ -314,6 +314,13 @@ img {
   scroll-behavior: smooth;
 }
 
+.app-data-notice {
+  width: 100%;
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 18px 36px 0;
+}
+
 .page {
   width: 100%;
   max-width: 1380px;

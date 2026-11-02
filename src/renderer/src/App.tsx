@@ -25,7 +25,7 @@ import {
 import { AppNav } from './components/AppNav'
 import { TitleBar } from './components/TitleBar'
 import { BrandMark } from './components/Artwork'
-import { Button, Modal, Spinner } from './components/ui'
+import { Button, InlineNotice, Modal, Spinner } from './components/ui'
 import { HomePage } from './pages/HomePage'
 import { InstancesPage } from './pages/InstancesPage'
 import { InstanceDetailPage } from './pages/InstanceDetailPage'
@@ -601,6 +601,21 @@ export default function App(): React.JSX.Element {
           gamepadConnected={gamepad.connected}
         />
         <main className="main-scroll" id="main-content">
+          {boot.dataPathWarning ? (
+            <div className="app-data-notice">
+              <InlineNotice
+                tone="warn"
+                title="数据目录已临时切换"
+                action={
+                  <Button variant="ghost" onClick={() => navigate('settings')}>
+                    数据设置
+                  </Button>
+                }
+              >
+                {boot.dataPathWarning}
+              </InlineNotice>
+            </div>
+          ) : null}
           {page === 'home' ? <HomePage /> : null}
           {page === 'instances' ? <InstancesPage /> : null}
           {page === 'instance' && activeInstance ? (

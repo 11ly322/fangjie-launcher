@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, shell } from 'electron'
+import { app, BrowserWindow, dialog, Menu, shell } from 'electron'
 import { appendFileSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { LauncherStore } from './store'
@@ -141,30 +141,39 @@ function getMainWindow(): BrowserWindow | null {
 
 app.whenReady().then(() => {
   log('app ready')
-  app.setAppUserModelId('com.fangjie.launcher')
-  Menu.setApplicationMenu(null)
-  installDownloadConcurrencyLimit(20)
-
-  store = new LauncherStore()
-  configureNetworkConcurrency(store.settings.downloadConcurrency)
-  installFetchGuard()
-  setOffline(store.settings.offline)
   try {
-    configureNetwork(store.settings.proxyUrl)
-  } catch {
-    configureNetwork('')
-  }
-  configureModrinthBase(store.settings.modrinthBase)
-  configureCurseForgeBase(store.settings.curseforgeBase)
-  configureMetadataCache(store.dataPath)
-  tasks = new TaskManager()
-  rustCore = new RustCoreClient()
-  registerIpcHandlers({ store, tasks, rustCore, getMainWindow })
-  createWindow()
+    app.setAppUserModelId('com.fangjie.launcher')
+    Menu.setApplicationMenu(null)
+    installDownloadConcurrencyLimit(20)
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
+    store = new LauncherStore()
+    configureNetworkConcurrency(store.settings.downloadConcurrency)
+    installFetchGuard()
+    setOffline(store.settings.offline)
+    try {
+      configureNetwork(store.settings.proxyUrl)
+    } catch {
+      configureNetwork('')
+    }
+    configureModrinthBase(store.settings.modrinthBase)
+    configureCurseForgeBase(store.settings.curseforgeBase)
+    configureMetadataCache(store.dataPath)
+    tasks = new TaskManager()
+    rustCore = new RustCoreClient()
+    registerIpcHandlers({ store, tasks, rustCore, getMainWindow })
+    createWindow()
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    })
+  } catch (error) {
+    log('startup failed', error)
+    dialog.showErrorBox(
+      'UBL 无法启动',
+      `启动器初始化失败。请查看日志：\n${getLogPath()}\n\n${error instanceof Error ? error.message : String(error)}`
+    )
+    app.quit()
+  }
 })
 
 app.on('second-instance', () => {

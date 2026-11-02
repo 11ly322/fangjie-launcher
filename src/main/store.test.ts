@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
@@ -78,6 +78,36 @@ describe('LauncherStore account book', () => {
     const switched = store.setActiveAccount(microsoft.uuid)
     expect(switched.type).toBe('microsoft')
     expect(store.getMicrosoftAuth()?.refreshToken).toBe('refresh')
+  })
+})
+
+describe('LauncherStore data location recovery', () => {
+  it('falls back when a saved custom directory is unavailable and keeps the pointer', () => {
+    const blocked = join(home, 'blocked')
+    writeFileSync(blocked, 'not a directory')
+    const configured = join(blocked, 'minecraft-data')
+    const pointer = `${JSON.stringify({ dataPath: configured }, null, 2)}\n`
+    writeFileSync(join(home, 'data-location.json'), pointer)
+
+    const store = new LauncherStore()
+
+    expect(store.dataPath).toBe(join(home, 'game'))
+    expect(store.dataPathWarning).toContain(configured)
+    expect(store.dataPathWarning).toContain(join(home, 'game'))
+    expect(readFileSync(join(home, 'data-location.json'), 'utf8')).toBe(pointer)
+    expect(existsSync(join(home, 'game', 'minecraft'))).toBe(true)
+    expect(existsSync(join(home, 'game', 'instances'))).toBe(true)
+  })
+
+  it('keeps using an available custom directory without a warning', () => {
+    const configured = join(home, 'custom-data')
+    writeFileSync(join(home, 'data-location.json'), JSON.stringify({ dataPath: configured }))
+
+    const store = new LauncherStore()
+
+    expect(store.dataPath).toBe(configured)
+    expect(store.dataPathWarning).toBeNull()
+    expect(existsSync(join(configured, 'minecraft'))).toBe(true)
   })
 })
 
