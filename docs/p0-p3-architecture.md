@@ -121,7 +121,7 @@ src/renderer/src/pages/InstanceDetailPage.tsx
 - `npm test`：23 passed（主题/房间码/连接器直连中继/地址解析/离线策略+fetch 门禁/OptiFine 文件名/统一下载校验）
 - `npm run typecheck`：通过
 - `npm run build`：通过
-- `npm run package`：通过；`release/Fangjie-win32-x64/resources/bin/fangjie-core-sidecar.exe` 已包含，打包版 `coreStatus` 与崩溃诊断已验证。
+- `npm run package`：通过；`release/UBL-win32-x64/resources/bin/fangjie-core-sidecar.exe` 已包含，打包版 `coreStatus` 与崩溃诊断已验证。
 - Electron E2E：
   - 崩溃诊断命中 OptiFine/Sodium 冲突 → diff 1 行 → apply 后 `optifine.jar.disabled` → rollback 后 `optifine.jar` 恢复。
   - 批量禁用/启用 sodium，实例文件状态正确。
@@ -180,7 +180,7 @@ Electron 流程：
 update:check
   → 读取 GitHub Releases latest.json（通过可配置 UpdateFeed 抽象）
   → Rust check_manifest 比较 semver
-  → update:download 到 %LOCALAPPDATA%\Fangjie\updates\<version>\
+  → update:download 到 %LOCALAPPDATA%\UBL\updates\<version>\
   → Rust verify_asset（大小 + SHA256；后续加签名）
   → update:apply
       → 启动 NSIS /S 安装器（当前用户，无管理员）
@@ -373,7 +373,7 @@ pub trait AccountProviderPlugin { fn manifest(&self) -> &PluginManifest; ... }
 
 1. 购买 OV/EV Authenticode 证书（EV 对 SmartScreen 声誉更快）。
 2. CI 用 Azure Trusted Signing 或硬件令牌/密钥库；不把 PFX 明文入库。
-3. 对 `Fangjie.exe` 和 NSIS 安装包分别签名；使用 RFC3161 时间戳。
+3. 对 `UBL.exe` 和 NSIS 安装包分别签名；使用 RFC3161 时间戳。
 4. `signtool sign /fd SHA256 /tr <timestamp> /td SHA256 /a ...`；安装器签名后再计算 SHA256。
 5. SmartScreen 仍可能对新证书提示；持续发布、稳定 publisher name、EV 证书和下载量建立声誉。不能承诺“签名即无警告”。
 

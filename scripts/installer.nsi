@@ -1,4 +1,4 @@
-﻿Unicode true
+Unicode true
 !include "MUI2.nsh"
 !include "FileFunc.nsh"
 
@@ -6,12 +6,12 @@
   !error "PROJECT_ROOT is required"
 !endif
 
-!define APP_NAME "unflod bindery launcher"
+!define APP_NAME "UBL"
 !ifndef APP_VERSION
-  !define APP_VERSION "0.0.15"
+  !define APP_VERSION "0.0.16"
 !endif
 !ifndef APP_VERSION_NUMERIC
-  !define APP_VERSION_NUMERIC "0.0.15.0"
+  !define APP_VERSION_NUMERIC "0.0.16.0"
 !endif
 !define APP_PUBLISHER "11ly322"
 !define APP_EXE "UBL.exe"
@@ -42,7 +42,7 @@ VIAddVersionKey /LANG=2052 "LegalCopyright" "MIT License"
 !define MUI_UNICON "${PROJECT_ROOT}\resources\icon.ico"
 !define MUI_ABORTWARNING
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${APP_EXE}"
-!define MUI_FINISHPAGE_RUN_TEXT "启动 unflod bindery launcher"
+!define MUI_FINISHPAGE_RUN_TEXT "启动 UBL"
 !define MUI_FINISHPAGE_LINK "项目主页：github.com/11ly322/fangjie-launcher"
 !define MUI_FINISHPAGE_LINK_LOCATION "https://github.com/11ly322/fangjie-launcher"
 
@@ -57,7 +57,7 @@ VIAddVersionKey /LANG=2052 "LegalCopyright" "MIT License"
 
 !insertmacro MUI_LANGUAGE "SimpChinese"
 
-Section "安装 unflod bindery launcher" SecInstall
+Section "安装 UBL" SecInstall
   SetShellVarContext current
   SetRegView 64
   SetOutPath "$INSTDIR"
@@ -66,9 +66,11 @@ Section "安装 unflod bindery launcher" SecInstall
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
   CreateDirectory "$SMPROGRAMS\UBL"
-  CreateShortcut "$SMPROGRAMS\UBL\unflod bindery launcher.lnk" "$INSTDIR\${APP_EXE}"
+  Delete "$SMPROGRAMS\UBL\unflod bindery launcher.lnk"
+  Delete "$DESKTOP\unflod bindery launcher.lnk"
+  CreateShortcut "$SMPROGRAMS\UBL\UBL.lnk" "$INSTDIR\${APP_EXE}"
   CreateShortcut "$SMPROGRAMS\UBL\卸载 UBL.lnk" "$INSTDIR\Uninstall.exe"
-  CreateShortcut "$DESKTOP\unflod bindery launcher.lnk" "$INSTDIR\${APP_EXE}"
+  CreateShortcut "$DESKTOP\UBL.lnk" "$INSTDIR\${APP_EXE}"
 
   WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayName" "${APP_NAME}"
   WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayVersion" "${APP_VERSION}"
@@ -90,6 +92,7 @@ Section "Uninstall"
   SetShellVarContext current
   SetRegView 64
 
+  Delete "$DESKTOP\UBL.lnk"
   Delete "$DESKTOP\unflod bindery launcher.lnk"
   RMDir /r "$SMPROGRAMS\UBL"
   DeleteRegKey HKCU "${UNINSTALL_KEY}"

@@ -3,7 +3,7 @@ name = "fangjie-core"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "Fangjie launcher core: crash diagnosis, mod scanning, repair planning and Tauri commands"
+description = "UBL launcher core: crash diagnosis, mod scanning, repair planning and Tauri commands"
 
 [features]
 default = []

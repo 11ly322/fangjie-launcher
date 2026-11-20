@@ -26,7 +26,7 @@
 ```powershell
 $env:FJ_SIGN_CERT_PATH = 'C:\secure\ubl.pfx'
 $env:FJ_SIGN_CERT_PASSWORD = '<from secret store>'
-./scripts/sign-windows.ps1 -Path 'release\UBL-win32-x64\Fangjie.exe'
+./scripts/sign-windows.ps1 -Path 'release\UBL-win32-x64\UBL.exe'
 ./scripts/sign-windows.ps1 -Path 'release\UBL-Launcher-0.0.9-Setup.exe'
 ```
 

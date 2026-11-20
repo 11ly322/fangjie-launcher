@@ -53,6 +53,7 @@ function log(message: string, error?: unknown): void {
 const explicitUserData = process.argv.some((argument) => argument.startsWith('--user-data-dir'))
 app.setName('unflod bindery launcher')
 if (!explicitUserData && !process.env.FJ_HOME) {
+  // 兼容旧版本数据目录，请勿重命名
   app.setPath('userData', join(app.getPath('appData'), 'fangjie-launcher'))
 }
 
@@ -142,6 +143,7 @@ function getMainWindow(): BrowserWindow | null {
 app.whenReady().then(() => {
   log('app ready')
   try {
+    // 保留旧 AppUserModelID：任务栏固定项与通知身份依赖它，不能随显示名修改。
     app.setAppUserModelId('com.fangjie.launcher')
     Menu.setApplicationMenu(null)
     installDownloadConcurrencyLimit(20)
@@ -201,12 +203,12 @@ app.on('child-process-gone', (_event, details) => {
 
 process.on('uncaughtException', (error) => {
   log('uncaught exception', error)
-  console.error('[fangjie] uncaught exception', error)
+  console.error('[UBL] uncaught exception', error)
 })
 
 process.on('unhandledRejection', (error) => {
   log('unhandled rejection', error)
-  console.error('[fangjie] unhandled rejection', error)
+  console.error('[UBL] unhandled rejection', error)
 })
 
 process.on('exit', (code) => {

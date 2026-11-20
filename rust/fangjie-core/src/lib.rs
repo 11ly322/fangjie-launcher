@@ -1,4 +1,7 @@
-//! Fangjie launcher core.
+//! UBL launcher core.
+//!
+//! The crate name `fangjie-core` is retained because the sidecar and Tauri
+//! wiring depend on it; it is an internal compatibility identifier.
 //!
 //! Phase 1 is intentionally independent from the Tauri runtime. The `tauri`
 //! feature only compiles the command adapter; all diagnosis and repair logic

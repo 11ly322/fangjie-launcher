@@ -7,4 +7,4 @@ import { app } from 'electron'
  */
 export const APP_VERSION = app.getVersion()
 
-export const USER_AGENT = `fangjie-launcher/${APP_VERSION} (local Minecraft launcher)`
+export const USER_AGENT = `UBL/${APP_VERSION} (local Minecraft launcher)`

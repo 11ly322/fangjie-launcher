@@ -1,14 +1,16 @@
-# unflod bindery launcher · UBL
+# unflod bindery launcher（UBL）— Minecraft 桌面启动器
 
-官网：https://11ly322.github.io/fangjie-launcher/
+0.0.5 起由“方界”更名为 unflod bindery launcher（UBL）。
+
+[UBL 官网](https://11ly322.github.io/fangjie-launcher/)
 
 [![Release](https://img.shields.io/github/v/release/11ly322/fangjie-launcher?include_prereleases&label=release)](https://github.com/11ly322/fangjie-launcher/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-c4f06a.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-4a7c1f)
 
-一个面向 Windows 的 Minecraft 桌面启动器，使用 Electron + React + TypeScript 构建。以游戏版本为中心组织启动、下载与实例管理：游戏实例、加载器安装、模组搜索下载、正版登录与离线皮肤。0.0.5 起更名为 **unflod bindery launcher（UBL）**，以书架和低 bit 像素为视觉主体。
+unflod bindery launcher（UBL）是一个面向 Windows 的 Minecraft 桌面启动器，使用 Electron + React + TypeScript 构建。以游戏版本为中心组织启动、下载与实例管理：游戏实例、加载器安装、模组搜索下载、正版登录与离线皮肤。以书架和低 bit 像素为视觉主体。
 
-> **0.0.15**：数据目录恢复。自定义数据目录所在磁盘离线时，启动器不再无窗口卡死，而是临时回退到默认目录并在主界面提示；不改变存档、实例或模组文件结构。
+> **0.0.16**：品牌清理。用户可见名称统一为 unflod bindery launcher（UBL），安装器、快捷方式与日志改用 UBL；数据目录、npm 包名、联机与登录标识保持不变。包含 0.0.15 的数据目录恢复修复。
 >
 > 0.0.8 及更早版本的内置更新器仍有替换缺陷，请手动安装一次 0.0.9 或更新版本；0.0.9 起更新助手改用独立 PowerShell 流程，后续更新会写入安装目录并在完成后自动重启。
 
@@ -16,13 +18,13 @@
 
 ## 下载
 
-从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.15) 选择：
+从 [GitHub Releases](https://github.com/11ly322/fangjie-launcher/releases/tag/v0.0.16) 选择：
 
-- `UBL-Launcher-0.0.15-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建开始菜单项并注册卸载信息。
-- `UBL-Portable-0.0.15.zip`：免安装便携版，解压后双击 `UBL.exe`。
+- `UBL-Launcher-0.0.16-Setup.exe`：Windows 安装包，按用户安装，无需管理员权限；会创建开始菜单项并注册卸载信息。
+- `UBL-Portable-0.0.16.zip`：免安装便携版，解压后双击 `UBL.exe`。
 - `SHA256SUMS.txt`：两个发布包的 SHA256 校验和。
 
-系统要求：Windows 10/11 x64。首次创建实例会自动下载对应 Java 运行时；安装版默认安装到 `%LOCALAPPDATA%\Programs\UBL`，卸载不会删除游戏存档和用户数据。启动器继续复用 `%APPDATA%\fangjie-launcher` 数据目录，升级不会丢失旧实例。更新包与安装助手现在只写入安装目录下的 `updates/`，不再写入 `%APPDATA%\fangjie-launcher\updates`；不希望安装程序写卸载注册项时可直接使用便携版。
+系统要求：Windows 10/11 x64。首次创建实例会自动下载对应 Java 运行时；安装版默认安装到 `%LOCALAPPDATA%\Programs\UBL`，卸载不会删除游戏存档和用户数据。数据目录仍为 `%APPDATA%\fangjie-launcher`，这是为了兼容旧版本，不会随产品改名而改变。启动器升级不会丢失旧实例。更新包与安装助手现在只写入安装目录下的 `updates/`，不再写入 `%APPDATA%\fangjie-launcher\updates`；不希望安装程序写卸载注册项时可直接使用便携版。
 
 ## 界面
 
@@ -101,7 +103,7 @@ npm run package
 npm run package:installer
 ```
 
-安装包输出到 `release/UBL-Launcher-0.0.15-Setup.exe`。
+安装包输出到 `release/UBL-Launcher-0.0.16-Setup.exe`。
 
 联机连接器不提交二进制，需先通过 `.github/workflows/connector-build.yml` 构建到 `resources/bin/qomicex-connector-cli.exe`；发布包中已包含该组件。构建脚本会查找 electron-builder 缓存或系统安装的 NSIS 3.x；也可用 `MAKENSIS` 环境变量指定 `makensis.exe`。安装包未做代码签名，Windows SmartScreen 可能提示未知发布者。
 

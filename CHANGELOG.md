@@ -2,6 +2,40 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)，当前处于 `0.0.x` 预览阶段。
 
+## 0.0.16 — 2026-11-20
+
+品牌清理版本。用户可见名称统一为 unflod bindery launcher（UBL）；内部包名、数据目录、联机与登录标识保持不变，升级不会迁移或删除现有实例。
+
+### 变更
+
+- **窗口与日志**：启动日志前缀、User-Agent 改为 UBL；保留 `%APPDATA%\fangjie-launcher` 数据目录和 `com.fangjie.launcher` 应用标识，并补充兼容注释。
+- **安装器**：NSIS 显示名称、安装节、完成页、开始菜单与桌面快捷方式改为 UBL；覆盖安装时清理旧的长名称快捷方式，避免出现两个入口。
+- **文档与官网**：README、第三方声明、架构说明、代码签名说明和官网当前版本文案改用 UBL；历史版本发布说明与校验和保留原名。
+- **Rust 元数据**：核心 crate 描述改为 UBL，crate 名 `fangjie-core`、sidecar 文件名和 IPC 接口保持不变。
+
+### 兼容
+
+- npm 包名仍为 `fangjie-launcher`，GitHub 仓库地址不变；`window.fangjie` 预加载接口、`.fangjie` 实例内部目录、Microsoft 登录分区与本地存储键均未改名。
+- 0.0.15 的数据目录回退逻辑继续保留；升级到 0.0.16 不会复制、移动或删除存档和模组。
+
+### 验证
+
+- `npm run typecheck`、`npm test -- --run`（21 个文件 / 74 个测试）、`npm run build`、`npm run package:installer` 通过。
+- 隔离的 0.0.15 → 0.0.16 静默覆盖安装退出码为 0；版本显示 0.0.16，安装目录哨兵文件保留，旧快捷方式清理并生成 UBL 快捷方式。
+- ASCII 临时目录的静默安装/卸载退出码为 0，安装目录与 HKCU 卸载项均被移除。
+- 便携 ZIP 可解压，`UBL.exe` 与 `resources/bin/fangjie-core-sidecar.exe` 存在。
+
+### 发布包
+
+- `UBL-Launcher-0.0.16-Setup.exe` — 179,117,597 B / `d88c6da9714b70bca4ba8d0cca51677f8d35107a563c83f7549901d78e9c46da`
+- `UBL-Portable-0.0.16.zip` — 179,515,079 B / `877cf6eea032b1537a3dcb227dedeb5d6408a3165cdc1f44cfe3124f1fdd2ed6`
+- `SHA256SUMS.txt` — 188 B / `d4f2622ae6beafb5b428a1404c27960072fee6ca2f707c7961d9ab0fab17c76c`
+
+### 边界
+
+- 发布包未签名，Windows SmartScreen 可能提示未知发布者。
+- 安装目录位于包含中文的深层临时路径时，NSIS 静默卸载返回 2、未完成自动卸载；默认安装目录与 ASCII 路径已通过。
+
 ## 0.0.15 — 2026-11-02
 
 数据目录恢复版本。修复自定义数据目录所在磁盘离线时，启动器在创建窗口前抛错、进程占用单实例锁却不显示界面的问题；不改变存档、实例或模组文件结构。
